@@ -81,10 +81,10 @@ public class GuiNewChat extends Gui
                             {
                                 int i2 = 0;
                                 int j2 = -i1 * 9;
-                                drawRect(-2, j2 - 9, 0 + k + 4, j2, l1 / 2 << 24);
+                                drawRect(-2, j2 - 9, 0 + k + 4, j2, net.sythix.client.core.Hooks.chatBackground(l1 / 2, chatline.getChatComponent()));
                                 String s = chatline.getChatComponent().getFormattedText();
                                 GlStateManager.enableBlend();
-                                this.mc.fontRenderer.drawStringWithShadow(s, 0.0F, (float)(j2 - 8), 16777215 + (l1 << 24));
+                                this.mc.fontRenderer.drawString(s, 0.0F, (float)(j2 - 8), 16777215 + (l1 << 24), net.sythix.client.core.Hooks.chatShadow());
                                 GlStateManager.disableAlpha();
                                 GlStateManager.disableBlend();
                             }
@@ -139,6 +139,15 @@ public class GuiNewChat extends Gui
      */
     public void printChatMessageWithOptionalDeletion(ITextComponent chatComponent, int chatLineId)
     {
+        int[] sythixId = new int[] {chatLineId};
+        chatComponent = net.sythix.client.core.Hooks.incomingChat(this, chatComponent, sythixId);
+
+        if (chatComponent == null)
+        {
+            return;
+        }
+
+        chatLineId = sythixId[0];
         this.setChatLine(chatComponent, chatLineId, this.mc.ingameGUI.getUpdateCounter(), false);
         LOGGER.info("[CHAT] {}", (Object)chatComponent.getUnformattedText().replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n"));
     }
@@ -153,6 +162,12 @@ public class GuiNewChat extends Gui
         int i = MathHelper.floor((float)this.getChatWidth() / this.getChatScale());
         List<ITextComponent> list = GuiUtilRenderComponents.splitText(chatComponent, i, this.mc.fontRenderer, false, false);
         boolean flag = this.getChatOpen();
+        net.sythix.client.core.Hooks.tagChatLines(chatComponent, list);
+
+        if (!net.sythix.client.core.Hooks.chatTabAllows(chatComponent))
+        {
+            list = java.util.Collections.<ITextComponent>emptyList();
+        }
 
         for (ITextComponent itextcomponent : list)
         {
@@ -165,7 +180,7 @@ public class GuiNewChat extends Gui
             this.drawnChatLines.add(0, new ChatLine(updateCounter, itextcomponent, chatLineId));
         }
 
-        while (this.drawnChatLines.size() > 100)
+        while (this.drawnChatLines.size() > net.sythix.client.core.Hooks.chatHistory(100))
         {
             this.drawnChatLines.remove(this.drawnChatLines.size() - 1);
         }
@@ -174,7 +189,7 @@ public class GuiNewChat extends Gui
         {
             this.chatLines.add(0, new ChatLine(updateCounter, chatComponent, chatLineId));
 
-            while (this.chatLines.size() > 100)
+            while (this.chatLines.size() > net.sythix.client.core.Hooks.chatHistory(100))
             {
                 this.chatLines.remove(this.chatLines.size() - 1);
             }
@@ -203,6 +218,8 @@ public class GuiNewChat extends Gui
      */
     public void addToSentMessages(String message)
     {
+        net.sythix.client.core.Hooks.onChatSent();
+
         if (this.sentMessages.isEmpty() || !((String)this.sentMessages.get(this.sentMessages.size() - 1)).equals(message))
         {
             this.sentMessages.add(message);
@@ -374,5 +391,35 @@ public class GuiNewChat extends Gui
     public int getLineCount()
     {
         return this.getChatHeight() / 9;
+    }
+
+    /** Sythix: the drawn chat line under the mouse (mouse in screen pixels), or null. */
+    public ChatLine getLineAtSythix(int mouseX, int mouseY)
+    {
+        if (!this.getChatOpen())
+        {
+            return null;
+        }
+
+        ScaledResolution scaledresolution = new ScaledResolution(this.mc);
+        int i = scaledresolution.getScaleFactor();
+        float f = this.getChatScale();
+        int j = MathHelper.floor((float)(mouseX / i - 2) / f);
+        int k = MathHelper.floor((float)(mouseY / i - 40) / f);
+
+        if (j < 0 || k < 0 || j > MathHelper.floor((float)this.getChatWidth() / f))
+        {
+            return null;
+        }
+
+        int l = Math.min(this.getLineCount(), this.drawnChatLines.size());
+
+        if (k >= this.mc.fontRenderer.FONT_HEIGHT * l + l)
+        {
+            return null;
+        }
+
+        int index = k / this.mc.fontRenderer.FONT_HEIGHT + this.scrollPos;
+        return index >= 0 && index < this.drawnChatLines.size() ? this.drawnChatLines.get(index) : null;
     }
 }

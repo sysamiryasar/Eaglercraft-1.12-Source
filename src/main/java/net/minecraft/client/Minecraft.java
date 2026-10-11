@@ -1223,6 +1223,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             this.entityRenderer.updateCameraAndRender(this.isGamePaused ? this.renderPartialTicksPaused : this.timer.renderPartialTicks, i);
             this.mcProfiler.endStartSection("toasts");
             this.toastGui.drawToast(new ScaledResolution(this));
+            net.sythix.client.core.Hooks.renderNotifications(new ScaledResolution(this));
             this.mcProfiler.endSection();
         }
 

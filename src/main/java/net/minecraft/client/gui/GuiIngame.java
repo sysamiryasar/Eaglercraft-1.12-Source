@@ -371,7 +371,10 @@ public class GuiIngame extends Gui
 
         if (scoreobjective1 != null)
         {
-            this.renderScoreboard(scoreobjective1, scaledresolution);
+            if (!net.sythix.client.core.Hooks.captureScoreboard(scoreobjective1))
+            {
+                this.renderScoreboard(scoreobjective1, scaledresolution);
+            }
         }
 
         this.mc.mcProfiler.startSection("sythixHud");
@@ -391,7 +394,7 @@ public class GuiIngame extends Gui
         if (this.mc.gameSettings.keyBindPlayerList.isKeyDown() && (!this.mc.isIntegratedServerRunning() || this.mc.player.connection.getPlayerInfoMap().size() > 1 || scoreobjective1 != null))
         {
             this.overlayPlayerList.updatePlayerList(true);
-            this.overlayPlayerList.renderPlayerlist(i, scoreboard, scoreobjective1);
+            net.sythix.client.core.Hooks.renderTabList(this.overlayPlayerList, i, scoreboard, scoreobjective1);
         }
         else
         {

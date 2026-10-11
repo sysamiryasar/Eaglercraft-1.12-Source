@@ -21,6 +21,7 @@ public abstract class HudModule extends Module
     private double posX;
     private double posY;
     protected final NumberSetting scale;
+    protected final NumberSetting layer;
 
     protected HudModule(String name, String description, boolean defaultEnabled, double defaultX, double defaultY)
     {
@@ -35,6 +36,7 @@ public abstract class HudModule extends Module
         this.posX = defaultX;
         this.posY = defaultY;
         this.scale = this.add(new NumberSetting("Scale", "Size of the element. You can also scroll over it in the HUD editor.", 1.0D, 0.5D, 3.0D, 0.05D, "x"));
+        this.layer = this.add(new NumberSetting("Layer", "Elements on higher layers are drawn on top of lower ones.", 0.0D, 0.0D, 10.0D, 1.0D));
     }
 
     /** Unscaled width of the element. */
@@ -55,6 +57,11 @@ public abstract class HudModule extends Module
     public NumberSetting getScaleSetting()
     {
         return this.scale;
+    }
+
+    public int getLayer()
+    {
+        return this.layer.getInt();
     }
 
     public float getScale()

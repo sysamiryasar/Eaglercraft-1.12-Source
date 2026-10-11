@@ -59,6 +59,8 @@ public class ModuleManager
             }
         }
 
+        // Stable sort: lower layers first, so higher layers are drawn on top
+        list.sort(java.util.Comparator.comparingInt(HudModule::getLayer));
         return list;
     }
 

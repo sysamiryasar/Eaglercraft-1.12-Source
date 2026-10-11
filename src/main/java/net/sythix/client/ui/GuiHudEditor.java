@@ -11,6 +11,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.sythix.client.SythixClient;
 import net.sythix.client.input.InputUtil;
+import net.sythix.client.module.hud.HudEditorModule;
 import net.sythix.client.module.hud.HudModule;
 import net.sythix.client.setting.Setting;
 import net.sythix.client.ui.component.SettingsPanel;
@@ -25,7 +26,6 @@ import org.lwjgl.input.Mouse;
 public class GuiHudEditor extends GuiScreen
 {
     private static final int PANEL_WIDTH = 176;
-    private static final int SNAP_DISTANCE = 4;
     private static final int LIST_ROW = 16;
     private static final int HEADER = 22;
     private static boolean panelOnLeft;
@@ -44,6 +44,11 @@ public class GuiHudEditor extends GuiScreen
     {
         this.parent = parent;
         this.settingsPanel.setOnChange(() -> {});
+    }
+
+    private HudEditorModule options()
+    {
+        return SythixClient.get().getModuleManager().get(HudEditorModule.class);
     }
 
     private List<HudModule> modules()
@@ -184,8 +189,11 @@ public class GuiHudEditor extends GuiScreen
         }
 
         // Centre guide lines (faint), brighter while snapped
-        SythixTheme.drawRect((float)this.width / 2.0F - 0.5F, 0.0F, (float)this.width / 2.0F + 0.5F, (float)this.height, 0x14FFFFFF);
-        SythixTheme.drawRect(0.0F, (float)this.height / 2.0F - 0.5F, (float)this.width, (float)this.height / 2.0F + 0.5F, 0x14FFFFFF);
+        if (this.options() == null || this.options().showGuides())
+        {
+            SythixTheme.drawRect((float)this.width / 2.0F - 0.5F, 0.0F, (float)this.width / 2.0F + 0.5F, (float)this.height, 0x14FFFFFF);
+            SythixTheme.drawRect(0.0F, (float)this.height / 2.0F - 0.5F, (float)this.width, (float)this.height / 2.0F + 0.5F, 0x14FFFFFF);
+        }
 
         if (this.dragging != null)
         {
@@ -219,7 +227,7 @@ public class GuiHudEditor extends GuiScreen
             int outline = module == this.selected ? SythixTheme.RED : (module == hovered ? SythixTheme.LIGHT_BLUE : 0x50FFFFFF);
             SythixTheme.drawOutline(x - 1.0F, y - 1.0F, x + w + 1.0F, y + h + 1.0F, outline);
 
-            if (module == hovered || module == this.dragging)
+            if (module == hovered || module == this.dragging || (this.options() != null && this.options().showNames()))
             {
                 String info = module.getName() + "  " + Math.round(module.getScale() * 100.0F) + "%";
                 float ty = y > 11.0F ? y - 10.0F : y + h + 2.0F;
@@ -231,7 +239,7 @@ public class GuiHudEditor extends GuiScreen
         // Hints, centred in the free area beside the panel
         int areaLeft = panelOnLeft ? PANEL_WIDTH : 0;
         int areaWidth = this.width - PANEL_WIDTH;
-        String[] hints = new String[] {"Drag: move  |  Scroll: resize", "Shift: no snapping  |  Arrows: nudge"};
+        String[] hints = new String[] {"Drag: move  |  Scroll: resize", "Shift: free  |  Arrows: nudge  |  L/C/R: align"};
 
         for (int i = 0; i < hints.length; ++i)
         {
@@ -317,10 +325,19 @@ public class GuiHudEditor extends GuiScreen
         this.guideX = null;
         this.guideY = null;
 
-        if (!InputUtil.isShiftDown())
+        int snap = this.options() == null ? 4 : this.options().getSnapDistance();
+        int grid = this.options() == null ? 0 : this.options().getGridSize();
+
+        if (grid > 0 && !InputUtil.isShiftDown())
         {
-            float bestX = SNAP_DISTANCE + 1;
-            float bestY = SNAP_DISTANCE + 1;
+            x = (float)Math.round(x / (float)grid) * (float)grid;
+            y = (float)Math.round(y / (float)grid) * (float)grid;
+        }
+
+        if (!InputUtil.isShiftDown() && snap > 0)
+        {
+            float bestX = snap + 1;
+            float bestY = snap + 1;
             float snappedX = x;
             float snappedY = y;
             List<float[]> xTargets = new ArrayList<float[]>();
@@ -494,6 +511,16 @@ public class GuiHudEditor extends GuiScreen
             }
 
             this.selected.setScreenPosition(x, y, res);
+            return;
+        }
+
+        if (this.selected != null && this.selected.isEnabled() && (keyCode == 38 || keyCode == 46 || keyCode == 19))
+        {
+            // L / C / R: align the selected element to the left, centre or right of the screen
+            ScaledResolution res = new ScaledResolution(this.mc);
+            float w = this.selected.getScaledWidth();
+            float x = keyCode == 38 ? 2.0F : (keyCode == 46 ? ((float)this.width - w) / 2.0F : (float)this.width - w - 2.0F);
+            this.selected.setScreenPosition(x, this.selected.getScreenY(res), res);
             return;
         }
 

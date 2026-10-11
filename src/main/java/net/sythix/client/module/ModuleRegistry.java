@@ -1,7 +1,16 @@
 package net.sythix.client.module;
 
 import net.sythix.client.module.client.SearchDiscovery;
+import net.sythix.client.module.hud.ArrayListModule;
+import net.sythix.client.module.hud.ChatModule;
 import net.sythix.client.module.hud.CpsModule;
+import net.sythix.client.module.hud.HudEditorModule;
+import net.sythix.client.module.hud.InterfaceThemeModule;
+import net.sythix.client.module.hud.MainMenuModule;
+import net.sythix.client.module.hud.NotificationsModule;
+import net.sythix.client.module.hud.ScoreboardModule;
+import net.sythix.client.module.hud.TabListModule;
+import net.sythix.client.module.multiplayer.ChatUtilities;
 import net.sythix.client.module.inventory.InventoryEnhancements;
 import net.sythix.client.module.inventory.InventoryHud;
 import net.sythix.client.module.inventory.ItemCounters;
@@ -69,6 +78,17 @@ final class ModuleRegistry
         m.register(new ItemInformation());
         m.register(new InventoryEnhancements());
         m.register(new WorldInformation());
+        // E. HUD and interface
+        m.register(new HudEditorModule());
+        m.register(new ScoreboardModule());
+        m.register(new TabListModule());
+        m.register(new ChatModule());
+        m.register(new NotificationsModule());
+        m.register(new ArrayListModule());
+        m.register(new InterfaceThemeModule());
+        m.register(new MainMenuModule());
+        // G. Multiplayer (partial, more below)
+        m.register(new ChatUtilities());
         // I. Client configuration
         m.register(new SearchDiscovery());
     }

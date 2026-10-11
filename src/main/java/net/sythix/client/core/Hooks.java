@@ -13,6 +13,18 @@ import net.sythix.client.SythixClient;
 import net.sythix.client.module.Module;
 import net.sythix.client.module.ModuleManager;
 import net.sythix.client.module.hud.HudModule;
+import net.sythix.client.module.hud.ChatModule;
+import net.sythix.client.module.hud.NotificationsModule;
+import net.sythix.client.module.hud.ScoreboardModule;
+import net.sythix.client.module.hud.TabListModule;
+import net.sythix.client.module.multiplayer.ChatUtilities;
+import net.minecraft.client.gui.ChatLine;
+import net.minecraft.client.gui.GuiNewChat;
+import net.minecraft.client.gui.GuiPlayerTabOverlay;
+import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.client.renderer.GlStateManager;
 import net.sythix.client.module.inventory.InventoryEnhancements;
 import net.sythix.client.module.inventory.ItemInformation;
 import net.sythix.client.module.movement.CameraTools;
@@ -492,5 +504,232 @@ public final class Hooks
     {
         InventoryEnhancements enh = on(InventoryEnhancements.class);
         return enh != null && enh.key(gui, typedChar, keyCode);
+    }
+
+    // ---- HUD and interface ---------------------------------------------------------------------
+
+    /** Returns true when the Scoreboard module draws the sidebar instead of vanilla. */
+    public static boolean captureScoreboard(ScoreObjective objective)
+    {
+        ScoreboardModule scoreboard = on(ScoreboardModule.class);
+        return scoreboard != null && scoreboard.capture(objective);
+    }
+
+    public static void renderTabList(GuiPlayerTabOverlay overlay, int width, Scoreboard scoreboard, ScoreObjective objective)
+    {
+        TabListModule tab = on(TabListModule.class);
+        float scale = tab == null ? 1.0F : tab.getScale();
+
+        if (scale == 1.0F)
+        {
+            overlay.renderPlayerlist(width, scoreboard, objective);
+            return;
+        }
+
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(scale, scale, 1.0F);
+        overlay.renderPlayerlist((int)((float)width / scale), scoreboard, objective);
+        GlStateManager.popMatrix();
+    }
+
+    public static int tabBackground(int vanilla)
+    {
+        TabListModule tab = on(TabListModule.class);
+        return tab == null ? vanilla : tab.background(vanilla);
+    }
+
+    public static int tabRow(int vanilla, String playerName)
+    {
+        TabListModule tab = on(TabListModule.class);
+        return tab == null ? vanilla : tab.rowColor(playerName);
+    }
+
+    public static boolean tabHeads(boolean vanilla)
+    {
+        TabListModule tab = on(TabListModule.class);
+        return tab == null ? vanilla : tab.showHeads(vanilla);
+    }
+
+    public static boolean tabHeader()
+    {
+        TabListModule tab = on(TabListModule.class);
+        return tab == null || tab.showHeader();
+    }
+
+    public static boolean tabFooter()
+    {
+        TabListModule tab = on(TabListModule.class);
+        return tab == null || tab.showFooter();
+    }
+
+    /** Draws ping numbers; returns true when the vanilla ping bars should be skipped. */
+    public static boolean tabPing(int width, int x, int y, NetworkPlayerInfo info)
+    {
+        TabListModule tab = on(TabListModule.class);
+
+        if (tab == null)
+        {
+            return false;
+        }
+
+        if (tab.showNumbers())
+        {
+            tab.drawPingNumber(width, x, y, info, tab.showBars());
+        }
+
+        return !tab.showBars();
+    }
+
+    /** Filters, stacks and timestamps an incoming chat line. Returns null to hide it. */
+    public static ITextComponent incomingChat(GuiNewChat chat, ITextComponent message, int[] chatLineId)
+    {
+        ChatModule module = on(ChatModule.class);
+
+        if (module == null)
+        {
+            return message;
+        }
+
+        try
+        {
+            return module.incoming(chat, message, chatLineId);
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "chat", t);
+            return message;
+        }
+    }
+
+    public static void tagChatLines(ITextComponent message, java.util.List<ITextComponent> lines)
+    {
+        ChatModule module = on(ChatModule.class);
+
+        if (module != null)
+        {
+            ChatUtilities utilities = on(ChatUtilities.class);
+            module.tagLines(message, lines, utilities == null ? 0 : utilities.highlight(message));
+        }
+    }
+
+    public static boolean chatTabAllows(ITextComponent message)
+    {
+        ChatModule module = on(ChatModule.class);
+        return module == null || module.tabAllows(message);
+    }
+
+    public static int chatHistory(int vanilla)
+    {
+        ChatModule module = on(ChatModule.class);
+        return module == null ? vanilla : module.getHistory();
+    }
+
+    public static int chatBackground(int alpha, ITextComponent line)
+    {
+        ChatModule module = on(ChatModule.class);
+        return module == null ? alpha << 24 : module.background(alpha, line);
+    }
+
+    public static boolean chatShadow()
+    {
+        ChatModule module = on(ChatModule.class);
+        return module == null || module.textShadow();
+    }
+
+    public static void onChatSent()
+    {
+        ChatUtilities utilities = on(ChatUtilities.class);
+
+        if (utilities != null)
+        {
+            utilities.onSent();
+        }
+    }
+
+    public static String outgoingChat(String message)
+    {
+        ChatUtilities utilities = on(ChatUtilities.class);
+        return utilities == null || message.startsWith("/") ? message : utilities.applyShortcuts(message);
+    }
+
+    private static final int TAB_W = 48;
+
+    /** Draws chat tabs above the chat input while chat is open. */
+    public static void drawChatTabs(int width, int height, int mouseX, int mouseY)
+    {
+        ChatModule module = on(ChatModule.class);
+
+        if (module == null || !module.tabsEnabled())
+        {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        int y = height - 26;
+
+        for (int i = 0; i < ChatModule.TABS.length; ++i)
+        {
+            int x = 2 + i * (TAB_W + 2);
+            boolean active = ChatModule.TABS[i].equals(ChatModule.getActiveTab());
+            boolean hover = mouseX >= x && mouseX < x + TAB_W && mouseY >= y && mouseY < y + 11;
+            net.sythix.client.ui.SythixTheme.drawRect((float)x, (float)y, (float)(x + TAB_W), (float)(y + 11), active ? 0xC0D81820 : (hover ? 0x90303038 : 0x90000000));
+            String label = ChatModule.TABS[i];
+            mc.fontRenderer.drawString(label, (float)(x + TAB_W / 2 - mc.fontRenderer.getStringWidth(label) / 2), (float)(y + 2), active ? 0xFFFFFFFF : 0xFFB0B0B8, false);
+        }
+    }
+
+    /** Handles chat tab clicks and Ctrl+click copy. Returns true when the click was used. */
+    public static boolean chatScreenClick(int width, int height, int mouseX, int mouseY, int button)
+    {
+        Minecraft mc = Minecraft.getMinecraft();
+        ChatModule module = on(ChatModule.class);
+
+        if (module != null && module.tabsEnabled() && button == 0 && mouseY >= height - 26 && mouseY < height - 15)
+        {
+            int index = (mouseX - 2) / (TAB_W + 2);
+
+            if (mouseX >= 2 && index >= 0 && index < ChatModule.TABS.length)
+            {
+                ChatModule.setActiveTab(ChatModule.TABS[index]);
+                mc.ingameGUI.getChatGUI().refreshChat();
+                return true;
+            }
+        }
+
+        ChatUtilities utilities = on(ChatUtilities.class);
+
+        if (utilities != null && utilities.copyEnabled() && button == 0 && net.minecraft.client.gui.GuiScreen.isCtrlKeyDown())
+        {
+            ChatLine line = mc.ingameGUI.getChatGUI().getLineAtSythix(org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
+
+            if (line != null)
+            {
+                ITextComponent message = module == null ? null : module.messageForLine(line.getChatComponent());
+                utilities.copy(message != null ? message : line.getChatComponent());
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Draws toast notifications above everything. */
+    public static void renderNotifications(ScaledResolution res)
+    {
+        NotificationsModule module = on(NotificationsModule.class);
+
+        if (module != null)
+        {
+            try
+            {
+                GlStateManager.disableDepth();
+                module.render(res);
+                GlStateManager.enableDepth();
+            }
+            catch (Throwable t)
+            {
+                fail(NotificationsModule.class, "notifications", t);
+            }
+        }
     }
 }
