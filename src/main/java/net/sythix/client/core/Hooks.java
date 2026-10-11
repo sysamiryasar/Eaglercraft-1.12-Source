@@ -1374,6 +1374,16 @@ public final class Hooks
         {
             fail(PerformanceOptimizer.class, "benchmark", t);
         }
+
+        try
+        {
+            net.sythix.client.module.recording.VideoRecorder.onFrame();
+        }
+        catch (Throwable t)
+        {
+            net.sythix.client.module.recording.VideoRecorder.stop();
+            fail(RecordingTools.class, "video recorder", t);
+        }
     }
 
     // ---- Visuals and cosmetics -----------------------------------------------------------------

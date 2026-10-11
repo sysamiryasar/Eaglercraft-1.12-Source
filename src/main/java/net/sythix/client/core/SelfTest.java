@@ -262,7 +262,9 @@ public final class SelfTest
                 }
             }
         });
-        add("screenshot recording", 2, () -> shot("recording"));
+        add("screenshot recording", 60, () -> shot("recording"));
+        add("stop recording", 60, () -> press(modules().get(RecordingTools.class), "Recording Mode"));
+        add("check video", 1, SelfTest::checkVideo);
         add("normal screenshot", 5, () -> mc().ingameGUI.getChatGUI().printChatMessage(ScreenShotHelper.saveScreenshot(mc().mcDataDir, mc().displayWidth, mc().displayHeight, mc().getFramebuffer())));
         add("report", 1, SelfTest::report);
         add("leave world", 40, () -> {
@@ -389,6 +391,45 @@ public final class SelfTest
         catch (Throwable t)
         {
             fail("modern pack converter", t);
+        }
+    }
+
+    /** Opens the newest recording and checks it is a valid MJPEG AVI. */
+    private static void checkVideo()
+    {
+        try
+        {
+            File file = net.sythix.client.module.recording.VideoRecorder.getOutput();
+
+            if (file == null || !file.isFile())
+            {
+                fail("video recorder", new IllegalStateException("no file"));
+                return;
+            }
+
+            byte[] data = FileUtils.readFileToByteArray(file);
+            java.nio.ByteBuffer b = java.nio.ByteBuffer.wrap(data).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            String riff = new String(data, 0, 4, StandardCharsets.US_ASCII) + new String(data, 8, 4, StandardCharsets.US_ASCII);
+            int frames = b.getInt(48);
+            int width = b.getInt(64);
+            int height = b.getInt(68);
+            int movi = new String(data, StandardCharsets.ISO_8859_1).indexOf("movi00dc");
+            int size = b.getInt(movi + 8);
+            java.awt.image.BufferedImage first = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(data, movi + 12, size));
+            boolean idx = new String(data, StandardCharsets.ISO_8859_1).contains("idx1");
+
+            if (riff.equals("RIFFAVI ") && frames >= 30 && first != null && first.getWidth() == width && first.getHeight() == height && idx && b.getInt(4) == data.length - 8)
+            {
+                pass("video recorder: " + file.getName() + ", " + frames + " frames " + width + "x" + height + ", " + data.length / 1024 + " KB");
+            }
+            else
+            {
+                fail("video recorder", new IllegalStateException(riff + " frames=" + frames + " first=" + first + " idx=" + idx + " size=" + b.getInt(4) + "/" + (data.length - 8)));
+            }
+        }
+        catch (Throwable t)
+        {
+            fail("video recorder", t);
         }
     }
 

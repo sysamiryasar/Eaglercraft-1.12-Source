@@ -7,11 +7,14 @@ import net.sythix.client.module.hud.StyledHudModule;
 import net.sythix.client.setting.BooleanSetting;
 import net.sythix.client.setting.InfoSetting;
 import net.sythix.client.setting.KeybindSetting;
+import net.sythix.client.setting.ButtonSetting;
+import net.sythix.client.setting.ModeSetting;
 import net.sythix.client.setting.NumberSetting;
 
 /**
- * #47 Gets the game ready for recording with your own recorder (OBS, ShadowPlay...): a REC
- * indicator, a clean view without HUD/chat, and a steady frame rate. Sythix does not record video.
+ * #47 Recording mode: the built-in video recorder (MJPEG .avi in the recordings folder, no
+ * sound), or a clean view for an external recorder like OBS, with a REC indicator, hidden HUD or
+ * chat, and a steady frame rate.
  */
 public class RecordingTools extends StyledHudModule
 {
@@ -20,18 +23,30 @@ public class RecordingTools extends StyledHudModule
     private final BooleanSetting hideChat;
     private final NumberSetting fpsLock;
     private final BooleanSetting showIndicator;
+    private final BooleanSetting builtIn;
+    private final NumberSetting videoFps;
+    private final ModeSetting videoSize;
+    private final NumberSetting videoQuality;
     private boolean recording;
     private long started;
 
     public RecordingTools()
     {
-        super("Recording Tools", "Recording mode: REC indicator, clean view and steady FPS for your own recorder.", Category.RECORDING, false, 0.995D, 0.01D);
-        this.add(new InfoSetting("Note", "What this module does.", () -> "Works with OBS etc. - Sythix itself does not record"));
+        super("Recording Tools", "Record video with the built-in recorder, or prepare a clean view for OBS.", Category.RECORDING, false, 0.995D, 0.01D);
+        this.builtIn = this.add(new BooleanSetting("Built-in Recorder", "Save a video file while recording mode is on (video only - use OBS if you also need sound).", true));
+        this.videoFps = this.add(new NumberSetting("Video FPS", "Frames per second in the video.", 30.0D, 10.0D, 60.0D, 5.0D, " fps")).visibleWhen(this.builtIn::isOn);
+        this.videoSize = this.add(new ModeSetting("Video Size", "Full window size, or half size (smaller files, less lag).", "Full", "Full", "Half")).visibleWhen(this.builtIn::isOn);
+        this.videoQuality = this.add(new NumberSetting("Video Quality", "Higher = sharper but bigger files.", 80.0D, 30.0D, 100.0D, 5.0D, "%")).visibleWhen(this.builtIn::isOn);
+        this.add(new ButtonSetting("Recordings Folder", "Open the folder with your videos.", "Open", () -> {
+            java.io.File dir = new java.io.File(this.mc.mcDataDir, "recordings");
+            dir.mkdirs();
+            net.minecraft.client.renderer.OpenGlHelper.openFile(dir);
+        }));
         this.toggleKey = this.add(new KeybindSetting("Recording Mode Key", "Start or stop recording mode.", 0));
         this.hideHud = this.add(new BooleanSetting("Hide HUD", "Hide Sythix HUD elements while recording.", true));
         this.hideChat = this.add(new BooleanSetting("Hide Chat", "Hide chat while recording.", false));
         this.fpsLock = this.add(new NumberSetting("FPS Lock", "Frame rate while recording (match your recorder). 0 = no lock.", 60.0D, 0.0D, 240.0D, 10.0D, " fps"));
-        this.showIndicator = this.add(new BooleanSetting("REC Indicator", "Show a REC dot and timer (it is hidden from screenshots only if you hide it).", true));
+        this.showIndicator = this.add(new BooleanSetting("REC Indicator", "Show a REC dot and timer on screen. It appears in videos too; the window title also shows REC.", false));
         this.add(new net.sythix.client.setting.ButtonSetting("Recording Mode", "Start or stop recording mode now.", "Toggle", this::toggleRecording));
     }
 
@@ -47,12 +62,43 @@ public class RecordingTools extends StyledHudModule
     {
         this.recording = !this.recording;
         this.started = Minecraft.getSystemTime();
-        Notifications.post("Recording mode", this.recording ? "On - start your recorder now." : "Off.", Notifications.Kind.INFO);
+
+        if (this.builtIn.isOn())
+        {
+            if (this.recording)
+            {
+                VideoRecorder.start(this.videoFps.getInt(), this.videoSize.is("Half") ? 0.5F : 1.0F, this.videoQuality.getFloat() / 100.0F);
+            }
+            else
+            {
+                VideoRecorder.stop();
+            }
+        }
+        else
+        {
+            Notifications.post("Recording mode", this.recording ? "On - start your recorder now." : "Off.", Notifications.Kind.INFO);
+        }
+
+        // The window title shows recording, so the REC dot can stay out of the video
+        org.lwjgl.opengl.Display.setTitle(this.recording ? "\u25CF REC - " + net.sythix.client.SythixClient.getWindowTitle() : net.sythix.client.SythixClient.getWindowTitle());
     }
 
     protected void onDisable()
     {
-        this.recording = false;
+        if (this.recording)
+        {
+            this.toggleRecording();
+        }
+    }
+
+    public void onTick()
+    {
+        // The recorder stopped by itself (error): leave recording mode too
+        if (this.recording && this.builtIn.isOn() && !VideoRecorder.isRecording() && Minecraft.getSystemTime() - this.started > 1000L)
+        {
+            this.recording = false;
+            org.lwjgl.opengl.Display.setTitle(net.sythix.client.SythixClient.getWindowTitle());
+        }
     }
 
     public boolean isRecording()

@@ -1141,6 +1141,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         {
             LOGGER.info("Stopping!");
 
+            net.sythix.client.module.recording.VideoRecorder.stopAndWait();
+
             if (SythixClient.get() != null)
             {
                 SythixClient.get().save();
