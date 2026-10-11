@@ -146,6 +146,17 @@ public final class Hooks
     public static void onTick()
     {
         SelfTest.tick();
+
+        try
+        {
+            net.sythix.client.replay.ReplayPlayer.tick();
+            net.sythix.client.replay.ReplayRecorder.tick();
+        }
+        catch (Throwable t)
+        {
+            ModuleErrors.report(null, "replay", t);
+        }
+
         ModuleManager m = modules();
 
         if (m == null)
@@ -248,6 +259,12 @@ public final class Hooks
                     ModuleErrors.report(module, "HUD render", t);
                 }
             }
+        }
+
+        if (net.sythix.client.replay.ReplayPlayer.isActive())
+        {
+            net.sythix.client.module.recording.ReplaySystem replays = m.get(net.sythix.client.module.recording.ReplaySystem.class);
+            net.sythix.client.replay.ReplayPlayer.renderOverlay(res, replays == null ? "" : replays.keysHint());
         }
     }
 
@@ -1275,6 +1292,34 @@ public final class Hooks
             {
                 fail(NotificationsModule.class, "notifications", t);
             }
+        }
+    }
+
+    // ---- Replays ------------------------------------------------------------------------------
+
+    /** A packet from the server arrived (network thread, client side of a play connection). */
+    public static void onClientPacket(net.minecraft.network.Packet<?> packet)
+    {
+        try
+        {
+            if (packet instanceof net.minecraft.network.play.server.SPacketJoinGame && !net.sythix.client.replay.ReplayRecorder.isRecording() && !net.sythix.client.replay.ReplayPlayer.isActive())
+            {
+                net.sythix.client.module.recording.ReplaySystem replays = on(net.sythix.client.module.recording.ReplaySystem.class);
+                Minecraft mc = Minecraft.getMinecraft();
+                boolean singleplayer = mc.isIntegratedServerRunning();
+
+                if (replays != null && replays.shouldRecord(singleplayer))
+                {
+                    ServerData data = mc.getCurrentServerData();
+                    net.sythix.client.replay.ReplayRecorder.start(singleplayer ? "Singleplayer" : (data == null ? "Server" : data.serverName));
+                }
+            }
+
+            net.sythix.client.replay.ReplayRecorder.onPacket(packet);
+        }
+        catch (Throwable t)
+        {
+            ModuleErrors.report(null, "replay recording", t);
         }
     }
 

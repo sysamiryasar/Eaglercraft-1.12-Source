@@ -1142,6 +1142,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             LOGGER.info("Stopping!");
 
             net.sythix.client.module.recording.VideoRecorder.stopAndWait();
+            net.sythix.client.replay.ReplayRecorder.stop();
 
             if (SythixClient.get() != null)
             {
@@ -2562,6 +2563,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         networkmanager.sendPacket(new C00Handshake(335, socketaddress.toString(), 0, EnumConnectionState.LOGIN));
         networkmanager.sendPacket(new CPacketLoginStart(this.getSession().getProfile()));
         this.myNetworkManager = networkmanager;
+    }
+
+    /** Sythix replay playback: use a local connection as the game's connection. */
+    public void setNetworkManagerSythix(NetworkManager manager)
+    {
+        this.myNetworkManager = manager;
     }
 
     /**

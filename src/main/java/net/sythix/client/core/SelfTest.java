@@ -156,6 +156,14 @@ public final class SelfTest
 
     private static void build()
     {
+        if ("replay".equals(System.getProperty("sythix.selftest")))
+        {
+            replaySteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("pack".equals(System.getProperty("sythix.selftest")))
         {
             add("modern pack converter", 1, SelfTest::modernPack);
@@ -278,11 +286,145 @@ public final class SelfTest
         add("quit", 1, () -> mc().shutdown());
     }
 
+    private static File replayFile;
+    private static int replayStage;
+
+    /** Records a short singleplayer session, then plays it back and checks it. */
+    private static void replaySteps()
+    {
+        add("enable replay recording", 1, () -> {
+            modules().get(net.sythix.client.module.recording.ReplaySystem.class).setEnabled(true);
+            set(net.sythix.client.module.recording.ReplaySystem.class, "Record Replays", "\"Everything\"");
+        });
+        add("create replay world", 1, () -> {
+            File old = new File(new File(mc().mcDataDir, "saves"), "sythix-replaytest");
+
+            try
+            {
+                FileUtils.deleteDirectory(old);
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            mc().launchIntegratedServer("sythix-replaytest", "Sythix Replay Test", new WorldSettings(777L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands());
+        });
+        add("wait for replay world", 1, SelfTest::waitForWorld);
+        add("check recording", 40, () -> {
+            if (net.sythix.client.replay.ReplayRecorder.isRecording())
+            {
+                pass("replay recording started on join");
+            }
+            else
+            {
+                fail("replay recording", new IllegalStateException("not recording after join"));
+            }
+        });
+        add("summon pig", 20, () -> mc().player.sendChatMessage("/summon pig ~3 ~ ~"));
+        add("chat", 20, () -> mc().player.sendChatMessage("hello replay"));
+        add("marker", 1, net.sythix.client.replay.ReplayRecorder::marker);
+
+        for (int i = 0; i < 6; ++i)
+        {
+            final int step = i;
+            add("move " + i, 20, () -> {
+                mc().player.setPositionAndRotation(mc().player.posX + 1.0D, mc().player.posY, mc().player.posZ, (float)(step * 30), 0.0F);
+                mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND);
+            });
+        }
+
+        add("screenshot replay-recorded", 2, () -> shot("replay-recorded"));
+        add("leave replay world", 60, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+        add("check replay file", 1, () -> {
+            replayFile = net.sythix.client.replay.ReplayRecorder.current();
+            com.google.gson.JsonObject summary = replayFile == null ? new com.google.gson.JsonObject() : net.sythix.client.replay.ReplayFormat.summary(replayFile);
+
+            if (!net.sythix.client.replay.ReplayRecorder.isRecording() && replayFile != null && replayFile.isFile() && summary.has("duration") && summary.get("duration").getAsLong() > 5000L && summary.getAsJsonArray("markers").size() == 1)
+            {
+                pass("replay saved: " + replayFile.getName() + ", " + summary.get("duration").getAsLong() + " ms, " + replayFile.length() / 1024 + " KB");
+            }
+            else
+            {
+                fail("replay file", new IllegalStateException(replayFile + " " + summary));
+            }
+
+            set(net.sythix.client.module.recording.ReplaySystem.class, "Record Replays", "\"Off\"");
+        });
+        add("play replay", 1, () -> net.sythix.client.replay.ReplayPlayer.play(replayFile));
+        add("wait for replay", 1, SelfTest::waitForWorld);
+        add("watch", 200, () -> {});
+        add("screenshot replay-playing", 2, () -> shot("replay-playing"));
+        add("check playback", 1, () -> {
+            boolean spectator = mc().playerController != null && mc().playerController.isSpectator();
+            boolean avatar = mc().world.getEntityByID(-7351) != null;
+            boolean pig = false;
+
+            for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+            {
+                pig |= e instanceof net.minecraft.entity.passive.EntityPig;
+            }
+
+            long t = net.sythix.client.replay.ReplayPlayer.getTime();
+
+            if (net.sythix.client.replay.ReplayPlayer.isActive() && spectator && avatar && pig && t > 5000L)
+            {
+                pass("replay playback: world, recorded player, pig, spectator camera, time " + t + " ms");
+            }
+            else
+            {
+                fail("replay playback", new IllegalStateException("active=" + net.sythix.client.replay.ReplayPlayer.isActive() + " spectator=" + spectator + " avatar=" + avatar + " pig=" + pig + " time=" + t));
+            }
+        });
+        add("seek back", 1, () -> net.sythix.client.replay.ReplayPlayer.seek(2000L));
+        add("wait seek", 60, () -> {});
+        add("check seek", 1, () -> {
+            long t = net.sythix.client.replay.ReplayPlayer.getTime();
+
+            if (mc().world != null && net.sythix.client.replay.ReplayPlayer.isActive() && t >= 2000L && t < 6000L)
+            {
+                pass("replay seek back: time " + t + " ms");
+            }
+            else
+            {
+                fail("replay seek", new IllegalStateException("world=" + mc().world + " time=" + t));
+            }
+        });
+        add("pause", 40, net.sythix.client.replay.ReplayPlayer::togglePause);
+        add("check pause", 1, () -> {
+            long a = net.sythix.client.replay.ReplayPlayer.getTime();
+            replayStage = (int)a;
+        });
+        add("still paused", 1, () -> {
+            if (net.sythix.client.replay.ReplayPlayer.getTime() == replayStage)
+            {
+                pass("replay pause");
+            }
+            else
+            {
+                fail("replay pause", new IllegalStateException("time moved"));
+            }
+        });
+        add("exit replay", 40, net.sythix.client.replay.ReplayPlayer::exit);
+        add("check exit", 1, () -> {
+            if (mc().world == null && !net.sythix.client.replay.ReplayPlayer.isActive())
+            {
+                pass("left the replay");
+            }
+            else
+            {
+                fail("replay exit", new IllegalStateException("still in replay"));
+            }
+        });
+    }
+
     private static int waitTicks;
 
     private static void waitForWorld()
     {
-        if (mc().world == null || mc().player == null)
+        if (mc().world == null || mc().player == null || mc().currentScreen instanceof net.minecraft.client.gui.GuiDownloadTerrain)
         {
             if (++waitTicks > 1200)
             {
@@ -295,6 +437,7 @@ public final class SelfTest
             return;
         }
 
+        waitTicks = 0;
         pass("world loaded");
     }
 

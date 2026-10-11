@@ -146,6 +146,11 @@ public class NetworkManager extends SimpleChannelInboundHandler < Packet<? >>
     {
         net.sythix.client.core.Hooks.onPacket();
 
+        if (this.direction == EnumPacketDirection.CLIENTBOUND && this.packetListener instanceof net.minecraft.client.network.NetHandlerPlayClient)
+        {
+            net.sythix.client.core.Hooks.onClientPacket(p_channelRead0_2_);
+        }
+
         if (this.channel.isOpen())
         {
             try

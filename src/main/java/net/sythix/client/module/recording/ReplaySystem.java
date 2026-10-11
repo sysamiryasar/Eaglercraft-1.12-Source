@@ -19,33 +19,169 @@ import net.sythix.client.module.Module;
 import net.sythix.client.setting.ButtonSetting;
 import net.sythix.client.setting.InfoSetting;
 import net.sythix.client.setting.KeybindSetting;
+import net.sythix.client.setting.ModeSetting;
+import net.sythix.client.setting.NumberSetting;
+import net.sythix.client.replay.ReplayFormat;
+import net.sythix.client.replay.ReplayPlayer;
+import net.sythix.client.replay.ReplayRecorder;
+import net.sythix.client.replay.GuiReplays;
 import net.sythix.client.ui.GuiListScreen;
 import net.sythix.client.ui.GuiTextPrompt;
 import net.sythix.client.ui.SythixTheme;
 import org.apache.commons.io.FileUtils;
 
 /**
- * #48 Session timeline with bookmarks. Video playback is NOT implemented - bookmarks mark moments
- * (time, place, note) so you can find them later in your own recordings.
+ * #48 Replays: records your sessions (what the server sent, plus your own movement) and plays
+ * them back with a free camera, pause, speed and seeking. Bookmarks mark moments on the timeline.
  */
 public class ReplaySystem extends Module
 {
     private final KeybindSetting bookmarkKey;
+    private final ModeSetting recordMode;
+    private final NumberSetting keep;
+    private final KeybindSetting pauseKey;
+    private final KeybindSetting backKey;
+    private final KeybindSetting forwardKey;
+    private final KeybindSetting slowerKey;
+    private final KeybindSetting fasterKey;
+    private final KeybindSetting markerKey;
     private final List<JsonObject> bookmarks = new ArrayList<JsonObject>();
     private long sessionStart = System.currentTimeMillis();
     private boolean loaded;
 
     public ReplaySystem()
     {
-        super("Replay System", "Session timeline and bookmarks. Video replay playback is not implemented.", Category.RECORDING, true);
-        this.add(new InfoSetting("Status", "What is and is not available.", () -> "Bookmarks + timeline (no video playback)"));
-        this.bookmarkKey = this.add(new KeybindSetting("Bookmark Key", "Mark the current moment.", 0));
+        super("Replay System", "Record your games and watch them again with a free camera, pause, speed and seeking.", Category.RECORDING, true);
+        this.add(new ButtonSetting("Replays", "Watch, rename and delete your replays.", "Open", () -> this.mc.displayGuiScreen(new GuiReplays(this.mc.currentScreen))));
+        this.recordMode = this.add(new ModeSetting("Record Replays", "Which sessions are recorded automatically (from the moment you join).", "Off", "Off", "Everything", "Multiplayer", "Singleplayer"));
+        this.add(new InfoSetting("Recording Now", "Whether this session is being recorded.", () -> ReplayRecorder.isRecording() ? "Yes - " + ReplayFormat.time(ReplayRecorder.elapsed()) : "No"));
+        this.keep = this.add(new NumberSetting("Keep Replays", "Older replays are deleted when there are more than this (0 = keep all).", 20.0D, 0.0D, 200.0D, 1.0D));
+        this.bookmarkKey = this.add(new KeybindSetting("Bookmark Key", "Mark the current moment (also adds a marker to the replay).", 0));
         this.add(new ButtonSetting("Timeline", "See, rename and delete your bookmarks.", "Open", () -> this.mc.displayGuiScreen(new GuiTimeline(this.mc.currentScreen))));
+        this.pauseKey = this.add(new KeybindSetting("Replay: Pause Key", "Pause or play while watching a replay.", 25));
+        this.backKey = this.add(new KeybindSetting("Replay: Back 10s Key", "Jump 10 seconds back.", 203));
+        this.forwardKey = this.add(new KeybindSetting("Replay: Forward 10s Key", "Jump 10 seconds forward.", 205));
+        this.slowerKey = this.add(new KeybindSetting("Replay: Slower Key", "Slow the replay down.", 26));
+        this.fasterKey = this.add(new KeybindSetting("Replay: Faster Key", "Speed the replay up.", 27));
+        this.markerKey = this.add(new KeybindSetting("Replay: Next Marker Key", "Jump to the next marker.", 50));
     }
 
     public GuiScreen createScreen(GuiScreen parent)
     {
-        return new GuiTimeline(parent);
+        return new GuiReplays(parent);
+    }
+
+    /** Whether a session that is starting now should be recorded. */
+    public boolean shouldRecord(boolean singleplayer)
+    {
+        switch (this.recordMode.get())
+        {
+            case "Everything":
+                return true;
+            case "Multiplayer":
+                return !singleplayer;
+            case "Singleplayer":
+                return singleplayer;
+            default:
+                return false;
+        }
+    }
+
+    public void onTick()
+    {
+        if (!ReplayRecorder.isRecording() && this.mc.world == null && !this.pruned)
+        {
+            this.pruned = true;
+            this.prune();
+        }
+        else if (this.mc.world != null)
+        {
+            this.pruned = false;
+        }
+    }
+
+    private boolean pruned;
+
+    /** Deletes the oldest replays beyond the Keep Replays limit. */
+    private void prune()
+    {
+        int limit = this.keep.getInt();
+        File[] files = ReplayFormat.folder().listFiles((d, n) -> n.endsWith(ReplayFormat.EXTENSION));
+
+        if (limit <= 0 || files == null || files.length <= limit)
+        {
+            return;
+        }
+
+        java.util.Arrays.sort(files);
+
+        for (int i = 0; i < files.length - limit; ++i)
+        {
+            ReplayFormat.summaryFile(files[i]).delete();
+            files[i].delete();
+        }
+    }
+
+    public String keysHint()
+    {
+        return key(this.pauseKey) + " pause  " + key(this.backKey) + "/" + key(this.forwardKey) + " 10s  " + key(this.slowerKey) + "/" + key(this.fasterKey) + " speed  " + key(this.markerKey) + " marker  Esc: leave";
+    }
+
+    private static String key(KeybindSetting k)
+    {
+        switch (k.getKeyName())
+        {
+            case "LBRACKET":
+                return "[";
+            case "RBRACKET":
+                return "]";
+            case "LEFT":
+                return "Left";
+            case "RIGHT":
+                return "Right";
+            default:
+                return k.getKeyName();
+        }
+    }
+
+    /** Replay controls; returns true if the key was used. */
+    private boolean replayKey(int keyCode)
+    {
+        if (!ReplayPlayer.isActive() || keyCode == 0)
+        {
+            return false;
+        }
+
+        if (keyCode == this.pauseKey.getKey())
+        {
+            ReplayPlayer.togglePause();
+        }
+        else if (keyCode == this.backKey.getKey())
+        {
+            ReplayPlayer.seek(ReplayPlayer.getTime() - 10000L);
+        }
+        else if (keyCode == this.forwardKey.getKey())
+        {
+            ReplayPlayer.seek(ReplayPlayer.getTime() + 10000L);
+        }
+        else if (keyCode == this.slowerKey.getKey())
+        {
+            ReplayPlayer.slower();
+        }
+        else if (keyCode == this.fasterKey.getKey())
+        {
+            ReplayPlayer.faster();
+        }
+        else if (keyCode == this.markerKey.getKey())
+        {
+            ReplayPlayer.nextMarker();
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private File file()
@@ -99,8 +235,14 @@ public class ReplaySystem extends Module
 
     public void onKey(int keyCode)
     {
+        if (this.replayKey(keyCode))
+        {
+            return;
+        }
+
         if (keyCode != 0 && keyCode == this.bookmarkKey.getKey() && this.mc.player != null)
         {
+            ReplayRecorder.marker();
             this.load();
             JsonObject o = new JsonObject();
             long now = System.currentTimeMillis();
@@ -126,7 +268,7 @@ public class ReplaySystem extends Module
 
         protected String header()
         {
-            return "Video playback is not implemented. Use bookmarks to find moments in your own recordings.";
+            return "Bookmarks from all sessions. In recorded sessions they also appear as markers on the replay timeline.";
         }
 
         protected List<Row> rows()
