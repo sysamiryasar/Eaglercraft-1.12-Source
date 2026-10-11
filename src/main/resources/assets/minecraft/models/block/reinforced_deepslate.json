@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "blocks/reinforced_deepslate_side",
+    "end": "blocks/reinforced_deepslate_top"
+  }
+}

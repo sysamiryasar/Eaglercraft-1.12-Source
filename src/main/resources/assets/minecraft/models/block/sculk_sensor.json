@@ -1,0 +1,87 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "blocks/sculk_sensor_top",
+    "t": "blocks/sculk_sensor_top",
+    "s": "blocks/sculk_sensor_side",
+    "x": "blocks/sculk_sensor_tendril"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#t"
+        },
+        "down": {
+          "texture": "#t"
+        },
+        "north": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        8,
+        8
+      ],
+      "to": [
+        16,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#x"
+        },
+        "south": {
+          "texture": "#x"
+        }
+      }
+    }
+  ]
+}

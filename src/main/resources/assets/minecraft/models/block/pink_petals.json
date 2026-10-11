@@ -1,0 +1,29 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "blocks/pink_petals",
+    "p": "blocks/pink_petals"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0.5,
+        0
+      ],
+      "to": [
+        16,
+        0.5,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#p"
+        },
+        "down": {
+          "texture": "#p"
+        }
+      }
+    }
+  ]
+}

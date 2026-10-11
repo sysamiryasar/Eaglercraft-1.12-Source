@@ -95,6 +95,8 @@ public class RenderItem implements IResourceManagerReloadListener
         }
 
         this.registerItems();
+        // Sythix: models for the extra 1.21 blocks and items
+        net.sythix.modern.ModernBlocks.registerItemModels(this);
         this.itemColors = p_i46552_3_;
     }
 

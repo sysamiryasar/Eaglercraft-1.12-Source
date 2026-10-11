@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "blocks/trial_spawner_top",
+    "side": "blocks/trial_spawner_side"
+  }
+}

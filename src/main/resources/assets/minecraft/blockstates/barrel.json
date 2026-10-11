@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "barrel"
+    },
+    "facing=down": {
+      "model": "barrel",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "barrel",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "barrel",
+      "x": 90,
+      "y": 180
+    },
+    "facing=west": {
+      "model": "barrel",
+      "x": 90,
+      "y": 270
+    },
+    "facing=east": {
+      "model": "barrel",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

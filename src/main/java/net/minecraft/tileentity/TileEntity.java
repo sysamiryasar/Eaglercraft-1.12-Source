@@ -33,6 +33,12 @@ public abstract class TileEntity
     /** the Block type that this TileEntity is contained within */
     protected Block blockType;
 
+    /** Sythix: registers the tile entities of the extra blocks. */
+    public static void registerSythix(String id, Class <? extends TileEntity > type)
+    {
+        register(id, type);
+    }
+
     private static void register(String p_190560_0_, Class <? extends TileEntity > p_190560_1_)
     {
         REGISTRY.putObject(new ResourceLocation(p_190560_0_), p_190560_1_);

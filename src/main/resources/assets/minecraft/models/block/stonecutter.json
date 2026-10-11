@@ -1,0 +1,63 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "blocks/stonecutter_top",
+    "top": "blocks/stonecutter_top",
+    "side": "blocks/stonecutter_side",
+    "saw": "blocks/stonecutter_saw"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        9,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#side"
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "north": {
+          "texture": "#side"
+        },
+        "south": {
+          "texture": "#side"
+        },
+        "west": {
+          "texture": "#side"
+        },
+        "east": {
+          "texture": "#side"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        9,
+        8
+      ],
+      "to": [
+        15,
+        16,
+        8
+      ],
+      "faces": {
+        "north": {
+          "texture": "#saw"
+        },
+        "south": {
+          "texture": "#saw"
+        }
+      }
+    }
+  ]
+}

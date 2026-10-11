@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "blocks/vault_top",
+    "side": "blocks/vault_side"
+  }
+}

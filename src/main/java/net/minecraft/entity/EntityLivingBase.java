@@ -1453,6 +1453,11 @@ public abstract class EntityLivingBase extends Entity
 
             if (block != Blocks.LADDER && block != Blocks.VINE)
             {
+                if (net.sythix.modern.ModernBlocks.isClimbable(block))
+                {
+                    return true;
+                }
+
                 return block instanceof BlockTrapDoor && this.canGoThroughtTrapDoorOnLadder(blockpos, iblockstate);
             }
             else

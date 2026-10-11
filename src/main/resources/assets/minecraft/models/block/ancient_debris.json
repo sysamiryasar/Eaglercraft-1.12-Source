@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "blocks/ancient_debris_side",
+    "end": "blocks/ancient_debris_top"
+  }
+}

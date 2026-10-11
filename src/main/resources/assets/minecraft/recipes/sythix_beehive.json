@@ -1,0 +1,21 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "PPP",
+    "HHH",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:planks",
+      "data": 32767
+    },
+    "H": {
+      "item": "minecraft:honey_block"
+    }
+  },
+  "result": {
+    "item": "minecraft:beehive",
+    "count": 1
+  }
+}

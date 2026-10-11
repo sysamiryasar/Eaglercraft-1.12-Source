@@ -1,0 +1,66 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "blocks/sculk_shrieker_top",
+    "t": "blocks/sculk_shrieker_top",
+    "s": "blocks/sculk_shrieker_side"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#t"
+        },
+        "down": {
+          "texture": "#s"
+        },
+        "north": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#s",
+          "uv": [
+            0,
+            8,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

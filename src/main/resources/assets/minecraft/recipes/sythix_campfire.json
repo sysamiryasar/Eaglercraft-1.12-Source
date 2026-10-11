@@ -1,0 +1,25 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    " S ",
+    "SCS",
+    "LLL"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "C": {
+      "item": "minecraft:coal",
+      "data": 32767
+    },
+    "L": {
+      "item": "minecraft:log",
+      "data": 32767
+    }
+  },
+  "result": {
+    "item": "minecraft:campfire",
+    "count": 1
+  }
+}

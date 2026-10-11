@@ -156,6 +156,14 @@ public final class SelfTest
 
     private static void build()
     {
+        if ("modern".equals(System.getProperty("sythix.selftest")))
+        {
+            modernSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("replay".equals(System.getProperty("sythix.selftest")))
         {
             replaySteps();
@@ -439,6 +447,171 @@ public final class SelfTest
             {
                 fail("replay exit", new IllegalStateException("still in replay"));
             }
+        });
+    }
+
+    private static BlockPosHolder modernOrigin = new BlockPosHolder();
+
+    private static final class BlockPosHolder
+    {
+        net.minecraft.util.math.BlockPos pos;
+    }
+
+    /** Checks the extra 1.21 blocks and items: models, recipes, placing, saving. */
+    private static void modernSteps()
+    {
+        add("modern models", 1, () -> {
+            net.minecraft.client.renderer.block.model.ModelManager models = mc().getRenderItem().getItemModelMesher().getModelManager();
+            List<String> missing = new ArrayList<String>();
+            int states = 0;
+
+            for (java.util.Map.Entry<String, net.minecraft.block.Block> e : net.sythix.modern.ModernBlocks.all().entrySet())
+            {
+                for (net.minecraft.block.state.IBlockState st : e.getValue().getBlockState().getValidStates())
+                {
+                    ++states;
+
+                    if (e.getValue().getDefaultState().getRenderType() == net.minecraft.util.EnumBlockRenderType.MODEL && mc().getBlockRendererDispatcher().getModelForState(st) == models.getMissingModel())
+                    {
+                        missing.add(e.getKey() + "[" + st + "]");
+                        break;
+                    }
+                }
+
+                if (mc().getRenderItem().getItemModelMesher().getItemModel(new net.minecraft.item.ItemStack(e.getValue())) == models.getMissingModel())
+                {
+                    missing.add(e.getKey() + " (item)");
+                }
+            }
+
+            for (java.util.Map.Entry<String, net.minecraft.item.Item> e : net.sythix.modern.ModernItems.all().entrySet())
+            {
+                if (mc().getRenderItem().getItemModelMesher().getItemModel(new net.minecraft.item.ItemStack(e.getValue())) == models.getMissingModel())
+                {
+                    missing.add(e.getKey() + " (item)");
+                }
+            }
+
+            int recipes = 0;
+
+            for (net.minecraft.util.ResourceLocation key : net.minecraft.item.crafting.CraftingManager.REGISTRY.getKeys())
+            {
+                if (key.getResourcePath().startsWith("sythix_"))
+                {
+                    ++recipes;
+                }
+            }
+
+            if (missing.isEmpty() && recipes > 30)
+            {
+                pass("modern content: " + net.sythix.modern.ModernBlocks.all().size() + " blocks (" + states + " states), " + net.sythix.modern.ModernItems.all().size() + " items, all have models; " + recipes + " recipes");
+            }
+            else
+            {
+                fail("modern models/recipes", new IllegalStateException("recipes=" + recipes + " missing=" + missing));
+            }
+        });
+        add("create modern world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-moderntest"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            mc().launchIntegratedServer("sythix-moderntest", "Sythix Modern Test", new WorldSettings(4242L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands());
+        });
+        add("wait for modern world", 1, SelfTest::waitForWorld);
+        add("place modern blocks", 40, () -> {
+            net.minecraft.world.World world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.util.math.BlockPos base = new net.minecraft.util.math.BlockPos(mc().player).add(2, 0, -6);
+            modernOrigin.pos = base;
+            int i = 0;
+
+            for (net.minecraft.block.Block b : net.sythix.modern.ModernBlocks.all().values())
+            {
+                net.minecraft.util.math.BlockPos p = base.add((i % 12) * 2, 0, (i / 12) * 2);
+                world.setBlockState(p.down(), net.minecraft.init.Blocks.GRASS.getDefaultState());
+                world.setBlockState(p, b.getDefaultState());
+                ++i;
+            }
+
+            mc().player.setPositionAndRotation(base.getX() + 11.0D, base.getY() + 7.0D, base.getZ() - 6.0D, 0.0F, 45.0F);
+            mc().player.connection.sendPacket(new net.minecraft.network.play.client.CPacketPlayer.PositionRotation(base.getX() + 11.0D, base.getY() + 7.0D, base.getZ() - 6.0D, 0.0F, 45.0F, false));
+            mc().player.capabilities.isFlying = true;
+            pass(i + " modern blocks placed");
+        });
+        add("screenshot modern-blocks", 2, () -> shot("modern-blocks"));
+        add("check placed", 1, () -> {
+            net.minecraft.world.World world = mc().world;
+            List<String> wrong = new ArrayList<String>();
+            int i = 0;
+
+            for (java.util.Map.Entry<String, net.minecraft.block.Block> e : net.sythix.modern.ModernBlocks.all().entrySet())
+            {
+                net.minecraft.util.math.BlockPos p = modernOrigin.pos.add((i % 12) * 2, 0, (i / 12) * 2);
+                net.minecraft.block.Block there = world.getBlockState(p).getBlock();
+
+                // Plants on sand-only rules or falling blocks may legitimately change
+                if (there != e.getValue() && !(e.getValue() instanceof net.minecraft.block.BlockFalling))
+                {
+                    wrong.add(e.getKey() + "=" + net.minecraft.block.Block.REGISTRY.getNameForObject(there));
+                }
+
+                ++i;
+            }
+
+            if (wrong.isEmpty())
+            {
+                pass("client received every modern block from the integrated server");
+            }
+            else
+            {
+                fail("modern blocks on client", new IllegalStateException(wrong.toString()));
+            }
+        });
+        add("leave modern world", 60, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+        add("reopen modern world", 1, () -> mc().launchIntegratedServer("sythix-moderntest", "Sythix Modern Test", null));
+        add("wait for reopened world", 1, SelfTest::waitForWorld);
+        add("wait chunks", 60, () -> {});
+        add("check saved", 1, () -> {
+            net.minecraft.world.World world = mc().getIntegratedServer().getWorld(0);
+            int ok = 0;
+            int i = 0;
+            List<String> wrong = new ArrayList<String>();
+
+            for (java.util.Map.Entry<String, net.minecraft.block.Block> e : net.sythix.modern.ModernBlocks.all().entrySet())
+            {
+                net.minecraft.util.math.BlockPos p = modernOrigin.pos.add((i % 12) * 2, 0, (i / 12) * 2);
+
+                if (world.getBlockState(p).getBlock() == e.getValue() || e.getValue() instanceof net.minecraft.block.BlockFalling)
+                {
+                    ++ok;
+                }
+                else
+                {
+                    wrong.add(e.getKey());
+                }
+
+                ++i;
+            }
+
+            if (wrong.isEmpty())
+            {
+                pass("all " + ok + " modern blocks were saved and loaded again");
+            }
+            else
+            {
+                fail("modern blocks after reload", new IllegalStateException(wrong.toString()));
+            }
+        });
+        add("leave reopened world", 40, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
         });
     }
 

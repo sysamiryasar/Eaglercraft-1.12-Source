@@ -1,0 +1,22 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "PSP",
+    "P P",
+    "PSP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:planks",
+      "data": 32767
+    },
+    "S": {
+      "item": "minecraft:wooden_slab",
+      "data": 32767
+    }
+  },
+  "result": {
+    "item": "minecraft:barrel",
+    "count": 1
+  }
+}
