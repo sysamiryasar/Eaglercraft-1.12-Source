@@ -33,6 +33,7 @@ public class TexturePackManager extends Module
         this.add(new ButtonSetting("Pack Manager", "Open the texture pack manager.", "Open", () -> this.mc.displayGuiScreen(new GuiTexturePacks(this.mc.currentScreen))));
         this.cycleKey = this.add(new KeybindSetting("Cycle Favourites Key", "Switch between your favourite packs in game (and no pack).", 0));
         this.warnIncompatible = this.add(new BooleanSetting("Compatibility Warnings", "Mark packs made for other Minecraft versions.", true));
+        this.add(new ButtonSetting("Modern Pack Converter", "Convert 1.13-1.21 resource packs so 1.12 shows their modern textures.", "Open", () -> this.mc.displayGuiScreen(new net.sythix.client.pack.GuiModernPacks(this.mc.currentScreen))));
     }
 
     public GuiScreen createScreen(GuiScreen parent)

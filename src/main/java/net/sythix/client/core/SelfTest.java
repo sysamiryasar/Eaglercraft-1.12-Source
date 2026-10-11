@@ -156,6 +156,14 @@ public final class SelfTest
 
     private static void build()
     {
+        if ("pack".equals(System.getProperty("sythix.selftest")))
+        {
+            add("modern pack converter", 1, SelfTest::modernPack);
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("anim".equals(System.getProperty("sythix.selftest")))
         {
             add("slow animation", 1, () -> set(net.sythix.client.module.performance.AnimationController.class, "Menu Animation Time", "600"));
@@ -182,6 +190,7 @@ public final class SelfTest
         }
 
         add("config round trip", 1, SelfTest::configRoundTrip);
+        add("modern pack converter", 1, SelfTest::modernPack);
         add("settings on menu", 1, () -> exerciseSettings(true));
         add("module screens on menu", 1, SelfTest::drawModuleScreens);
         add("reset", 5, () -> modules().resetAll());
@@ -285,6 +294,102 @@ public final class SelfTest
         }
 
         pass("world loaded");
+    }
+
+    private static byte[] png(int w, int h, int color) throws Exception
+    {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < h; ++y)
+        {
+            for (int x = 0; x < w; ++x)
+            {
+                img.setRGB(x, y, color);
+            }
+        }
+
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "png", out);
+        return out.toByteArray();
+    }
+
+    /** Builds a fake 1.21-style pack, converts it and checks the result. */
+    private static void modernPack()
+    {
+        try
+        {
+            File dir = new File(mc().mcDataDir, "sythix/selftest-packs");
+            FileUtils.deleteDirectory(dir);
+            dir.mkdirs();
+            File pack = new File(dir, "Modern Test.zip");
+            String[][] files = new String[][] {
+                {"textures/block/oak_planks.png", "16x16"}, {"textures/block/wheat_stage3.png", "16x16"}, {"textures/block/grass_block_top.png", "16x16"},
+                {"textures/block/red_wool.png", "16x16"}, {"textures/block/light_gray_concrete.png", "16x16"}, {"textures/block/stone.png", "16x48"},
+                {"textures/block/cherry_planks.png", "16x16"}, {"textures/item/golden_sword.png", "16x16"}, {"textures/item/netherite_sword.png", "16x16"},
+                {"textures/entity/creeper/creeper.png", "64x32"}, {"textures/entity/chest/normal.png", "64x64"}, {"textures/block/spruce_log_top.png", "32x32"}};
+
+            try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(pack)))
+            {
+                out.putNextEntry(new java.util.zip.ZipEntry("pack.mcmeta"));
+                out.write("{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}".getBytes(StandardCharsets.UTF_8));
+
+                for (String[] f : files)
+                {
+                    String[] size = f[1].split("x");
+                    out.putNextEntry(new java.util.zip.ZipEntry("assets/minecraft/" + f[0]));
+                    out.write(png(Integer.parseInt(size[0]), Integer.parseInt(size[1]), 0xFF20C040));
+                }
+
+                out.putNextEntry(new java.util.zip.ZipEntry("assets/minecraft/textures/block/stone.png.mcmeta"));
+                out.write("{\"animation\":{}}".getBytes(StandardCharsets.UTF_8));
+            }
+
+            if (!net.sythix.client.pack.ModernPackConverter.isModern(pack))
+            {
+                fail("modern pack detection", new IllegalStateException("not detected"));
+                return;
+            }
+
+            net.sythix.client.pack.ModernPackConverter.Result r = net.sythix.client.pack.ModernPackConverter.convert(pack, dir);
+            Set<String> names = new HashSet<String>();
+
+            try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(r.output))
+            {
+                java.util.Enumeration<? extends java.util.zip.ZipEntry> e = zip.entries();
+
+                while (e.hasMoreElements())
+                {
+                    names.add(e.nextElement().getName());
+                }
+            }
+
+            String[] expected = new String[] {"blocks/planks_oak.png", "blocks/wheat_stage_3.png", "blocks/grass_top.png", "blocks/wool_colored_red.png", "blocks/concrete_silver.png",
+                "blocks/stone.png", "blocks/stone.png.mcmeta", "items/gold_sword.png", "entity/creeper/creeper.png", "blocks/log_spruce_top.png"};
+            List<String> missing = new ArrayList<String>();
+
+            for (String x : expected)
+            {
+                if (!names.contains("assets/minecraft/textures/" + x))
+                {
+                    missing.add(x);
+                }
+            }
+
+            boolean noChest = !names.contains("assets/minecraft/textures/entity/chest/normal.png");
+
+            if (missing.isEmpty() && noChest && r.converted == 9 && r.skippedNew == 2 && r.skippedLayout == 1 && names.contains("pack.mcmeta"))
+            {
+                pass("modern pack converter (" + String.join(" ", r.notes) + ")");
+            }
+            else
+            {
+                fail("modern pack converter", new IllegalStateException("missing " + missing + ", chest skipped " + noChest + ", " + r.converted + "/" + r.skippedNew + "/" + r.skippedLayout + " " + names));
+            }
+        }
+        catch (Throwable t)
+        {
+            fail("modern pack converter", t);
+        }
     }
 
     private static void configRoundTrip()
