@@ -45,7 +45,7 @@ public class RenderPlayer extends RenderLivingBase<AbstractClientPlayer>
         this.addLayer(new LayerCustomHead(this.getMainModel().bipedHead));
         this.addLayer(new LayerElytra(this));
         this.addLayer(new LayerEntityOnShoulder(renderManager));
-        this.addLayer(new net.sythix.client.cosmetic.LayerSythixCosmetics());
+        this.addLayer(new net.sythix.client.cosmetic.LayerSythixCosmetics(this));
     }
 
     public ModelPlayer getMainModel()

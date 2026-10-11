@@ -117,7 +117,9 @@ public class GuiProfile extends GuiScreen
         {
             for (Setting<?> s : cosmetics.getSettings())
             {
-                if (s.getName().equals("Wings") || s.getName().startsWith("Wing ") || s.getName().equals("Show Cape"))
+                String n = s.getName();
+
+                if (n.equals("Wings") || n.startsWith("Wing ") || n.equals("Show Cape") || n.startsWith("Hat") || n.startsWith("Shoulder Buddy") || n.startsWith("Buddy") || n.startsWith("Aura") || n.equals("Trail Only"))
                 {
                     this.settings.add(s);
                 }
@@ -206,15 +208,17 @@ public class GuiProfile extends GuiScreen
         }
 
         this.fontRenderer.drawString(this.name.get(), (float)(this.px + 6 + (left - 6) / 2 - this.fontRenderer.getStringWidth(this.name.get()) / 2), (float)(this.py + 30), 0xFFFFFFFF, true);
-        this.fontRenderer.drawString("Drag to rotate", (float)(this.px + 10), (float)(this.py + this.ph - 62), SythixTheme.TEXT_DISABLED, false);
+        this.fontRenderer.drawString("Drag to rotate", (float)(this.px + 10), (float)(this.py + this.ph - 76), SythixTheme.TEXT_DISABLED, false);
 
         // Emote preview buttons
-        int bw = (left - 6) / CosmeticsModule.EMOTES.length - 2;
+        // Two rows of emote buttons
+        int perRow = (CosmeticsModule.EMOTES.length + 1) / 2;
+        int bw = (left - 6) / perRow - 2;
 
         for (int i = 0; i < CosmeticsModule.EMOTES.length; ++i)
         {
-            int bx = this.px + 6 + i * (bw + 2);
-            int by = this.py + this.ph - 48;
+            int bx = this.px + 6 + (i % perRow) * (bw + 2);
+            int by = this.py + this.ph - 64 + (i / perRow) * 16;
             boolean hover = mouseX >= bx && mouseX < bx + bw && mouseY >= by && mouseY < by + 14;
             SythixTheme.drawButton((float)bx, (float)by, (float)bw, 14.0F, true, hover ? 1.0F : 0.0F);
             String label = this.fontRenderer.trimStringToWidth(CosmeticsModule.EMOTES[i], bw - 2);
@@ -318,9 +322,9 @@ public class GuiProfile extends GuiScreen
             GlStateManager.popMatrix();
         }
 
-        if (cosmetics != null && cosmetics.showWings())
+        if (cosmetics != null)
         {
-            WingRenderer.draw(age, cosmetics.wingColor(), cosmetics.wingFlap(), cosmetics.wingSize(), false);
+            LayerSythixCosmetics.drawAll(m, cosmetics, age, false);
         }
 
         GlStateManager.popMatrix();
@@ -387,12 +391,14 @@ public class GuiProfile extends GuiScreen
             }
         }
 
-        int bw = (left - 6) / CosmeticsModule.EMOTES.length - 2;
-        int ey = this.py + this.ph - 48;
+        int perRow = (CosmeticsModule.EMOTES.length + 1) / 2;
+        int bw = (left - 6) / perRow - 2;
+        int ey = this.py + this.ph - 64;
 
-        if (mouseY >= ey && mouseY < ey + 14 && mouseX >= this.px + 6 && mouseX < this.px + left)
+        if (mouseY >= ey && mouseY < ey + 30 && mouseX >= this.px + 6 && mouseX < this.px + left)
         {
-            int index = (mouseX - this.px - 6) / (bw + 2);
+            int column = (mouseX - this.px - 6) / (bw + 2);
+            int index = column < perRow ? column + (mouseY - ey) / 16 * perRow : -1;
 
             if (index >= 0 && index < CosmeticsModule.EMOTES.length)
             {

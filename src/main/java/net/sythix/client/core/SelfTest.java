@@ -156,6 +156,14 @@ public final class SelfTest
 
     private static void build()
     {
+        if ("cosmetics".equals(System.getProperty("sythix.selftest")))
+        {
+            add("equip", 1, SelfTest::equipCosmetics);
+            show("cosmetics-profile", () -> new GuiProfile(null));
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("profile".equals(System.getProperty("sythix.selftest")))
         {
             show("profile", () -> new GuiProfile(null));
@@ -444,6 +452,33 @@ public final class SelfTest
         }
 
         return out.length() == 0 ? "(only outside modules)" : out.toString();
+    }
+
+    /** Sets one setting from a JSON value, e.g. set(CosmeticsModule.class, "Hat", "\"Crown\""). */
+    private static void set(Class<? extends Module> type, String name, String json)
+    {
+        for (Setting<?> s : modules().get(type).getSettings())
+        {
+            if (s.getName().equals(name))
+            {
+                s.fromJson(new com.google.gson.JsonParser().parse(json));
+            }
+        }
+    }
+
+    private static void equipCosmetics()
+    {
+        Class<net.sythix.client.module.visuals.CosmeticsModule> c = net.sythix.client.module.visuals.CosmeticsModule.class;
+        modules().get(c).setEnabled(true);
+        set(c, "Hat", "\"Crown\"");
+        set(c, "Hat Color", "{\"argb\":\"#FFFFD020\"}");
+        set(c, "Shoulder Buddy", "\"Slime\"");
+        set(c, "Wings", "true");
+        set(c, "Wing Style", "\"Angel\"");
+        set(c, "Wing Color", "{\"argb\":\"#E0FFFFFF\"}");
+        set(c, "Aura", "\"Hearts\"");
+        net.sythix.client.cosmetic.ProfileStore.cape = "anim:chroma";
+        pass("cosmetics equipped");
     }
 
     private static void press(Module m, String name)

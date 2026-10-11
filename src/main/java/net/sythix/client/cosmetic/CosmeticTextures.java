@@ -30,6 +30,11 @@ public final class CosmeticTextures
         {"split", "Red & Blue", Integer.valueOf(0xD81820), Integer.valueOf(0x2F6BFF), Boolean.TRUE}
     };
     private static final Map<String, ResourceLocation> CACHE = new HashMap<String, ResourceLocation>();
+    /** Animated capes: id, display name. Their textures are redrawn about 20 times a second. */
+    private static final String[][] ANIMATED = new String[][] {{"anim:chroma", "Chroma Flow (animated)"}, {"anim:ember", "Ember (animated)"}, {"anim:galaxy", "Galaxy (animated)"}};
+    private static final Map<String, DynamicTexture> ANIM_TEXTURES = new HashMap<String, DynamicTexture>();
+    private static final Map<String, ResourceLocation> ANIM_LOCATIONS = new HashMap<String, ResourceLocation>();
+    private static final Map<String, Long> ANIM_UPDATED = new HashMap<String, Long>();
 
     private CosmeticTextures()
     {
@@ -44,6 +49,11 @@ public final class CosmeticTextures
         for (Object[] cape : BUILT_IN)
         {
             list.add(new String[] {(String)cape[0], (String)cape[1]});
+        }
+
+        for (String[] cape : ANIMATED)
+        {
+            list.add(cape);
         }
 
         File[] files = ProfileStore.capesDir().listFiles((dir, n) -> n.toLowerCase().endsWith(".png"));
@@ -96,6 +106,11 @@ public final class CosmeticTextures
         if (id == null || id.equals("none"))
         {
             return null;
+        }
+
+        if (id.startsWith("anim:"))
+        {
+            return animated(id);
         }
 
         if (CACHE.containsKey("cape:" + id))
@@ -174,6 +189,83 @@ public final class CosmeticTextures
     }
 
     /** Draws a 64x32 cape: vertical gradient, accent edges and (optionally) the Sythix emblem. */
+    private static ResourceLocation animated(String id)
+    {
+        boolean known = false;
+
+        for (String[] cape : ANIMATED)
+        {
+            known |= cape[0].equals(id);
+        }
+
+        if (!known)
+        {
+            return null;
+        }
+
+        DynamicTexture texture = ANIM_TEXTURES.get(id);
+
+        if (texture == null)
+        {
+            texture = new DynamicTexture(64, 32);
+            ANIM_TEXTURES.put(id, texture);
+            ANIM_LOCATIONS.put(id, Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("sythix_anim_cape", texture));
+            ANIM_UPDATED.put(id, Long.valueOf(0L));
+        }
+
+        long now = Minecraft.getSystemTime();
+
+        if (now - ANIM_UPDATED.get(id).longValue() >= 50L)
+        {
+            ANIM_UPDATED.put(id, Long.valueOf(now));
+            int[] data = texture.getTextureData();
+            float t = (float)(now % 1000000L) / 1000.0F;
+
+            for (int y = 0; y < 32; ++y)
+            {
+                for (int x = 0; x < 64; ++x)
+                {
+                    data[y * 64 + x] = x < 23 && y < 18 ? animatedPixel(id, x, y, t) : 0;
+                }
+            }
+
+            texture.updateDynamicTexture();
+        }
+
+        return ANIM_LOCATIONS.get(id);
+    }
+
+    private static int animatedPixel(String id, int x, int y, float t)
+    {
+        boolean edge = y == 0 || y == 17 || x == 0 || x == 11 || x == 22;
+        // Same position on front and back faces
+        int fx = x > 11 ? x - 11 : x;
+
+        switch (id)
+        {
+            case "anim:chroma":
+            {
+                int c = java.awt.Color.HSBtoRGB(((float)(fx + y) / 30.0F + t * 0.25F) % 1.0F, 0.8F, edge ? 0.55F : 1.0F);
+                return 0xFF000000 | c;
+            }
+            case "anim:ember":
+            {
+                float heat = (float)y / 17.0F + 0.25F * (float)Math.sin(t * 6.0F + fx * 0.9F + y * 0.4F) + 0.15F * (float)Math.sin(t * 11.0F + fx * 2.1F);
+                heat = Math.max(0.0F, Math.min(1.0F, heat));
+                int c = lerp(0x2A0204, heat > 0.6F ? lerp(0xD81820, 0xFFB020, (heat - 0.6F) / 0.4F) : lerp(0x2A0204, 0xD81820, heat / 0.6F), 1.0F);
+                return 0xFF000000 | (edge ? lerp(c, 0x000000, 0.4F) : c);
+            }
+            default:
+            {
+                int base = lerp(0x1B0B3A, 0x050512, (float)y / 17.0F);
+                int seed = (fx * 73856093) ^ (y * 19349663);
+                float star = (seed & 15) == 0 ? 0.5F + 0.5F * (float)Math.sin(t * 3.0F + (float)(seed & 255)) : 0.0F;
+                int c = lerp(base, 0xFFFFFF, Math.max(0.0F, star));
+                return 0xFF000000 | (edge ? lerp(c, 0x2F6BFF, 0.5F) : c);
+            }
+        }
+    }
+
     private static BufferedImage drawCape(int top, int bottom, boolean emblem)
     {
         BufferedImage img = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB);
