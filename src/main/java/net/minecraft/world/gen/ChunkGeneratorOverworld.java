@@ -463,6 +463,8 @@ public class ChunkGeneratorOverworld implements IChunkGenerator
             }
         }
 
+        // Sythix: 1.21 blocks in new chunks (own random numbers, vanilla terrain unchanged)
+        net.sythix.modern.ModernWorldGen.populateOverworld(this.world, i, j, biome);
         BlockFalling.fallInstantly = false;
     }
 

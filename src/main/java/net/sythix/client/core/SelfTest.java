@@ -172,6 +172,14 @@ public final class SelfTest
             return;
         }
 
+        if ("worldgen".equals(System.getProperty("sythix.selftest")))
+        {
+            worldgenSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("pack".equals(System.getProperty("sythix.selftest")))
         {
             add("modern pack converter", 1, SelfTest::modernPack);
@@ -647,7 +655,7 @@ public final class SelfTest
 
             if (slimes >= slimesBefore + 2 && slow)
             {
-                pass("Oozing spawned slimes on death; Slow Falling zombie floats down (motionY " + String.format("%.3f", modernFloater.motionY) + ")");
+                pass("Oozing spawned slimes on death; Slow Falling zombie floats down (" + String.format("%.3f", perTick) + " blocks/tick)");
             }
             else
             {
@@ -747,6 +755,82 @@ public final class SelfTest
             }
         });
         add("leave reopened world", 40, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+    }
+
+    /** New default world: checks that the 1.21 blocks are generated. */
+    private static void worldgenSteps()
+    {
+        add("create generated world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-worldgen"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            mc().launchIntegratedServer("sythix-worldgen", "Sythix Worldgen Test", new WorldSettings(20261011L, GameType.CREATIVE, true, false, WorldType.DEFAULT).enableCommands());
+        });
+        add("wait for generated world", 1, SelfTest::waitForWorld);
+        add("let chunks generate", 200, () -> {});
+        add("count generated blocks", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.util.math.BlockPos spawn = world.getSpawnPoint();
+            java.util.Map<String, Integer> counts = new java.util.TreeMap<String, Integer>();
+            int chunks = 0;
+            long started = System.nanoTime();
+
+            for (int cx = -3; cx <= 3; ++cx)
+            {
+                for (int cz = -3; cz <= 3; ++cz)
+                {
+                    net.minecraft.world.chunk.Chunk chunk = world.getChunkFromChunkCoords((spawn.getX() >> 4) + cx, (spawn.getZ() >> 4) + cz);
+
+                    if (!chunk.isTerrainPopulated())
+                    {
+                        continue;
+                    }
+
+                    ++chunks;
+
+                    for (int x = 0; x < 16; ++x)
+                    {
+                        for (int z = 0; z < 16; ++z)
+                        {
+                            for (int y = 1; y < 100; ++y)
+                            {
+                                net.minecraft.block.Block b = chunk.getBlockState(x, y, z).getBlock();
+                                net.minecraft.util.ResourceLocation id = net.minecraft.block.Block.REGISTRY.getNameForObject(b);
+
+                                if (net.sythix.modern.ModernBlocks.get(id.getResourcePath()) == b)
+                                {
+                                    counts.merge(id.getResourcePath(), Integer.valueOf(1), Integer::sum);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            boolean ok = chunks > 10 && counts.getOrDefault("deepslate", 0) > 1000 && counts.getOrDefault("copper_ore", 0) + counts.getOrDefault("deepslate_copper_ore", 0) > 10 && counts.getOrDefault("tuff", 0) > 10;
+
+            if (ok)
+            {
+                pass("generated in " + chunks + " chunks: " + counts);
+            }
+            else
+            {
+                fail("world generation", new IllegalStateException(chunks + " chunks: " + counts));
+            }
+        }));
+        add("look down", 1, () -> {
+            mc().player.rotationPitch = 30.0F;
+        });
+        add("screenshot worldgen", 20, () -> shot("worldgen"));
+        add("leave generated world", 40, () -> {
             mc().loadWorld(null);
             mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
         });

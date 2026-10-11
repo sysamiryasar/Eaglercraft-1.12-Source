@@ -152,5 +152,7 @@ final class ModuleRegistry
         m.register(new PrivacyControls());
         m.register(new BrowserCompatibility());
         m.register(new Localization());
+        // Content backported from Minecraft 1.13-1.21
+        m.register(new net.sythix.modern.ModernContent());
     }
 }
