@@ -95,6 +95,13 @@ public abstract class AbstractClientPlayer extends EntityPlayer
      */
     public ResourceLocation getLocationSkin()
     {
+        ResourceLocation sythixSkin = net.sythix.client.core.Hooks.localSkin(this);
+
+        if (sythixSkin != null)
+        {
+            return sythixSkin;
+        }
+
         NetworkPlayerInfo networkplayerinfo = this.getPlayerInfo();
         return networkplayerinfo == null ? DefaultPlayerSkin.getDefaultSkin(this.getUniqueID()) : networkplayerinfo.getLocationSkin();
     }
@@ -102,6 +109,13 @@ public abstract class AbstractClientPlayer extends EntityPlayer
     @Nullable
     public ResourceLocation getLocationCape()
     {
+        ResourceLocation sythixCape = net.sythix.client.core.Hooks.localCape(this);
+
+        if (sythixCape != null)
+        {
+            return sythixCape;
+        }
+
         if (!Config.isShowCapes())
         {
             return null;
@@ -157,6 +171,13 @@ public abstract class AbstractClientPlayer extends EntityPlayer
 
     public String getSkinType()
     {
+        String sythixType = net.sythix.client.core.Hooks.localSkinType(this);
+
+        if (sythixType != null)
+        {
+            return sythixType;
+        }
+
         NetworkPlayerInfo networkplayerinfo = this.getPlayerInfo();
         return networkplayerinfo == null ? DefaultPlayerSkin.getSkinType(this.getUniqueID()) : networkplayerinfo.getSkinType();
     }

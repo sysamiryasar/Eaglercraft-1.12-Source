@@ -16,6 +16,10 @@ import net.minecraft.world.storage.ISaveFormat;
 import net.minecraft.world.storage.WorldInfo;
 import net.sythix.client.SythixClient;
 import net.sythix.client.ui.SythixTheme;
+import net.sythix.client.core.Hooks;
+import net.sythix.client.module.hud.MainMenuModule;
+import net.minecraft.client.multiplayer.GuiConnecting;
+import net.minecraft.client.multiplayer.ServerData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Mouse;
@@ -129,7 +133,21 @@ public class GuiMainMenu extends GuiScreen
 
         // Layout: logo, then three full-width buttons, then the Options/Quit row
         int buttonBlockHeight = 24 * 3 + 12 + 20;
+        MainMenuModule menu = this.menuOptions();
+        java.util.List<String[]> shortcuts = menu == null ? java.util.Collections.<String[]>emptyList() : menu.shortcuts();
+
+        if (!shortcuts.isEmpty())
+        {
+            buttonBlockHeight += 22;
+        }
+
         this.logoSize = Math.max(48, Math.min(130, this.height - buttonBlockHeight - 40));
+
+        if (menu != null)
+        {
+            this.logoSize = Math.round((float)this.logoSize * menu.logoScale());
+        }
+
         int contentHeight = this.logoSize + 8 + buttonBlockHeight;
         this.logoY = Math.max(6, (this.height - contentHeight) / 2 - 6);
         int j = this.logoY + this.logoSize + 8;
@@ -146,6 +164,22 @@ public class GuiMainMenu extends GuiScreen
         this.buttonList.add(new GuiButton(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.format("menu.options")));
         this.buttonList.add(new GuiButton(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.format("menu.quit")));
         this.buttonList.add(new GuiButtonLanguage(5, this.width / 2 - 124, j + 72 + 12));
+
+        // Quick-join server shortcuts from the Main Menu module
+        for (int s = 0; s < shortcuts.size(); ++s)
+        {
+            int w = (200 - (shortcuts.size() - 1) * 4) / shortcuts.size();
+            this.buttonList.add(new GuiButton(100 + s, this.width / 2 - 100 + s * (w + 4), j + 72 + 12 + 24, w, 20, "\u25b6 " + shortcuts.get(s)[0]));
+        }
+
+        if (menu != null && menu.leftButtons())
+        {
+            // Left layout: move every button to the left side of the screen
+            for (GuiButton button : this.buttonList)
+            {
+                button.x = button.x - (this.width / 2 - 100) + 20;
+            }
+        }
 
         synchronized (this.threadLock)
         {
@@ -182,7 +216,8 @@ public class GuiMainMenu extends GuiScreen
         this.buttonList.add(new GuiButton(1, this.width / 2 - 100, p_73969_1_, I18n.format("menu.singleplayer")));
         this.buttonList.add(new GuiButton(2, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 1, I18n.format("menu.multiplayer")));
 
-        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, SythixClient.NAME + " Mods"));
+        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, 98, 20, SythixClient.NAME + " Mods"));
+        this.buttonList.add(new GuiButton(7, this.width / 2 + 2, p_73969_1_ + p_73969_2_ * 2, 98, 20, "Profile"));
     }
 
     /**
@@ -234,6 +269,22 @@ public class GuiMainMenu extends GuiScreen
         if (button.id == 6)
         {
             this.mc.displayGuiScreen(new net.sythix.client.ui.GuiModMenu(this));
+        }
+
+        if (button.id == 7)
+        {
+            this.mc.displayGuiScreen(new net.sythix.client.cosmetic.GuiProfile(this));
+        }
+
+        if (button.id >= 100 && button.id < 103)
+        {
+            MainMenuModule menu = this.menuOptions();
+
+            if (menu != null && button.id - 100 < menu.shortcuts().size())
+            {
+                String[] shortcut = menu.shortcuts().get(button.id - 100);
+                this.mc.displayGuiScreen(new GuiConnecting(this, this.mc, new ServerData(shortcut[0], shortcut[1], false)));
+            }
         }
 
         if (button.id == 11)
@@ -294,15 +345,35 @@ public class GuiMainMenu extends GuiScreen
         float fadeIn = Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 600.0F);
 
         // Background with gentle mouse parallax, darkened at the top and bottom
-        SythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, 0.0F);
+        MainMenuModule menu = this.menuOptions();
+        String background = menu == null ? "Sythix" : menu.getBackground();
+        boolean parallax = (menu == null || menu.parallax()) && !SythixTheme.reducedMotion;
+
+        if (background.equals("Dark"))
+        {
+            SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, SythixTheme.BLACK);
+        }
+        else if (background.equals("Gradient"))
+        {
+            SythixTheme.drawQuad(0.0F, 0.0F, (float)this.width, (float)this.height, SythixTheme.lerpColor(SythixTheme.BLACK, SythixTheme.BLUE, 0.35F), SythixTheme.BLACK, SythixTheme.lerpColor(SythixTheme.BLACK, SythixTheme.RED, 0.45F), SythixTheme.BLACK);
+        }
+        else
+        {
+            SythixTheme.drawBackground(this.width, this.height, parallax ? mouseX : -1, parallax ? mouseY : -1, 0.0F);
+        }
+
         SythixTheme.drawGradientV(0.0F, 0.0F, (float)this.width, (float)this.height * 0.35F, 0x900B0B0E, 0x000B0B0E);
         SythixTheme.drawGradientV(0.0F, (float)this.height * 0.7F, (float)this.width, (float)this.height, 0x000B0B0E, 0xC00B0B0E);
 
         // Logo, gently bobbing; the texture is square with the artwork centred
-        float bob = (float)Math.sin((double)(Minecraft.getSystemTime() % 4000L) / 4000.0D * Math.PI * 2.0D) * 1.5F;
-        SythixTheme.drawTexture(SythixTheme.LOGO, (float)(this.width - this.logoSize) / 2.0F, (float)this.logoY + bob, (float)this.logoSize, (float)this.logoSize, fadeIn);
+        boolean animate = (menu == null || menu.logoAnimation()) && !SythixTheme.reducedMotion;
+        float bob = animate ? (float)Math.sin((double)(Minecraft.getSystemTime() % 4000L) / 4000.0D * Math.PI * 2.0D) * 1.5F : 0.0F;
+        float logoX = menu != null && menu.leftButtons() ? 20.0F + (200.0F - (float)this.logoSize) / 2.0F : (float)(this.width - this.logoSize) / 2.0F;
+        SythixTheme.drawTexture(SythixTheme.LOGO, logoX, (float)this.logoY + bob, (float)this.logoSize, (float)this.logoSize, fadeIn);
 
         // Footer bar
+        if (menu == null || menu.footer())
+        {
         SythixTheme.drawRect(0.0F, (float)(this.height - 12), (float)this.width, (float)this.height, 0xB00B0B0E);
         SythixTheme.drawAccentLine(0.0F, (float)(this.height - 12), (float)this.width, 0.9F);
         String branding = SythixClient.getBrandingLine();
@@ -315,6 +386,7 @@ public class GuiMainMenu extends GuiScreen
         this.drawString(this.fontRenderer, branding, 2, this.height - 10, SythixTheme.TEXT_MUTED);
         boolean copyrightHovered = mouseX > this.widthCopyrightRest && mouseX < this.widthCopyrightRest + this.widthCopyright && mouseY > this.height - 10 && mouseY < this.height && Mouse.isInsideWindow();
         this.drawString(this.fontRenderer, COPYRIGHT_TEXT, this.widthCopyrightRest, this.height - 10, copyrightHovered ? SythixTheme.LIGHT_BLUE : SythixTheme.TEXT_MUTED);
+        }
 
         if (this.openGLWarning1 != null && !this.openGLWarning1.isEmpty())
         {
@@ -369,5 +441,10 @@ public class GuiMainMenu extends GuiScreen
         {
             this.realmsNotification.onGuiClosed();
         }
+    }
+
+    private MainMenuModule menuOptions()
+    {
+        return net.sythix.client.SythixClient.get() == null ? null : net.sythix.client.SythixClient.get().getModuleManager().get(MainMenuModule.class);
     }
 }

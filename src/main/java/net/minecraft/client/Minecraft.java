@@ -271,7 +271,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     /** Manages all search trees */
     private SearchTreeManager searchTreeManager = new SearchTreeManager();
-    private final Session session;
+    private Session session;
     private boolean isGamePaused;
 
     /**
@@ -3321,6 +3321,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public boolean isFullScreen()
     {
         return this.fullscreen;
+    }
+
+    /** Sythix: switch to another offline name (Profile screen; only outside worlds). */
+    public void setSessionSythix(Session newSession)
+    {
+        this.session = newSession;
     }
 
     public Session getSession()

@@ -13,6 +13,17 @@ import net.sythix.client.SythixClient;
 import net.sythix.client.module.Module;
 import net.sythix.client.module.ModuleManager;
 import net.sythix.client.module.hud.HudModule;
+import net.sythix.client.module.visuals.BlockVisuals;
+import net.sythix.client.module.visuals.CosmeticsModule;
+import net.sythix.client.module.visuals.EnvironmentVisuals;
+import net.sythix.client.module.visuals.SoundController;
+import net.sythix.client.cosmetic.CosmeticTextures;
+import net.sythix.client.cosmetic.ProfileStore;
+import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.audio.ISound;
+import net.minecraft.client.model.ModelBiped;
+import net.minecraft.util.ResourceLocation;
 import net.sythix.client.module.hud.ChatModule;
 import net.sythix.client.module.hud.NotificationsModule;
 import net.sythix.client.module.hud.ScoreboardModule;
@@ -731,5 +742,132 @@ public final class Hooks
                 fail(NotificationsModule.class, "notifications", t);
             }
         }
+    }
+
+    // ---- Visuals and cosmetics -----------------------------------------------------------------
+
+    private static final ResourceLocation ALEX = new ResourceLocation("textures/entity/alex.png");
+
+    /** Your own skin from the Profile screen, or null to use the normal one. */
+    public static ResourceLocation localSkin(AbstractClientPlayer player)
+    {
+        if (!(player instanceof EntityPlayerSP) || SythixClient.get() == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            ResourceLocation custom = CosmeticTextures.skin(ProfileStore.skin);
+
+            if (custom != null)
+            {
+                return custom;
+            }
+
+            return ProfileStore.slim ? ALEX : null;
+        }
+        catch (Throwable t)
+        {
+            fail(CosmeticsModule.class, "skin", t);
+            return null;
+        }
+    }
+
+    public static String localSkinType(AbstractClientPlayer player)
+    {
+        if (!(player instanceof EntityPlayerSP) || SythixClient.get() == null)
+        {
+            return null;
+        }
+
+        return ProfileStore.slim ? "slim" : (ProfileStore.skin.isEmpty() ? null : "default");
+    }
+
+    public static ResourceLocation localCape(AbstractClientPlayer player)
+    {
+        CosmeticsModule cosmetics = on(CosmeticsModule.class);
+
+        if (cosmetics == null || !cosmetics.showCape() || !(player instanceof EntityPlayerSP))
+        {
+            return null;
+        }
+
+        try
+        {
+            return CosmeticTextures.cape(ProfileStore.cape);
+        }
+        catch (Throwable t)
+        {
+            fail(CosmeticsModule.class, "cape", t);
+            return null;
+        }
+    }
+
+    public static void applyEmote(ModelBiped model, Entity entity, float ageInTicks)
+    {
+        CosmeticsModule cosmetics = on(CosmeticsModule.class);
+
+        if (cosmetics != null && entity != null)
+        {
+            cosmetics.applyEmote(model, entity, ageInTicks);
+        }
+    }
+
+    public static boolean allowSound(ISound sound)
+    {
+        SoundController controller = on(SoundController.class);
+
+        try
+        {
+            return controller == null || sound == null || controller.allow(sound);
+        }
+        catch (Throwable t)
+        {
+            return true;
+        }
+    }
+
+    public static long worldTime()
+    {
+        EnvironmentVisuals env = on(EnvironmentVisuals.class);
+        return env == null ? -1L : env.worldTime();
+    }
+
+    public static float rainStrength()
+    {
+        EnvironmentVisuals env = on(EnvironmentVisuals.class);
+        return env == null ? -1.0F : env.rain();
+    }
+
+    public static float thunderStrength()
+    {
+        EnvironmentVisuals env = on(EnvironmentVisuals.class);
+        return env == null ? -1.0F : env.thunder();
+    }
+
+    public static float gamma(float vanilla)
+    {
+        EnvironmentVisuals env = on(EnvironmentVisuals.class);
+        float g = env == null ? -1.0F : env.gamma();
+        return g >= 0.0F ? g : vanilla;
+    }
+
+    public static float outlineWidth(float vanilla)
+    {
+        BlockVisuals visuals = on(BlockVisuals.class);
+        return visuals == null ? vanilla : visuals.getWidth();
+    }
+
+    public static float[] outlineColor()
+    {
+        BlockVisuals visuals = on(BlockVisuals.class);
+        return visuals == null ? null : visuals.outline();
+    }
+
+    public static float[] outlineFill()
+    {
+        BlockVisuals visuals = on(BlockVisuals.class);
+        return visuals == null ? null : visuals.fillColor();
     }
 }

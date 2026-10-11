@@ -241,6 +241,11 @@ public class SoundHandler implements IResourceManagerReloadListener, ITickable
      */
     public void playSound(ISound sound)
     {
+        if (!net.sythix.client.core.Hooks.allowSound(sound))
+        {
+            return;
+        }
+
         this.sndManager.playSound(sound);
     }
 

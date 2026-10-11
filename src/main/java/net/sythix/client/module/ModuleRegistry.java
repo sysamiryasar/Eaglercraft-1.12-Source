@@ -2,6 +2,11 @@ package net.sythix.client.module;
 
 import net.sythix.client.module.client.SearchDiscovery;
 import net.sythix.client.module.hud.ArrayListModule;
+import net.sythix.client.module.visuals.BlockVisuals;
+import net.sythix.client.module.visuals.CosmeticsModule;
+import net.sythix.client.module.visuals.EnvironmentVisuals;
+import net.sythix.client.module.visuals.SoundController;
+import net.sythix.client.module.visuals.TexturePackManager;
 import net.sythix.client.module.hud.ChatModule;
 import net.sythix.client.module.hud.CpsModule;
 import net.sythix.client.module.hud.HudEditorModule;
@@ -87,6 +92,12 @@ final class ModuleRegistry
         m.register(new ArrayListModule());
         m.register(new InterfaceThemeModule());
         m.register(new MainMenuModule());
+        // F. Visuals and cosmetics
+        m.register(new EnvironmentVisuals());
+        m.register(new BlockVisuals());
+        m.register(new TexturePackManager());
+        m.register(new CosmeticsModule());
+        m.register(new SoundController());
         // G. Multiplayer (partial, more below)
         m.register(new ChatUtilities());
         // I. Client configuration
