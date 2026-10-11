@@ -140,8 +140,7 @@ public class GuiScreenOptionsSounds extends GuiScreen
                 }
 
                 GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                this.drawTexturedModalRect(this.x + (int)(this.volume * (float)(this.width - 8)), this.y, 0, 66, 4, 20);
-                this.drawTexturedModalRect(this.x + (int)(this.volume * (float)(this.width - 8)) + 4, this.y, 196, 66, 4, 20);
+                this.drawSliderKnob(this.x + (int)(this.volume * (float)(this.width - 8)));
             }
         }
 

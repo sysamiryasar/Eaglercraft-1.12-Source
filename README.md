@@ -1,3 +1,16 @@
+# ScythiX Client
+
+ScythiX Client is a customised PvP client built on top of this Eaglercraft 1.12 source.
+
+- Client name and version: `src/main/java/net/scythix/client/ScythixClient.java`
+- UI theme (colours, buttons, backgrounds): `src/main/java/net/scythix/client/ui/ScythixTheme.java`
+- Branding textures: `src/main/resources/assets/minecraft/textures/gui/scythix/`
+- To regenerate the textures from the source logo: `python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/scythix` (needs Pillow)
+
+Build with **JDK 17** (the Gradle 8.0 wrapper does not run on Java 21): `./gradlew clean build`, then `./UnpackRuntime.sh` and run `runtime/run.sh`. The client asks for a username in the terminal before the window opens.
+
+---
+
 # Eaglercraft 1.12 source
 
 [![Java CI with Gradle](https://github.com/catfoolyou/Eaglercraft-1.12/actions/workflows/gradle.yml/badge.svg)](https://github.com/catfoolyou/Eaglercraft-1.12/actions/workflows/gradle.yml)

@@ -38,6 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import net.scythix.client.ui.ScythixTheme;
 
 public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 {
@@ -650,6 +651,12 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
      */
     public void drawBackground(int tint)
     {
+        if (ScythixTheme.isEnabled())
+        {
+            ScythixTheme.drawBackground(this.width, this.height, -1, -1, 0.55F);
+            return;
+        }
+
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
         Tessellator tessellator = Tessellator.getInstance();

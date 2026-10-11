@@ -217,11 +217,13 @@ import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.OpenGLException;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
+import net.scythix.client.ScythixClient;
+import net.scythix.client.ui.ScythixTheme;
 
 public class Minecraft implements IThreadListener, ISnooperInfo
 {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final ResourceLocation LOCATION_MOJANG_PNG = new ResourceLocation("textures/gui/title/mojang.png");
+    private static final ResourceLocation LOCATION_SPLASH_LOGO = ScythixTheme.LOGO;
     public static final boolean IS_RUNNING_ON_MAC = Util.getOSType() == Util.EnumOS.OSX;
 
     /** A 10MiB preallocation to ensure the heap is reasonably sized. */
@@ -692,7 +694,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
-        Display.setTitle("Eaglercraft 1.12");
+        Display.setTitle(ScythixClient.getWindowTitle());
 
         try
         {
@@ -746,8 +748,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             try
             {
-                inputstream = this.mcDefaultResourcePack.getInputStreamAssets(new ResourceLocation("icons/icon_16x16.png"));
-                inputstream1 = this.mcDefaultResourcePack.getInputStreamAssets(new ResourceLocation("icons/icon_32x32.png"));
+                inputstream = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/scythix/icon_16.png"));
+                inputstream1 = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/scythix/icon_32.png"));
 
                 if (inputstream != null && inputstream1 != null)
                 {
@@ -997,31 +999,33 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
         try
         {
-            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_MOJANG_PNG);
-            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("logo", new DynamicTexture(ImageIO.read(inputstream)));
+            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_SPLASH_LOGO);
+            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("scythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
             textureManagerInstance.bindTexture(this.mojangLogo);
         }
         catch (IOException ioexception)
         {
-            LOGGER.error("Unable to load logo: {}", LOCATION_MOJANG_PNG, ioexception);
+            LOGGER.error("Unable to load logo: {}", LOCATION_SPLASH_LOGO, ioexception);
         }
         finally
         {
             IOUtils.closeQuietly(inputstream);
         }
 
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuffer();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-        bufferbuilder.pos(0.0D, (double)this.displayHeight, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos((double)this.displayWidth, (double)this.displayHeight, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos((double)this.displayWidth, 0.0D, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos(0.0D, 0.0D, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        tessellator.draw();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        int j = 256;
-        int k = 256;
-        this.draw((scaledresolution.getScaledWidth() - 256) / 2, (scaledresolution.getScaledHeight() - 256) / 2, 0, 0, 256, 256, 255, 255, 255, 255);
+        // ScythiX loading screen: dark gradient, centred logo and a red-to-blue accent line
+        float screenWidth = (float)scaledresolution.getScaledWidth();
+        float screenHeight = (float)scaledresolution.getScaledHeight();
+        ScythixTheme.drawGradientV(0.0F, 0.0F, screenWidth, screenHeight, ScythixTheme.CHARCOAL, ScythixTheme.BLACK);
+
+        if (this.mojangLogo != null)
+        {
+            float logoSize = Math.min(screenHeight * 0.6F, 220.0F);
+            float logoX = (screenWidth - logoSize) / 2.0F;
+            float logoY = (screenHeight - logoSize) / 2.0F - 8.0F;
+            ScythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
+            ScythixTheme.drawAccentLine(screenWidth / 2.0F - 60.0F, logoY + logoSize + 10.0F, screenWidth / 2.0F + 60.0F, 1.0F);
+        }
+
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
         framebuffer.unbindFramebuffer();
