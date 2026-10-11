@@ -1,8 +1,8 @@
-"""ScythiX Client branding asset generator."""
+"""Sythix Client branding asset generator."""
 import sys, os, math, random
 from PIL import Image, ImageDraw, ImageFilter
 # Usage (from the repository root):
-#   python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/scythix
+#   python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/sythix
 # Requires Pillow (pip install pillow). Regenerates logo.png, icon_16.png, icon_32.png and background.png.
 src, outdir = sys.argv[1], sys.argv[2]
 os.makedirs(outdir, exist_ok=True)

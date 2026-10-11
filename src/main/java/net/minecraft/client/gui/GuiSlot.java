@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.input.Mouse;
-import net.scythix.client.ui.ScythixTheme;
+import net.sythix.client.ui.SythixTheme;
 
 public abstract class GuiSlot
 {
@@ -495,11 +495,11 @@ public abstract class GuiSlot
      */
     protected void overlayBackground(int startY, int endY, int startAlpha, int endAlpha)
     {
-        if (ScythixTheme.isEnabled())
+        if (SythixTheme.isEnabled())
         {
-            ScythixTheme.drawBackgroundRegion(this.width, this.height, this.left, startY, this.left + this.width, endY, -1, -1, 0.55F);
-            ScythixTheme.drawGradientV((float)this.left, (float)startY, (float)(this.left + this.width), (float)endY, ScythixTheme.withAlpha(ScythixTheme.BLACK, startAlpha * 3 / 4), ScythixTheme.withAlpha(ScythixTheme.BLACK, endAlpha * 3 / 4));
-            ScythixTheme.drawAccentLine((float)this.left, startY == 0 ? (float)(endY - 1) : (float)startY, (float)(this.left + this.width), 0.8F);
+            SythixTheme.drawBackgroundRegion(this.width, this.height, this.left, startY, this.left + this.width, endY, -1, -1, 0.55F);
+            SythixTheme.drawGradientV((float)this.left, (float)startY, (float)(this.left + this.width), (float)endY, SythixTheme.withAlpha(SythixTheme.BLACK, startAlpha * 3 / 4), SythixTheme.withAlpha(SythixTheme.BLACK, endAlpha * 3 / 4));
+            SythixTheme.drawAccentLine((float)this.left, startY == 0 ? (float)(endY - 1) : (float)startY, (float)(this.left + this.width), 0.8F);
             return;
         }
 
@@ -532,10 +532,10 @@ public abstract class GuiSlot
 
     protected void drawContainerBackground(Tessellator p_drawContainerBackground_1_)
     {
-        if (ScythixTheme.isEnabled())
+        if (SythixTheme.isEnabled())
         {
-            ScythixTheme.drawBackgroundRegion(this.width, this.height, this.left, this.top, this.right, this.bottom, -1, -1, 0.55F);
-            ScythixTheme.drawRect((float)this.left, (float)this.top, (float)this.right, (float)this.bottom, 0x800B0B0E);
+            SythixTheme.drawBackgroundRegion(this.width, this.height, this.left, this.top, this.right, this.bottom, -1, -1, 0.55F);
+            SythixTheme.drawRect((float)this.left, (float)this.top, (float)this.right, (float)this.bottom, 0x800B0B0E);
             return;
         }
 

@@ -1,20 +1,22 @@
-package net.scythix.client.ui;
+package net.sythix.client.ui;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
 
 /**
- * ScythiX UI theme: colours taken from the logo (charcoal, black, red) plus blue accents,
+ * Sythix UI theme: colours taken from the logo (charcoal, black, red) plus blue accents,
  * and small drawing helpers shared by the menus and buttons.
  *
  * Only Minecraft's own rendering classes are used here (no direct LWJGL calls), so this
  * code carries over unchanged to a future browser (WebGL) runtime.
  */
-public final class ScythixTheme
+public final class SythixTheme
 {
     /** Master switch for the themed UI. Becomes a user setting with the mod menu. */
     public static boolean enabled = true;
@@ -32,13 +34,13 @@ public final class ScythixTheme
     public static final int TEXT_MUTED = 0xFF9A9AA6;
     public static final int TEXT_DISABLED = 0xFF5C5C66;
 
-    public static final ResourceLocation LOGO = new ResourceLocation("textures/gui/scythix/logo.png");
-    public static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/scythix/background.png");
+    public static final ResourceLocation LOGO = new ResourceLocation("textures/gui/sythix/logo.png");
+    public static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/sythix/background.png");
 
     /** The logo texture is 512x512 with the artwork (376x512) centred horizontally. */
     public static final float LOGO_ASPECT = 376.0F / 512.0F;
 
-    private ScythixTheme()
+    private SythixTheme()
     {
     }
 
@@ -114,7 +116,7 @@ public final class ScythixTheme
         drawRect(right - 1, top + 1, right, bottom - 1, color);
     }
 
-    /** Red-to-blue accent line, the signature ScythiX detail. */
+    /** Red-to-blue accent line, the signature Sythix detail. */
     public static void drawAccentLine(float left, float y, float right, float alpha)
     {
         int a = (int)(255 * alpha);
@@ -239,6 +241,23 @@ public final class ScythixTheme
     public static void drawListBar(float left, float top, float right, float bottom, int alpha)
     {
         drawRect(left, top, right, bottom, withAlpha(BLACK, alpha));
+    }
+
+    /**
+     * Clips drawing to a rectangle in GUI coordinates until endClip is called. This is the only
+     * place that uses raw OpenGL, so a browser build only needs to adapt this method.
+     */
+    public static void beginClip(int left, int top, int right, int bottom)
+    {
+        Minecraft mc = Minecraft.getMinecraft();
+        int factor = new ScaledResolution(mc).getScaleFactor();
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(left * factor, mc.displayHeight - bottom * factor, Math.max(0, (right - left) * factor), Math.max(0, (bottom - top) * factor));
+    }
+
+    public static void endClip()
+    {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     /** Smoothly moves current toward target; speed is in units per second. */

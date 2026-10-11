@@ -1,11 +1,13 @@
-# ScythiX Client
+# Sythix Client
 
-ScythiX Client is a customised PvP client built on top of this Eaglercraft 1.12 source.
+Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 source.
 
-- Client name and version: `src/main/java/net/scythix/client/ScythixClient.java`
-- UI theme (colours, buttons, backgrounds): `src/main/java/net/scythix/client/ui/ScythixTheme.java`
-- Branding textures: `src/main/resources/assets/minecraft/textures/gui/scythix/`
-- To regenerate the textures from the source logo: `python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/scythix` (needs Pillow)
+- Client name and version: `src/main/java/net/sythix/client/SythixClient.java`
+- UI theme (colours, buttons, backgrounds): `src/main/java/net/sythix/client/ui/SythixTheme.java`
+- Branding textures: `src/main/resources/assets/minecraft/textures/gui/sythix/`
+- To regenerate the textures from the source logo: `python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/sythix` (needs Pillow)
+
+**HUD:** FPS, CPS, Ping and Keystrokes. Press **Right Shift** in game (rebindable under Controls > Sythix Client) or use **Sythix HUD Editor** on the main menu to drag elements, scroll to resize, toggle them and change their colours, labels, backgrounds and more. Settings are saved to `sythix/config.json` in the game folder; every setting has a reset button, and **Reset All** restores the defaults.
 
 Build with **JDK 17** (the Gradle 8.0 wrapper does not run on Java 21): `./gradlew clean build`, then `./UnpackRuntime.sh` and run `runtime/run.sh`. The client asks for a username in the terminal before the window opens.
 

@@ -14,15 +14,16 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.WorldServerDemo;
 import net.minecraft.world.storage.ISaveFormat;
 import net.minecraft.world.storage.WorldInfo;
-import net.scythix.client.ScythixClient;
-import net.scythix.client.ui.ScythixTheme;
+import net.sythix.client.SythixClient;
+import net.sythix.client.ui.SythixTheme;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GLContext;
+import net.sythix.client.ui.GuiHudEditor;
 
 /**
- * ScythiX Client main menu: themed background with parallax, the ScythiX logo and themed buttons.
+ * Sythix Client main menu: themed background with parallax, the Sythix logo and themed buttons.
  */
 public class GuiMainMenu extends GuiScreen
 {
@@ -30,7 +31,7 @@ public class GuiMainMenu extends GuiScreen
     private static final String COPYRIGHT_TEXT = "Resources Copyright Mojang AB";
 
     /**
-     * Not drawn by ScythiX. It must stay the first String field: OptiFine's Reflector writes the
+     * Not drawn by Sythix. It must stay the first String field: OptiFine's Reflector writes the
      * splash text into the first String field of this class.
      */
     private String splashText;
@@ -181,10 +182,7 @@ public class GuiMainMenu extends GuiScreen
         this.buttonList.add(new GuiButton(1, this.width / 2 - 100, p_73969_1_, I18n.format("menu.singleplayer")));
         this.buttonList.add(new GuiButton(2, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 1, I18n.format("menu.multiplayer")));
 
-        // Placeholder until the ScythiX mod menu is added
-        GuiButton modsButton = new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, ScythixClient.NAME + " Mods");
-        modsButton.enabled = false;
-        this.buttonList.add(modsButton);
+        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, SythixClient.NAME + " HUD Editor"));
     }
 
     /**
@@ -231,6 +229,11 @@ public class GuiMainMenu extends GuiScreen
         if (button.id == 4)
         {
             this.mc.shutdown();
+        }
+
+        if (button.id == 6)
+        {
+            this.mc.displayGuiScreen(new GuiHudEditor(this));
         }
 
         if (button.id == 11)
@@ -291,27 +294,27 @@ public class GuiMainMenu extends GuiScreen
         float fadeIn = Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 600.0F);
 
         // Background with gentle mouse parallax, darkened at the top and bottom
-        ScythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, 0.0F);
-        ScythixTheme.drawGradientV(0.0F, 0.0F, (float)this.width, (float)this.height * 0.35F, 0x900B0B0E, 0x000B0B0E);
-        ScythixTheme.drawGradientV(0.0F, (float)this.height * 0.7F, (float)this.width, (float)this.height, 0x000B0B0E, 0xC00B0B0E);
+        SythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, 0.0F);
+        SythixTheme.drawGradientV(0.0F, 0.0F, (float)this.width, (float)this.height * 0.35F, 0x900B0B0E, 0x000B0B0E);
+        SythixTheme.drawGradientV(0.0F, (float)this.height * 0.7F, (float)this.width, (float)this.height, 0x000B0B0E, 0xC00B0B0E);
 
         // Logo, gently bobbing; the texture is square with the artwork centred
         float bob = (float)Math.sin((double)(Minecraft.getSystemTime() % 4000L) / 4000.0D * Math.PI * 2.0D) * 1.5F;
-        ScythixTheme.drawTexture(ScythixTheme.LOGO, (float)(this.width - this.logoSize) / 2.0F, (float)this.logoY + bob, (float)this.logoSize, (float)this.logoSize, fadeIn);
+        SythixTheme.drawTexture(SythixTheme.LOGO, (float)(this.width - this.logoSize) / 2.0F, (float)this.logoY + bob, (float)this.logoSize, (float)this.logoSize, fadeIn);
 
         // Footer bar
-        ScythixTheme.drawRect(0.0F, (float)(this.height - 12), (float)this.width, (float)this.height, 0xB00B0B0E);
-        ScythixTheme.drawAccentLine(0.0F, (float)(this.height - 12), (float)this.width, 0.9F);
-        String branding = ScythixClient.getBrandingLine();
+        SythixTheme.drawRect(0.0F, (float)(this.height - 12), (float)this.width, (float)this.height, 0xB00B0B0E);
+        SythixTheme.drawAccentLine(0.0F, (float)(this.height - 12), (float)this.width, 0.9F);
+        String branding = SythixClient.getBrandingLine();
 
         if (this.mc.isDemo())
         {
             branding = branding + " Demo";
         }
 
-        this.drawString(this.fontRenderer, branding, 2, this.height - 10, ScythixTheme.TEXT_MUTED);
+        this.drawString(this.fontRenderer, branding, 2, this.height - 10, SythixTheme.TEXT_MUTED);
         boolean copyrightHovered = mouseX > this.widthCopyrightRest && mouseX < this.widthCopyrightRest + this.widthCopyright && mouseY > this.height - 10 && mouseY < this.height && Mouse.isInsideWindow();
-        this.drawString(this.fontRenderer, COPYRIGHT_TEXT, this.widthCopyrightRest, this.height - 10, copyrightHovered ? ScythixTheme.LIGHT_BLUE : ScythixTheme.TEXT_MUTED);
+        this.drawString(this.fontRenderer, COPYRIGHT_TEXT, this.widthCopyrightRest, this.height - 10, copyrightHovered ? SythixTheme.LIGHT_BLUE : SythixTheme.TEXT_MUTED);
 
         if (this.openGLWarning1 != null && !this.openGLWarning1.isEmpty())
         {

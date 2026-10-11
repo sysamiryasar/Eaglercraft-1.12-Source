@@ -217,13 +217,13 @@ import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.OpenGLException;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
-import net.scythix.client.ScythixClient;
-import net.scythix.client.ui.ScythixTheme;
+import net.sythix.client.SythixClient;
+import net.sythix.client.ui.SythixTheme;
 
 public class Minecraft implements IThreadListener, ISnooperInfo
 {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final ResourceLocation LOCATION_SPLASH_LOGO = ScythixTheme.LOGO;
+    private static final ResourceLocation LOCATION_SPLASH_LOGO = SythixTheme.LOGO;
     public static final boolean IS_RUNNING_ON_MAC = Util.getOSType() == Util.EnumOS.OSX;
 
     /** A 10MiB preallocation to ensure the heap is reasonably sized. */
@@ -609,6 +609,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.effectRenderer = new ParticleManager(this.world, this.renderEngine);
         this.checkGLError("Post startup");
         this.ingameGUI = new GuiIngame(this);
+        SythixClient.init(this);
 
         if (this.serverName != null)
         {
@@ -694,7 +695,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
-        Display.setTitle(ScythixClient.getWindowTitle());
+        Display.setTitle(SythixClient.getWindowTitle());
 
         try
         {
@@ -748,8 +749,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             try
             {
-                inputstream = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/scythix/icon_16.png"));
-                inputstream1 = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/scythix/icon_32.png"));
+                inputstream = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/sythix/icon_16.png"));
+                inputstream1 = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/sythix/icon_32.png"));
 
                 if (inputstream != null && inputstream1 != null)
                 {
@@ -1000,7 +1001,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         try
         {
             inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_SPLASH_LOGO);
-            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("scythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
+            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("sythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
             textureManagerInstance.bindTexture(this.mojangLogo);
         }
         catch (IOException ioexception)
@@ -1012,18 +1013,18 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             IOUtils.closeQuietly(inputstream);
         }
 
-        // ScythiX loading screen: dark gradient, centred logo and a red-to-blue accent line
+        // Sythix loading screen: dark gradient, centred logo and a red-to-blue accent line
         float screenWidth = (float)scaledresolution.getScaledWidth();
         float screenHeight = (float)scaledresolution.getScaledHeight();
-        ScythixTheme.drawGradientV(0.0F, 0.0F, screenWidth, screenHeight, ScythixTheme.CHARCOAL, ScythixTheme.BLACK);
+        SythixTheme.drawGradientV(0.0F, 0.0F, screenWidth, screenHeight, SythixTheme.CHARCOAL, SythixTheme.BLACK);
 
         if (this.mojangLogo != null)
         {
             float logoSize = Math.min(screenHeight * 0.6F, 220.0F);
             float logoX = (screenWidth - logoSize) / 2.0F;
             float logoY = (screenHeight - logoSize) / 2.0F - 8.0F;
-            ScythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
-            ScythixTheme.drawAccentLine(screenWidth / 2.0F - 60.0F, logoY + logoSize + 10.0F, screenWidth / 2.0F + 60.0F, 1.0F);
+            SythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
+            SythixTheme.drawAccentLine(screenWidth / 2.0F - 60.0F, logoY + logoSize + 10.0F, screenWidth / 2.0F + 60.0F, 1.0F);
         }
 
         GlStateManager.disableLighting();
@@ -1139,6 +1140,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         try
         {
             LOGGER.info("Stopping!");
+
+            if (SythixClient.get() != null)
+            {
+                SythixClient.get().save();
+            }
 
             try
             {
@@ -2082,6 +2088,10 @@ public class Minecraft implements IThreadListener, ISnooperInfo
                     {
                         this.displayInGameMenu();
                     }
+                    else if (!Keyboard.isKeyDown(61))
+                    {
+                        SythixClient.get().onKeyPressed(i);
+                    }
 
                     flag1 = Keyboard.isKeyDown(61) && this.processKeyF3(i);
                     this.actionKeyF3 |= flag1;
@@ -2398,6 +2408,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             if (Mouse.getEventButtonState())
             {
+                if (this.currentScreen == null)
+                {
+                    SythixClient.get().onMouseClick(i);
+                }
+
                 if (this.player.isSpectator() && i == 2)
                 {
                     this.ingameGUI.getSpectatorGui().onMiddleClick();

@@ -6,7 +6,7 @@ import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.util.ResourceLocation;
-import net.scythix.client.ui.ScythixTheme;
+import net.sythix.client.ui.SythixTheme;
 
 public class GuiButton extends Gui
 {
@@ -35,7 +35,7 @@ public class GuiButton extends Gui
     public boolean visible;
     protected boolean hovered;
 
-    /** ScythiX: animated hover amount (0..1) and the time of the previous frame. */
+    /** Sythix: animated hover amount (0..1) and the time of the previous frame. */
     private float hoverAnimation;
     private long lastDrawTime;
 
@@ -83,7 +83,7 @@ public class GuiButton extends Gui
      */
     public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks)
     {
-        if (this.visible && ScythixTheme.isEnabled())
+        if (this.visible && SythixTheme.isEnabled())
         {
             this.drawThemedButton(mc, mouseX, mouseY);
         }
@@ -147,7 +147,7 @@ public class GuiButton extends Gui
     }
 
     /**
-     * ScythiX themed look: flat charcoal button with a red/blue hover accent.
+     * Sythix themed look: flat charcoal button with a red/blue hover accent.
      */
     private void drawThemedButton(Minecraft mc, int mouseX, int mouseY)
     {
@@ -155,10 +155,10 @@ public class GuiButton extends Gui
         long now = Minecraft.getSystemTime();
         float seconds = this.lastDrawTime == 0L ? 0.0F : Math.min(0.1F, (float)(now - this.lastDrawTime) / 1000.0F);
         this.lastDrawTime = now;
-        this.hoverAnimation = ScythixTheme.approach(this.hoverAnimation, this.hovered && this.enabled ? 1.0F : 0.0F, 7.0F, seconds);
-        ScythixTheme.drawButton((float)this.x, (float)this.y, (float)this.width, (float)this.height, this.enabled, this.hoverAnimation);
+        this.hoverAnimation = SythixTheme.approach(this.hoverAnimation, this.hovered && this.enabled ? 1.0F : 0.0F, 7.0F, seconds);
+        SythixTheme.drawButton((float)this.x, (float)this.y, (float)this.width, (float)this.height, this.enabled, this.hoverAnimation);
         this.mouseDragged(mc, mouseX, mouseY);
-        this.drawCenteredString(mc.fontRenderer, this.displayString, this.x + this.width / 2, this.y + (this.height - 8) / 2, ScythixTheme.getButtonTextColor(this.enabled, this.hoverAnimation));
+        this.drawCenteredString(mc.fontRenderer, this.displayString, this.x + this.width / 2, this.y + (this.height - 8) / 2, SythixTheme.getButtonTextColor(this.enabled, this.hoverAnimation));
     }
 
     /**
@@ -166,9 +166,9 @@ public class GuiButton extends Gui
      */
     protected void drawSliderKnob(int knobX)
     {
-        if (ScythixTheme.isEnabled())
+        if (SythixTheme.isEnabled())
         {
-            ScythixTheme.drawSliderKnob((float)knobX, (float)this.y, 8.0F, (float)this.height);
+            SythixTheme.drawSliderKnob((float)knobX, (float)this.y, 8.0F, (float)this.height);
         }
         else
         {

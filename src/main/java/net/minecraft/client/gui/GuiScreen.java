@@ -38,7 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-import net.scythix.client.ui.ScythixTheme;
+import net.sythix.client.ui.SythixTheme;
 
 public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 {
@@ -651,9 +651,9 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
      */
     public void drawBackground(int tint)
     {
-        if (ScythixTheme.isEnabled())
+        if (SythixTheme.isEnabled())
         {
-            ScythixTheme.drawBackground(this.width, this.height, -1, -1, 0.55F);
+            SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.55F);
             return;
         }
 

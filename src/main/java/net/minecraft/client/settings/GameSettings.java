@@ -278,6 +278,9 @@ public class GameSettings
     private static final int[] OF_DYNAMIC_LIGHTS = new int[] {3, 1, 2};
     private static final String[] KEYS_DYNAMIC_LIGHTS = new String[] {"options.off", "options.graphics.fast", "options.graphics.fancy"};
     public KeyBinding ofKeyBindZoom;
+
+    /** Opens the Sythix HUD editor. Right Shift by default; rebindable in Controls. */
+    public KeyBinding keyBindSythixMenu = new KeyBinding("key.sythix.menu", 54, "key.categories.sythix");
     private File optionsFileOF;
     private boolean needsResourceRefresh = false;
 
@@ -306,6 +309,7 @@ public class GameSettings
         this.limitFramerate = (int)GameSettings.Options.FRAMERATE_LIMIT.getValueMax();
         this.ofKeyBindZoom = new KeyBinding("of.key.zoom", 46, "key.categories.misc");
         this.keyBindings = (KeyBinding[])ArrayUtils.add(this.keyBindings, this.ofKeyBindZoom);
+        this.keyBindings = (KeyBinding[])ArrayUtils.add(this.keyBindings, this.keyBindSythixMenu);
         GameSettings.Options.RENDER_DISTANCE.setValueMax(32.0F);
         this.renderDistanceChunks = 8;
         this.loadOptions();

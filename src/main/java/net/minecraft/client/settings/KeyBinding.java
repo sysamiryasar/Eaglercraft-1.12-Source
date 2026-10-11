@@ -184,5 +184,6 @@ public class KeyBinding implements Comparable<KeyBinding>
         CATEGORY_ORDER.put("key.categories.multiplayer", Integer.valueOf(5));
         CATEGORY_ORDER.put("key.categories.ui", Integer.valueOf(6));
         CATEGORY_ORDER.put("key.categories.misc", Integer.valueOf(7));
+        CATEGORY_ORDER.put("key.categories.sythix", Integer.valueOf(8));
     }
 }

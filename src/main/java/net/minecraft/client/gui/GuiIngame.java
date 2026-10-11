@@ -62,6 +62,7 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.border.WorldBorder;
+import net.sythix.client.SythixClient;
 
 public class GuiIngame extends Gui
 {
@@ -373,6 +374,9 @@ public class GuiIngame extends Gui
             this.renderScoreboard(scoreobjective1, scaledresolution);
         }
 
+        this.mc.mcProfiler.startSection("sythixHud");
+        SythixClient.get().renderHud(scaledresolution);
+        this.mc.mcProfiler.endSection();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         GlStateManager.disableAlpha();
