@@ -156,6 +156,16 @@ public final class SelfTest
 
     private static void build()
     {
+        if ("anim".equals(System.getProperty("sythix.selftest")))
+        {
+            add("slow animation", 1, () -> set(net.sythix.client.module.performance.AnimationController.class, "Menu Animation Time", "600"));
+            add("open", 4, () -> mc().displayGuiScreen(new GuiModMenu(null)));
+            add("screenshot anim-mid", 20, () -> shot("anim-mid"));
+            add("screenshot anim-end", 1, () -> shot("anim-end"));
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("cosmetics".equals(System.getProperty("sythix.selftest")))
         {
             add("equip", 1, SelfTest::equipCosmetics);

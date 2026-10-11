@@ -1006,6 +1006,13 @@ public final class Hooks
 
     public static void tagChatLines(ITextComponent message, java.util.List<ITextComponent> lines)
     {
+        AnimationController anim = on(AnimationController.class);
+
+        if (anim != null)
+        {
+            anim.onChatLine(lines.size());
+        }
+
         try
         {
             ChatModule module = on(ChatModule.class);
@@ -1268,6 +1275,77 @@ public final class Hooks
             {
                 fail(NotificationsModule.class, "notifications", t);
             }
+        }
+    }
+
+    // ---- Interface animations ----------------------------------------------------------------
+
+    public static boolean beginScreenAnimation(net.minecraft.client.gui.GuiScreen screen, int width, int height)
+    {
+        AnimationController anim = on(AnimationController.class);
+
+        try
+        {
+            return anim != null && anim.beginScreen(screen, width, height);
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "menu animation", t);
+            return false;
+        }
+    }
+
+    public static void endScreenAnimation(boolean pushed, int width, int height)
+    {
+        AnimationController anim = on(AnimationController.class);
+
+        if (anim == null)
+        {
+            if (pushed)
+            {
+                GlStateManager.popMatrix();
+            }
+
+            return;
+        }
+
+        try
+        {
+            anim.endScreen(pushed, width, height);
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "menu animation", t);
+        }
+    }
+
+    public static int hotbarSelectorX(int vanilla)
+    {
+        AnimationController anim = on(AnimationController.class);
+
+        try
+        {
+            return anim == null ? vanilla : anim.hotbarX(vanilla);
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "hotbar", t);
+            return vanilla;
+        }
+    }
+
+    public static float chatSlide(float lineHeight)
+    {
+        AnimationController anim = on(AnimationController.class);
+
+        try
+        {
+            return anim == null ? 0.0F : anim.chatOffset(lineHeight);
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "chat animation", t);
+            return 0.0F;
         }
     }
 

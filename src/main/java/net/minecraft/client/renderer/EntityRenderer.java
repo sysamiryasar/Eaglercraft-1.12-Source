@@ -1409,7 +1409,9 @@ public class EntityRenderer implements IResourceManagerReloadListener
                     }
                     else
                     {
+                        boolean sythixAnim = net.sythix.client.core.Hooks.beginScreenAnimation(this.mc.currentScreen, i1, j1);
                         this.mc.currentScreen.drawScreen(k1, l1, this.mc.getTickLength());
+                        net.sythix.client.core.Hooks.endScreenAnimation(sythixAnim, i1, j1);
                     }
                 }
                 catch (Throwable throwable1)

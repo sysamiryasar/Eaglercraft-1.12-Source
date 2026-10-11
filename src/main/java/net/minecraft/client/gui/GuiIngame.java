@@ -615,7 +615,7 @@ public class GuiIngame extends Gui
             int k = 91;
             this.zLevel = -90.0F;
             this.drawTexturedModalRect(i - 91, sr.getScaledHeight() - 22, 0, 0, 182, 22);
-            this.drawTexturedModalRect(i - 91 - 1 + entityplayer.inventory.currentItem * 20, sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
+            this.drawTexturedModalRect(i - 91 - 1 + net.sythix.client.core.Hooks.hotbarSelectorX(entityplayer.inventory.currentItem * 20), sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
 
             if (!itemstack.isEmpty())
             {

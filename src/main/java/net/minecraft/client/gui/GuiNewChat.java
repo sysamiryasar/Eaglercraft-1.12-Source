@@ -48,7 +48,7 @@ public class GuiNewChat extends Gui
                 float f1 = this.getChatScale();
                 int k = MathHelper.ceil((float)this.getChatWidth() / f1);
                 GlStateManager.pushMatrix();
-                GlStateManager.translate(2.0F, 8.0F, 0.0F);
+                GlStateManager.translate(2.0F, 8.0F + (flag ? 0.0F : net.sythix.client.core.Hooks.chatSlide(9.0F * f1)), 0.0F);
                 GlStateManager.scale(f1, f1, 1.0F);
                 int l = 0;
 
