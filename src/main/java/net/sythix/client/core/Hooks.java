@@ -1279,8 +1279,10 @@ public final class Hooks
     public static void renderNotifications(ScaledResolution res)
     {
         NotificationsModule module = on(NotificationsModule.class);
+        RecordingTools recording = on(RecordingTools.class);
 
-        if (module != null)
+        // A clean recording: no pop-ups in the video
+        if (module != null && !(recording != null && recording.hidesHud() && Minecraft.getMinecraft().world != null))
         {
             try
             {

@@ -236,6 +236,25 @@ public final class SelfTest
             pass("all modules enabled in world");
         });
         add("screenshot in-game-hud", 2, () -> shot("in-game-hud"));
+        add("benchmark", 1, () -> {
+            net.sythix.client.module.performance.Benchmark.start(10, true, "selftest");
+            benchCount = net.sythix.client.module.performance.Benchmark.load().size();
+        });
+        add("benchmark running", 100, () -> shot("benchmark"));
+        add("benchmark wait", 140, () -> {});
+        add("check benchmark", 1, () -> {
+            List<com.google.gson.JsonObject> all = net.sythix.client.module.performance.Benchmark.load();
+            com.google.gson.JsonObject last = all.isEmpty() ? null : all.get(all.size() - 1);
+
+            if (!net.sythix.client.module.performance.Benchmark.isRunning() && last != null && all.size() > benchCount - 1 && last.get("avgFps").getAsDouble() > 0.0D && last.get("lowFps").getAsDouble() <= last.get("avgFps").getAsDouble())
+            {
+                pass("benchmark: " + last.get("avgFps").getAsString() + " FPS avg, " + last.get("lowFps").getAsString() + " 1% low, " + last.get("frames").getAsString() + " frames");
+            }
+            else
+            {
+                fail("benchmark", new IllegalStateException("running=" + net.sythix.client.module.performance.Benchmark.isRunning() + " results=" + all));
+            }
+        });
         add("events", 20, SelfTest::events);
         add("settings in world", 40, () -> exerciseSettings(false));
         add("hud previews", 1, SelfTest::hudPreviews);
@@ -279,6 +298,8 @@ public final class SelfTest
             mc().loadWorld(null);
             mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
         });
+        add("replay tests", 1, () -> {});
+        replaySteps();
         add("final report", 20, () -> {
             pass("left the world and returned to the main menu");
             report();
@@ -287,6 +308,7 @@ public final class SelfTest
     }
 
     private static File replayFile;
+    private static int benchCount;
     private static int replayStage;
 
     /** Records a short singleplayer session, then plays it back and checks it. */

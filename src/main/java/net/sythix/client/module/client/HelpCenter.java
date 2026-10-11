@@ -52,17 +52,26 @@ public class HelpCenter extends Module
             "# Using packs\n"
             + "Texture Pack Manager lists your packs and lets you turn them on and off, change their order and mark favourites. Put .zip packs in the resourcepacks folder.\n\n"
             + "# Modern (1.21) textures\n"
-            + "This client runs Minecraft 1.12.2. It can show newer-looking textures for blocks, items and mobs that exist in 1.12 by using a resource pack made for 1.12 that copies the modern art (search for \"1.12 modern textures\" or \"programmer art\" alternatives, and check the pack's licence).\n\n"
-            + "What a pack cannot do: add blocks, mobs, items or terrain that do not exist in 1.12 (cherry trees, copper, the Warden, 1.18 cave generation...). Those need a different Minecraft version and server, so they are not part of Sythix.\n\n"
+            + "Put a resource pack made for Minecraft 1.13-1.21 (for example the 1.21 default textures, or any modern pack you are allowed to use) in the resourcepacks folder. Open Texture Pack Manager > Modern Pack Converter, pick the pack and press Convert. Sythix renames its block, item, mob and interface textures to the 1.12 names and saves \"NAME (1.12).zip\". Turn that pack on and blocks, items and mobs that exist in 1.12 get the modern look.\n\n"
+            + "Textures for things 1.12 does not have (cherry wood, copper, the Warden...) and textures whose layout changed are left out, so nothing shows up broken. New blocks, mobs and terrain cannot appear in 1.12 worlds: servers running 1.12 never send them.\n\n"
             + "# Compatibility\n"
-            + "Packs made for newer versions use different file names and usually show missing (purple/black) textures. Use packs made for pack_format 3 (1.11-1.12)."},
+            + "Unconverted packs made for newer versions show missing (purple/black) textures. Convert them first, or use packs made for pack_format 3 (1.11-1.12)."},
+        {"Recording and replays", "Videos, replays and screenshots",
+            "# Video\n"
+            + "Turn on Recording Tools and press its Recording Mode key (or button). With Built-in Recorder on, Sythix saves an .avi video in the recordings folder - no OBS needed. Sound is not recorded; use OBS if you need it.\n\n"
+            + "# Replays\n"
+            + "In Replay System set Record Replays (for example Everything). Each session is then saved from the moment you join. Open Replays to watch one: you fly around freely while everything happens again. P pauses, Left/Right jump 10 seconds, [ and ] change the speed, M jumps to the next marker (your bookmarks). Esc > Disconnect leaves the replay.\n\n"
+            + "# Screenshots\n"
+            + "Screenshot Manager names your screenshots and has a gallery."},
         {"Performance tips", "More FPS",
             "# Quick wins\n"
             + "Turn on Performance Optimizer, lower render distance, set graphics to Fast and turn off clouds. Particle Controller and Animation Controller can remove effects you do not need.\n\n"
             + "# Sythix Settings\n"
             + "Options > Sythix Settings has every video option in one place, including the OptiFine details and quality options.\n\n"
             + "# Measuring\n"
-            + "Performance Monitor shows FPS, frame time and memory. Diagnostics shows your graphics card and Java version."},
+            + "Performance Optimizer > Run Benchmark measures your average FPS and 1% low FPS. Change one setting, run it again and compare in Benchmark Results. Performance Monitor shows FPS, frame time and memory live.\n\n"
+            + "# Adaptive render distance\n"
+            + "Turn it on in Performance Optimizer and set a Target FPS: the render distance drops when the game struggles and goes back up when it can."},
         {"Multiplayer", "Servers, friends and parties",
             "# Server Manager\n"
             + "Favourites, folders, notes and icons for your servers. Open it from the Multiplayer screen.\n\n"
@@ -83,7 +92,7 @@ public class HelpCenter extends Module
             + "Diagnostics > Copy puts a report on your clipboard that you can share. It contains no account details or passwords."},
         {"Privacy", "What Sythix stores and sends",
             "# Stored on your computer\n"
-            + "Settings (sythix/config.json), profiles, backups, waypoints, statistics, screenshots and your local profile (name, skin and cape files).\n\n"
+            + "Settings (sythix/config.json), profiles, backups, waypoints, statistics, screenshots, videos (recordings), replays and your local profile (name, skin and cape files). Replays contain everything the server sent during that session, including chat - be careful who you share them with.\n\n"
             + "# Sent over the internet\n"
             + "Nothing by default. Update Manager only checks a URL if you turn it on and enter one. Cosmetics, friends and parties are visible only to you.\n\n"
             + "# Streamer mode\n"

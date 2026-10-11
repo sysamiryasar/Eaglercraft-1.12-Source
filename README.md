@@ -25,15 +25,24 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 | I. Client | Keybind Manager, Profile Manager, Settings Manager, Search and Discovery, Accessibility, Help Center |
 | J. Advanced | Diagnostics, Error Handler, Safe Mode, Update Manager, Plugin Framework, Developer Tools, Privacy Controls, Browser Compatibility, Localization |
 
-Honest limits:
-- **Recording Tools** prepares the game for OBS etc. (REC indicator, clean view, FPS lock) but does not record video itself. **Replay System** stores bookmarks and a timeline, not playable replays.
-- **Modern (1.21) look:** Sythix runs Minecraft 1.12.2. Resource packs made for 1.12 can give existing blocks, items and mobs a newer look, but blocks, mobs, items and terrain that do not exist in 1.12 cannot be added by a client.
-- **Browser:** this source builds the desktop client only; there is no web build yet.
+## Phase 6 highlights
+
+- **Performance:** a benchmark that measures your average FPS and 1% low FPS (results history in *Benchmark Results*), an adaptive render distance that holds a target FPS, dynamic chunk updates and a memory clean-up.
+- **Cosmetics** (Profile screen or the Cosmetics module): hats (top hat, crown, halo, horns, cat ears, witch hat, cap), shoulder buddies (slime, cube, ghost), particle auras or trails, four wing styles, animated capes (Chroma Flow, Ember, Galaxy) and seven emotes.
+- **Animations** (Animation Controller): menu open animations (fade, slide or zoom), a smooth hotbar and smooth chat. Accessibility > Reduced Motion turns them off.
+- **Modern textures:** *Texture Pack Manager > Modern Pack Converter* turns a 1.13-1.21 resource pack into a 1.12 pack, so blocks, items and mobs that exist in 1.12 get the modern look.
+- **Video recording:** Recording Tools saves `.avi` videos to `recordings/` by itself (video only; use OBS if you also need sound).
+- **Replays:** Replay System records your sessions to `replays/` and plays them back with a free camera, pause, 0.25x-8x speed, seeking and bookmark markers.
+
+What is still not possible, and why:
+- **New 1.21 blocks, mobs and terrain** cannot appear in 1.12 worlds: servers running 1.12 never send them, and adding them would break joining normal servers. The pack converter gives everything that exists in 1.12 the modern look.
+- **Sound in videos:** the game's audio output cannot be captured from inside the game; record with OBS if you need sound.
+- **Browser:** this source builds the desktop client only. A web build is part of Phase 7.
 - **Update Manager** and **Plugin Framework** are off by default and only do something if you set them up.
 
 ## Files
 
-Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `profile.json`, `skins/`, `capes/` and `plugins/`. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.
+Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `profile.json`, `skins/`, `capes/`, `plugins/` and `benchmarks.json`. Videos go to `recordings/` and replays to `replays/` in the game folder. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.
 
 ## Building
 
