@@ -1,15 +1,47 @@
 # Sythix Client
 
-Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 source.
+Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 source (desktop Java build, OptiFine included). It has no cheats: every module is visual, informational or a comfort feature.
 
-- Client name and version: `src/main/java/net/sythix/client/SythixClient.java`
-- UI theme (colours, buttons, backgrounds): `src/main/java/net/sythix/client/ui/SythixTheme.java`
-- Branding textures: `src/main/resources/assets/minecraft/textures/gui/sythix/`
-- To regenerate the textures from the source logo: `python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/sythix` (needs Pillow)
+## Using it
 
-**HUD:** FPS, CPS, Ping and Keystrokes. Press **Right Shift** in game (rebindable under Controls > Sythix Client) or use **Sythix HUD Editor** on the main menu to drag elements, scroll to resize, toggle them and change their colours, labels, backgrounds and more. Settings are saved to `sythix/config.json` in the game folder; every setting has a reset button, and **Reset All** restores the defaults.
+- **Mod menu:** press **Right Shift** in game (rebind it in Controls or the Keybind Manager) or click **Sythix Mods** on the main menu. Search, filter by category or favourites, switch modules on/off and click the gear for settings. Every setting has a description and its own reset arrow.
+- **HUD editor:** button in the mod menu. Drag elements, scroll to resize, click one to edit it. Hold Shift to place freely.
+- **Sythix Settings:** Options > *Sythix Settings...* (replaces the Snooper button). All video, OptiFine detail/quality/animation/performance options in one tabbed screen.
+- **Profile:** **Profile** on the main menu. Change your offline name, skin (put PNGs in `sythix/skins`), model (classic/slim) and cape (built-in or your own PNG in `sythix/capes`). Skins and capes are shown on your screen only.
+- **Help Center** (mod menu > Client) has guides and troubleshooting.
 
-Build with **JDK 17** (the Gradle 8.0 wrapper does not run on Java 21): `./gradlew clean build`, then `./UnpackRuntime.sh` and run `runtime/run.sh`. The client asks for a username in the terminal before the window opens.
+## The 65 modules
+
+| Section | Modules |
+|---|---|
+| A. Performance | Performance Optimizer, Animation Controller, Particle Controller, Graphics Controller, Resource Manager, Performance Monitor |
+| B. PvP & combat | Keystrokes, CPS Counter, Crosshair, Combat HUD, Combat Animations, Viewmodel, Armor HUD, Potion HUD, Combat Timers, Movement Controls |
+| C. Movement | Camera Tools (zoom, freelook, perspective), Movement HUD, Coordinates HUD, Compass HUD, Waypoints (one module with a manager screen) |
+| D. Inventory | Inventory HUD, Item Counters, Item Information, Inventory Enhancements, World Information |
+| E. HUD & interface | HUD Editor, Scoreboard, Tab List, Chat, Notifications, Array List, Interface Theme, Main Menu |
+| F. Visuals | Environment Visuals, Block Visuals, Texture Pack Manager, Cosmetics, Sound Controller |
+| G. Multiplayer | Server Manager, Connection Monitor, Friends Manager, Party Tools, Server Profiles, Chat Utilities |
+| H. Recording & stats | Screenshot Manager, Recording Tools, Replay System, Statistics Tracker, Practice Tools |
+| I. Client | Keybind Manager, Profile Manager, Settings Manager, Search and Discovery, Accessibility, Help Center |
+| J. Advanced | Diagnostics, Error Handler, Safe Mode, Update Manager, Plugin Framework, Developer Tools, Privacy Controls, Browser Compatibility, Localization |
+
+Honest limits:
+- **Recording Tools** prepares the game for OBS etc. (REC indicator, clean view, FPS lock) but does not record video itself. **Replay System** stores bookmarks and a timeline, not playable replays.
+- **Modern (1.21) look:** Sythix runs Minecraft 1.12.2. Resource packs made for 1.12 can give existing blocks, items and mobs a newer look, but blocks, mobs, items and terrain that do not exist in 1.12 cannot be added by a client.
+- **Browser:** this source builds the desktop client only; there is no web build yet.
+- **Update Manager** and **Plugin Framework** are off by default and only do something if you set them up.
+
+## Files
+
+Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `profile.json`, `skins/`, `capes/` and `plugins/`. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.
+
+## Building
+
+Build with **JDK 17** (the Gradle 8.0 wrapper does not run on Java 21): `./gradlew clean build`, then `./UnpackRuntime.sh` and run `runtime/run.sh`.
+
+Developers can run the automatic test with `JAVA_OPTS="-Dsythix.selftest=true" runtime/run.sh`. It switches on every module, changes all settings, opens every screen on the menu and in a test world, saves screenshots and writes the result to `sythix/selftest.txt`, then quits.
+
+Source layout: `src/main/java/net/sythix/client/` (`module/` = modules by section, `ui/` = menus and theme, `core/Hooks.java` = the small entry points called from Minecraft's code). Branding textures are in `src/main/resources/assets/minecraft/textures/gui/sythix/`; regenerate them with `python3 branding/make_assets.py branding/logo-source.webp src/main/resources/assets/minecraft/textures/gui/sythix` (needs Pillow).
 
 ---
 

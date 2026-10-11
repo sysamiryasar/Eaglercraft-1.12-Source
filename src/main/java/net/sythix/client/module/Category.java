@@ -12,7 +12,7 @@ public enum Category
     INTERFACE("HUD & Interface"),
     VISUALS("Visuals"),
     MULTIPLAYER("Multiplayer"),
-    RECORDING("Recording & Stats"),
+    RECORDING("Rec & Stats"),
     CLIENT("Client"),
     ADVANCED("Advanced");
 
