@@ -144,6 +144,8 @@ public class NetworkManager extends SimpleChannelInboundHandler < Packet<? >>
 
     protected void channelRead0(ChannelHandlerContext p_channelRead0_1_, Packet<?> p_channelRead0_2_) throws Exception
     {
+        net.sythix.client.core.Hooks.onPacket();
+
         if (this.channel.isOpen())
         {
             try

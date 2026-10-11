@@ -74,7 +74,9 @@ public final class ProfileStore
 
         if (!isValidName(name))
         {
+            // First launch: pick a name and remember it so it stays the same
             name = "Player" + (100 + new Random().nextInt(900));
+            save();
         }
     }
 

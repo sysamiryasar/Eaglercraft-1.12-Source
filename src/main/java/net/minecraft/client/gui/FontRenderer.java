@@ -636,6 +636,8 @@ public class FontRenderer implements IResourceManagerReloadListener
      */
     private int renderString(String text, float x, float y, int color, boolean dropShadow)
     {
+        text = net.sythix.client.core.Hooks.filterText(text);
+
         if (text == null)
         {
             return 0;
@@ -674,6 +676,8 @@ public class FontRenderer implements IResourceManagerReloadListener
      */
     public int getStringWidth(String text)
     {
+        text = net.sythix.client.core.Hooks.filterText(text);
+
         if (text == null)
         {
             return 0;

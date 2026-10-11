@@ -13,6 +13,11 @@ import net.sythix.client.SythixClient;
 import net.sythix.client.module.Module;
 import net.sythix.client.module.ModuleManager;
 import net.sythix.client.module.hud.HudModule;
+import net.sythix.client.module.multiplayer.ConnectionMonitor;
+import net.sythix.client.module.multiplayer.FriendsManager;
+import net.sythix.client.module.multiplayer.ServerManagerModule;
+import net.sythix.client.module.advanced.PrivacyControls;
+import net.minecraft.client.multiplayer.ServerData;
 import net.sythix.client.module.visuals.BlockVisuals;
 import net.sythix.client.module.visuals.CosmeticsModule;
 import net.sythix.client.module.visuals.EnvironmentVisuals;
@@ -49,6 +54,7 @@ import net.sythix.client.module.pvp.MovementControls;
 import net.sythix.client.module.pvp.PotionHud;
 import net.sythix.client.module.pvp.ViewmodelModule;
 import net.sythix.client.ui.GuiHudEditor;
+import net.sythix.client.ui.SythixTheme;
 import net.sythix.client.ui.GuiModMenu;
 
 /**
@@ -551,6 +557,13 @@ public final class Hooks
 
     public static int tabRow(int vanilla, String playerName)
     {
+        FriendsManager friends = on(FriendsManager.class);
+
+        if (friends != null && friends.highlightTab() && friends.isFriend(playerName))
+        {
+            return SythixTheme.withAlpha(friends.getColor(), 0x50);
+        }
+
         TabListModule tab = on(TabListModule.class);
         return tab == null ? vanilla : tab.rowColor(playerName);
     }
@@ -869,5 +882,41 @@ public final class Hooks
     {
         BlockVisuals visuals = on(BlockVisuals.class);
         return visuals == null ? null : visuals.fillColor();
+    }
+
+    // ---- Multiplayer ----------------------------------------------------------------------------
+
+    public static String serverName(ServerData data)
+    {
+        ServerManagerModule manager = on(ServerManagerModule.class);
+        return manager == null ? data.serverName : manager.decorateName(data);
+    }
+
+    public static String nametag(Entity entity, String text)
+    {
+        FriendsManager friends = on(FriendsManager.class);
+
+        if (friends != null && friends.highlightNames() && entity instanceof EntityPlayer && friends.isFriend(entity.getName()))
+        {
+            return "\u00a7b\u2605 \u00a7r" + text;
+        }
+
+        return text;
+    }
+
+    public static void onPacket()
+    {
+        ConnectionMonitor monitor = on(ConnectionMonitor.class);
+
+        if (monitor != null)
+        {
+            monitor.onPacket();
+        }
+    }
+
+    /** Streamer mode: replaces your name in text drawn on screen. */
+    public static String filterText(String text)
+    {
+        return SythixClient.get() == null ? text : PrivacyControls.filterText(text);
     }
 }

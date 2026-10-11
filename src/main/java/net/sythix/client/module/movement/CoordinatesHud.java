@@ -56,6 +56,11 @@ public class CoordinatesHud extends TextHudModule
         }
     }
 
+    public boolean shouldRender()
+    {
+        return !net.sythix.client.module.advanced.PrivacyControls.hideCoords();
+    }
+
     protected List<String[]> getLines()
     {
         Entity e = this.mc.getRenderViewEntity();

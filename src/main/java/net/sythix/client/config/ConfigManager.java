@@ -17,7 +17,7 @@ import org.apache.logging.log4j.Logger;
 public class ConfigManager
 {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final int VERSION = 1;
+    private static final int VERSION = ConfigMigration.CURRENT;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private final ConfigStorage storage;
     private final ModuleManager modules;
@@ -40,7 +40,21 @@ public class ConfigManager
                 return;
             }
 
-            JsonObject root = new JsonParser().parse(text).getAsJsonObject();
+            this.apply(text);
+            LOGGER.info("[Sythix] Config loaded");
+        }
+        catch (Exception e)
+        {
+            // A broken file must never stop the game from starting; defaults are used instead
+            LOGGER.error("[Sythix] Could not read config, using defaults", e);
+        }
+    }
+
+    /** Applies settings from JSON text (used for loading, profiles, backups and imports). */
+    public void apply(String text)
+    {
+        {
+            JsonObject root = ConfigMigration.migrate(new JsonParser().parse(text).getAsJsonObject());
 
             if (root.has("theme") && root.get("theme").isJsonObject())
             {
@@ -66,17 +80,23 @@ public class ConfigManager
                     }
                 }
             }
-
-            LOGGER.info("[Sythix] Config loaded");
-        }
-        catch (Exception e)
-        {
-            // A broken file must never stop the game from starting; defaults are used instead
-            LOGGER.error("[Sythix] Could not read config, using defaults", e);
         }
     }
 
     public void save()
+    {
+        try
+        {
+            this.storage.write(this.toJsonString());
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("[Sythix] Could not save config", e);
+        }
+    }
+
+    /** All settings as pretty JSON text. */
+    public String toJsonString()
     {
         JsonObject root = new JsonObject();
         root.addProperty("version", Integer.valueOf(VERSION));
@@ -91,14 +111,6 @@ public class ConfigManager
         }
 
         root.add("modules", saved);
-
-        try
-        {
-            this.storage.write(this.gson.toJson(root));
-        }
-        catch (Exception e)
-        {
-            LOGGER.error("[Sythix] Could not save config", e);
-        }
+        return this.gson.toJson(root);
     }
 }
