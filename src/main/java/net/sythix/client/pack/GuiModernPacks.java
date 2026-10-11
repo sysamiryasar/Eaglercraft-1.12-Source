@@ -27,7 +27,7 @@ public class GuiModernPacks extends GuiListScreen
 
     protected String header()
     {
-        return this.working ? "Converting..." : "Packs for 1.13-1.21 in your resourcepacks folder. Convert one, then enable \"(1.12)\" in Pack Manager.";
+        return this.working ? "Converting..." : "1.13-1.21 packs, or your own Minecraft 1.21 install. Convert one, then enable \"(1.12)\" in Pack Manager.";
     }
 
     protected List<Row> rows()
@@ -52,20 +52,71 @@ public class GuiModernPacks extends GuiListScreen
 
             for (File f : files)
             {
-                if ((f.isDirectory() || f.getName().endsWith(".zip")) && ModernPackConverter.isModern(f))
+                if ((f.isDirectory() || f.getName().endsWith(".zip") || f.getName().endsWith(".jar")) && ModernPackConverter.isModern(f))
                 {
-                    boolean done = new File(this.dir(), f.getName().replaceAll("\\.zip$", "") + " (1.12).zip").isFile();
-                    rows.add(new Row(f.getName(), f.getName(), "pack format " + ModernPackConverter.packFormat(f), done ? "converted" : "", done ? 0xFF40D060 : SythixTheme.RED));
+                    rows.add(this.row(f, "pack format " + ModernPackConverter.packFormat(f)));
                 }
             }
+        }
+
+        // Minecraft versions installed with the official launcher (your own copy)
+        for (File jar : installedVersions())
+        {
+            rows.add(this.row(jar, "Minecraft installation: " + jar.getParent()));
         }
 
         return rows;
     }
 
+    private Row row(File f, String subtitle)
+    {
+        String out = f.getName().endsWith(".jar") ? "Minecraft " + f.getName().replaceAll("\\.jar$", "") + " textures (1.12).zip" : f.getName().replaceAll("\\.zip$", "") + " (1.12).zip";
+        boolean done = new File(this.dir(), out).isFile();
+        return new Row(f, f.getName(), subtitle, done ? "converted" : "", done ? 0xFF40D060 : SythixTheme.RED);
+    }
+
+    /** Version jars 1.13 and newer in the usual Minecraft folders. */
+    static List<File> installedVersions()
+    {
+        List<File> jars = new ArrayList<File>();
+        String home = System.getProperty("user.home", "");
+        String appData = System.getenv("APPDATA");
+        File[] roots = new File[] {appData == null ? null : new File(appData, ".minecraft"), new File(home, "Library/Application Support/minecraft"), new File(home, ".minecraft")};
+
+        for (File root : roots)
+        {
+            File[] versions = root == null ? null : new File(root, "versions").listFiles();
+
+            if (versions == null)
+            {
+                continue;
+            }
+
+            for (File v : versions)
+            {
+                File jar = new File(v, v.getName() + ".jar");
+                String[] parts = v.getName().split("[.\\-]");
+
+                try
+                {
+                    if (jar.isFile() && parts.length >= 2 && Integer.parseInt(parts[0]) == 1 && Integer.parseInt(parts[1]) >= 13)
+                    {
+                        jars.add(jar);
+                    }
+                }
+                catch (NumberFormatException ignored)
+                {
+                    // Snapshots and modded versions are skipped
+                }
+            }
+        }
+
+        return jars;
+    }
+
     protected String emptyText()
     {
-        return "No modern packs found. Put a 1.13+ pack (.zip) in the resourcepacks folder.";
+        return "Nothing found. Put a 1.13+ pack (.zip) or a Minecraft 1.21 .jar in the resourcepacks folder.";
     }
 
     protected String[] buttons()
@@ -87,7 +138,7 @@ public class GuiModernPacks extends GuiListScreen
     {
         if (index == 0)
         {
-            File pack = new File(this.dir(), (String)this.selected);
+            File pack = (File)this.selected;
             this.working = true;
             // Big packs take a few seconds; convert off the game thread
             Thread thread = new Thread(() -> {

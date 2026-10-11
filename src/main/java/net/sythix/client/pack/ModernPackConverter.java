@@ -54,6 +54,15 @@ public final class ModernPackConverter
     private static final Map<String, String> ITEMS = new HashMap<String, String>();
     private static final Map<String, String> OTHER = new HashMap<String, String>();
 
+    /**
+     * Sythix's own 1.21 blocks drawn with hand-made models: the real 1.21 textures for these use a
+     * different layout, so the generated ones are kept.
+     */
+    private static final Set<String> CUSTOM_LAYOUT = new HashSet<String>(Arrays.asList("lantern", "soul_lantern", "chain", "campfire_log", "campfire_fire", "soul_campfire_fire",
+        "stonecutter_saw", "stonecutter_top", "stonecutter_side", "composter_top", "composter_side", "composter_bottom", "composter_compost", "composter_ready", "sculk_sensor_tendril",
+        "sculk_sensor_top", "sculk_sensor_side", "scaffolding_top", "scaffolding_side", "bamboo_stalk", "sea_pickle", "conduit", "grindstone_side", "grindstone_pivot",
+        "trial_spawner_side", "trial_spawner_top", "ominous_trial_spawner_side", "ominous_trial_spawner_top", "vault_side", "vault_top", "pink_petals", "kelp", "honey_block_side", "honey_block_top"));
+
     /** Paths whose image layout changed after 1.12 although the file name stayed the same. */
     private static final String[] CHANGED_LAYOUT = new String[] {"textures/entity/chest/", "textures/entity/villager/", "textures/entity/zombie_villager/", "textures/entity/bed/", "textures/entity/cat/", "textures/entity/illager/", "textures/entity/horse/", "textures/entity/llama/", "textures/entity/cow/", "textures/entity/pig/", "textures/entity/chicken", "textures/entity/sheep/", "textures/entity/wolf/", "textures/gui/container/creative_inventory/", "textures/gui/widgets.png", "textures/gui/icons.png", "textures/gui/container/inventory.png", "textures/gui/advancements/"};
 
@@ -265,9 +274,12 @@ public final class ModernPackConverter
                 {
                     ZipEntry entry = e.nextElement();
 
-                    if (!entry.isDirectory())
+                    String name = entry.getName().replace('\\', '/');
+
+                    // a Minecraft .jar also holds thousands of .class files: only resources matter
+                    if (!entry.isDirectory() && (name.startsWith("assets/") || name.startsWith("pack.")))
                     {
-                        map.put(entry.getName().replace('\\', '/'), IOUtils.toByteArray(zip.getInputStream(entry)));
+                        map.put(name, IOUtils.toByteArray(zip.getInputStream(entry)));
                     }
                 }
             }
@@ -391,6 +403,21 @@ public final class ModernPackConverter
         {
             result = OTHER.get(png);
         }
+        else if (png.startsWith("textures/entity/equipment/humanoid/") || png.startsWith("textures/entity/equipment/humanoid_leggings/"))
+        {
+            // 1.21.2+ armour: equipment/humanoid/NAME.png = layer 1, humanoid_leggings = layer 2
+            boolean legs = png.startsWith("textures/entity/equipment/humanoid_leggings/");
+            String material = png.substring(png.lastIndexOf('/') + 1, png.length() - 4);
+            material = material.equals("chainmail") ? "chainmail" : material;
+            String target = "textures/models/armor/" + material + "_layer_" + (legs ? 2 : 1) + ".png";
+            result = exists(target) ? target : null;
+        }
+        else if (png.startsWith("textures/entity/boat/") && png.indexOf('/', 21) < 0 && !png.contains("boat_"))
+        {
+            String wood = png.substring(21, png.length() - 4);
+            String target = "textures/entity/boat/boat_" + (wood.equals("dark_oak") ? "darkoak" : wood) + ".png";
+            result = exists(target) ? target : null;
+        }
         else if (png.startsWith("textures/block/") || png.startsWith("textures/item/"))
         {
             boolean block = png.startsWith("textures/block/");
@@ -463,7 +490,12 @@ public final class ModernPackConverter
     {
         Result result = new Result();
         Map<String, byte[]> files = entries(pack);
-        String base = pack.getName().replaceAll("\\.zip$", "");
+        String base = pack.getName().replaceAll("\\.(zip|jar)$", "");
+
+        if (pack.getName().endsWith(".jar"))
+        {
+            base = "Minecraft " + base + " textures";
+        }
         result.output = new File(resourcePackDir, base + " (1.12).zip");
         Set<String> written = new HashSet<String>();
 
@@ -492,6 +524,12 @@ public final class ModernPackConverter
                 }
 
                 boolean png = target.endsWith(".png");
+                String fileBase = target.substring(target.lastIndexOf('/') + 1).replace(".png.mcmeta", "").replace(".png", "");
+
+                if (CUSTOM_LAYOUT.contains(fileBase) && target.startsWith("textures/blocks/"))
+                {
+                    continue;
+                }
 
                 if (changedLayout(target) || png && !sameShape(target, e.getValue()))
                 {

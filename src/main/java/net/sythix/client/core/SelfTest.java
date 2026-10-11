@@ -887,7 +887,9 @@ public final class SelfTest
                 {"textures/block/oak_planks.png", "16x16"}, {"textures/block/wheat_stage3.png", "16x16"}, {"textures/block/grass_block_top.png", "16x16"},
                 {"textures/block/red_wool.png", "16x16"}, {"textures/block/light_gray_concrete.png", "16x16"}, {"textures/block/stone.png", "16x48"},
                 {"textures/block/cherry_planks.png", "16x16"}, {"textures/item/golden_sword.png", "16x16"}, {"textures/item/netherite_sword.png", "16x16"},
-                {"textures/entity/creeper/creeper.png", "64x32"}, {"textures/entity/chest/normal.png", "64x64"}, {"textures/block/spruce_log_top.png", "32x32"}};
+                {"textures/entity/creeper/creeper.png", "64x32"}, {"textures/entity/chest/normal.png", "64x64"}, {"textures/block/spruce_log_top.png", "32x32"},
+                {"textures/entity/equipment/humanoid/netherite.png", "64x32"}, {"textures/entity/equipment/humanoid_leggings/gold.png", "64x32"}, {"textures/entity/boat/cherry.png", "128x64"},
+                {"textures/block/lantern.png", "16x16"}, {"textures/block/future_block_from_2030.png", "16x16"}};
 
             try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(pack)))
             {
@@ -925,7 +927,8 @@ public final class SelfTest
             }
 
             String[] expected = new String[] {"blocks/planks_oak.png", "blocks/wheat_stage_3.png", "blocks/grass_top.png", "blocks/wool_colored_red.png", "blocks/concrete_silver.png",
-                "blocks/stone.png", "blocks/stone.png.mcmeta", "items/gold_sword.png", "entity/creeper/creeper.png", "blocks/log_spruce_top.png"};
+                "blocks/stone.png", "blocks/stone.png.mcmeta", "items/gold_sword.png", "entity/creeper/creeper.png", "blocks/log_spruce_top.png",
+                "blocks/cherry_planks.png", "items/netherite_sword.png", "models/armor/netherite_layer_1.png", "models/armor/gold_layer_2.png", "entity/boat/boat_cherry.png"};
             List<String> missing = new ArrayList<String>();
 
             for (String x : expected)
@@ -936,9 +939,9 @@ public final class SelfTest
                 }
             }
 
-            boolean noChest = !names.contains("assets/minecraft/textures/entity/chest/normal.png");
+            boolean noChest = !names.contains("assets/minecraft/textures/entity/chest/normal.png") && !names.contains("assets/minecraft/textures/blocks/lantern.png");
 
-            if (missing.isEmpty() && noChest && r.converted == 9 && r.skippedNew == 2 && r.skippedLayout == 1 && names.contains("pack.mcmeta"))
+            if (missing.isEmpty() && noChest && r.converted == 14 && r.skippedNew == 1 && r.skippedLayout == 1 && names.contains("pack.mcmeta"))
             {
                 pass("modern pack converter (" + String.join(" ", r.notes) + ")");
             }
