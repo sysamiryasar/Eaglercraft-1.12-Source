@@ -437,6 +437,8 @@ public class EntityList
         // Sythix: projectiles of the extra 1.21 items
         register(400, "sythix_trident", net.sythix.modern.entity.EntityThrownTrident.class, "SythixTrident");
         register(401, "sythix_wind_charge", net.sythix.modern.entity.EntityWindCharge.class, "SythixWindCharge");
+        // Sythix: mobs from Minecraft 1.13-1.21 (ids 402+)
+        net.sythix.modern.mob.ModernMobs.register();
         KNOWN_TYPES.add(LIGHTNING_BOLT);
     }
 
@@ -468,6 +470,13 @@ public class EntityList
 
             OLD_NAMES.set(id, oldName);
         }
+    }
+
+    /** Sythix: registers an extra mob with a spawn egg. */
+    public static void registerSythix(int id, String name, Class <? extends Entity > clazz, String oldName, int primaryColor, int secondaryColor)
+    {
+        register(id, name, clazz, oldName);
+        addSpawnInfo(name, primaryColor, secondaryColor);
     }
 
     protected static EntityList.EntityEggInfo addSpawnInfo(String id, int primaryColor, int secondaryColor)

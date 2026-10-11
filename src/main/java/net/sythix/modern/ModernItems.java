@@ -140,6 +140,12 @@ public final class ModernItems
             SoundEvent.REGISTRY.register(1000 + BY_NAME.size(), id, sound);
             add("music_disc_" + disc, new MRecord(disc, sound), CreativeTabs.MISC);
         }
+
+        // ---- Mob drops (added after the discs so older item ids stay the same) ----
+        plain("turtle_scute", mat);
+        plain("armadillo_scute", mat);
+        plain("glow_ink_sac", mat);
+        plain("goat_horn", CreativeTabs.MISC);
     }
 
     public static final String[] DISCS = new String[] {"otherside", "5", "pigstep", "relic", "creator", "creator_music_box", "precipice"};

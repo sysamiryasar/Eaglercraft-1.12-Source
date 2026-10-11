@@ -972,6 +972,205 @@ def effects_lang():
         f.write(text.rstrip("\n") + "\n" + "\n".join(lines) + "\n")
 
 
+# ---- part 5: mobs ------------------------------------------------------------------------------
+
+# Mobs that reuse a 1.12 model get a recoloured copy of that mob's 1.12 texture.
+MOB_RECOLOURS = {
+    "drowned": ("zombie/zombie", "hue", (0.13, 0.9, 0.95)),
+    "piglin": ("zombie_pigman", "hue", (0.03, 1.15, 1.08)),
+    "piglin_brute": ("zombie_pigman", "hue", (0.0, 1.0, 0.7)),
+    "bogged": ("skeleton/skeleton", "colour", (150, 165, 110)),
+    "pillager": ("illager/vindicator", "hue", (0.0, 0.6, 0.8)),
+    "zombie_nautilus": ("guardian", "hue", (0.35, 0.7, 0.85)),
+    "glow_squid": ("squid", "colour", (60, 200, 190)),
+    "trader_llama": ("llama/llama_creamy", "colour", (215, 185, 135)),
+    "camel": ("horse/horse_white", "colour", (220, 175, 105)),
+    "ravager": ("bear/polarbear", "colour", (100, 95, 90)),
+    "hoglin": ("pig/pig", "colour", (190, 120, 95)),
+    "zoglin": ("pig/pig", "colour", (205, 165, 150)),
+    "warden": ("iron_golem", "colour", (30, 85, 95)),
+    "breeze": ("blaze", "colour", (170, 200, 240)),
+    "creaking": ("enderman/enderman", "dark", (125, 100, 75)),
+    "frog": ("rabbit/brown", "colour", (205, 125, 70)),
+    "fox": ("wolf/wolf", "colour", (225, 120, 45)),
+    "panda": ("bear/polarbear", "colour", (230, 230, 225)),
+    "sniffer": ("bear/polarbear", "colour", (170, 65, 55)),
+    "goat": ("cow/cow", "colour", (230, 225, 215)),
+    "armadillo": ("pig/pig", "colour", (180, 120, 110)),
+    "wandering_trader": ("villager/villager", "colour", (70, 100, 200)),
+    "happy_ghast": ("ghast/ghast", "dark", (245, 245, 245)),
+}
+
+
+def P(box, pivot, colour, role="static", name=None, parent=None, eyes=None, stripes=None, alpha=255):
+    return {"box": box, "pivot": pivot, "colour": colour, "role": role, "name": name, "parent": parent, "eyes": eyes, "stripes": stripes, "alpha": alpha}
+
+
+# Simple box models for the mobs without a similar 1.12 model: (texture width, height, parts).
+# box = x, y, z, width, height, depth (pixels; y grows downwards and 24 is the ground).
+MOB_MODELS = {
+    "cod": (32, 32, [P([-1, -2, -4, 2, 4, 8], [0, 22, 0], (180, 150, 100)),
+                     P([-1, -2, -7, 2, 4, 3], [0, 22, 0], (190, 160, 110), eyes="side"),
+                     P([-0.5, -2, 0, 1, 4, 4], [0, 22, 4], (160, 130, 90), role="tail"),
+                     P([-0.5, -3, -1, 1, 1, 5], [0, 22, 0], (150, 120, 80))]),
+    "salmon": (32, 32, [P([-1.5, -2.5, -6, 3, 5, 10], [0, 21, 0], (165, 70, 60)),
+                        P([-1, -2, -9, 2, 4, 3], [0, 21, 0], (175, 80, 65), eyes="side"),
+                        P([-0.5, -2.5, 0, 1, 5, 5], [0, 21, 4], (60, 120, 110), role="tail")]),
+    "tropical_fish": (32, 32, [P([-1, -3, -3, 2, 6, 6], [0, 21, 0], (240, 120, 30), eyes="side", stripes=(250, 250, 245)),
+                               P([-0.5, -2, 0, 1, 4, 3], [0, 21, 3], (245, 245, 240), role="tail"),
+                               P([-0.5, -5, -1, 1, 2, 3], [0, 21, 0], (250, 250, 245))]),
+    "pufferfish": (32, 32, [P([-3, -6, -3, 6, 6, 6], [0, 23, 0], (240, 190, 40), eyes="front"),
+                            P([-4, -4, -1, 1, 2, 2], [0, 23, 0], (230, 160, 30)),
+                            P([3, -4, -1, 1, 2, 2], [0, 23, 0], (230, 160, 30)),
+                            P([-0.5, -1, 0, 1, 2, 2], [0, 20, 3], (220, 150, 30), role="tail")]),
+    "tadpole": (32, 32, [P([-1.5, -2, -1.5, 3, 2, 3], [0, 23, 0], (90, 70, 50), eyes="side"),
+                         P([-0.5, -1.5, 0, 1, 2, 4], [0, 22, 1.5], (110, 85, 60), role="tail")]),
+    "dolphin": (64, 64, [P([-4, -3.5, -6, 8, 7, 13], [0, 20, 0], (110, 125, 140)),
+                         P([-4, -3.5, -11, 8, 7, 5], [0, 20, 0], (115, 130, 145), eyes="side"),
+                         P([-1, -0.5, -15, 2, 2, 4], [0, 20, 0], (180, 190, 200)),
+                         P([-2, -2.5, 0, 4, 5, 9], [0, 20, 7], (105, 120, 135), role="tailx", name="tail"),
+                         P([-5, -0.5, 8, 10, 1, 4], [0, 0, 0], (100, 115, 130), parent="tail"),
+                         P([-0.5, -7, -2, 1, 4, 5], [0, 20, 0], (95, 110, 125))]),
+    "axolotl": (64, 32, [P([-4, -2, -5, 8, 4, 10], [0, 20, 0], (240, 170, 200)),
+                         P([-4, -3, -5, 8, 5, 5], [0, 20, -5], (245, 180, 210), role="head", name="head", eyes="front"),
+                         P([-6, -5, -1, 12, 2, 1], [0, 0, 0], (200, 60, 120), parent="head"),
+                         P([-1, 0, -1, 2, 2, 2], [-3, 22, -3.5], (235, 160, 195), role="leg0"),
+                         P([-1, 0, -1, 2, 2, 2], [3, 22, -3.5], (235, 160, 195), role="leg1"),
+                         P([-1, 0, -1, 2, 2, 2], [-3, 22, 3.5], (235, 160, 195), role="leg2"),
+                         P([-1, 0, -1, 2, 2, 2], [3, 22, 3.5], (235, 160, 195), role="leg3"),
+                         P([-0.5, -2, 0, 1, 4, 9], [0, 20, 5], (235, 160, 195), role="tail")]),
+    "turtle": (128, 64, [P([-9, -4, -11, 18, 4, 22], [0, 20, 0], (70, 110, 60), stripes=(55, 90, 50)),
+                         P([-8, 0, -10, 16, 1, 20], [0, 20, 0], (190, 180, 120)),
+                         P([-3, -2.5, -6, 6, 4, 6], [0, 19, -11], (90, 150, 120), role="head", eyes="side"),
+                         P([-2, 0, -2, 4, 3, 4], [-6, 21, -6], (90, 150, 120), role="leg0"),
+                         P([-2, 0, -2, 4, 3, 4], [6, 21, -6], (90, 150, 120), role="leg1"),
+                         P([-2, 0, -2, 4, 3, 4], [-6, 21, 6], (90, 150, 120), role="leg2"),
+                         P([-2, 0, -2, 4, 3, 4], [6, 21, 6], (90, 150, 120), role="leg3")]),
+    "bee": (64, 64, [P([-3.5, -4, -5, 7, 7, 10], [0, 19, 0], (240, 190, 50), eyes="front", stripes=(60, 40, 25)),
+                     P([-0.5, -1, 5, 1, 1, 2], [0, 19, 0], (40, 30, 20)),
+                     P([0, -0.5, 0, 9, 1, 6], [1.5, 15, -3], (225, 240, 255), role="wingl", alpha=170),
+                     P([-9, -0.5, 0, 9, 1, 6], [-1.5, 15, -3], (225, 240, 255), role="wingr", alpha=170)]),
+    "strider": (64, 64, [P([-8, -14, -8, 16, 14, 16], [0, 8, 0], (160, 50, 50), eyes="front", stripes=(120, 35, 40)),
+                         P([-2, 0, -2, 4, 16, 4], [-4, 8, 0], (110, 60, 70), role="legl"),
+                         P([-2, 0, -2, 4, 16, 4], [4, 8, 0], (110, 60, 70), role="legr")]),
+    "phantom": (64, 64, [P([-3, -1.5, -4, 6, 3, 9], [0, 17, 0], (70, 90, 140)),
+                         P([-3.5, -1.5, -5, 7, 3, 5], [0, 17, -4], (75, 95, 145), role="head", eyes="front"),
+                         P([0, -0.5, 0, 12, 1, 9], [3, 16, -4], (90, 110, 160), role="wingl"),
+                         P([-12, -0.5, 0, 12, 1, 9], [-3, 16, -4], (90, 110, 160), role="wingr"),
+                         P([-2, -1, 0, 4, 2, 6], [0, 17, 5], (65, 85, 130), role="tailx", name="tail"),
+                         P([-1, -0.5, 6, 2, 1, 6], [0, 0, 0], (60, 80, 125), parent="tail")]),
+    "allay": (32, 32, [P([-2.5, -5, -2.5, 5, 5, 5], [0, 17, 0], (100, 200, 255), role="head", eyes="front"),
+                       P([-1.5, 0, -1, 3, 4, 2], [0, 17, 0], (80, 180, 240)),
+                       P([0, -1, 0, 1, 5, 6], [0.5, 18, 1], (200, 240, 255), role="wingl", alpha=190),
+                       P([-1, -1, 0, 1, 5, 6], [-0.5, 18, 1], (200, 240, 255), role="wingr", alpha=190)]),
+}
+
+
+def mob_texture(name, w, h, parts, seed):
+    """Paints each box's area of the texture with its colour (plus eyes and stripes) and lays out the UVs."""
+    r = random.Random(seed)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    px = img.load()
+    x = y = row = 0
+    out = []
+    for p in parts:
+        bw, bh, bd = int(p["box"][3]), int(p["box"][4]), int(p["box"][5])
+        uw, uh = 2 * (bd + bw), bd + bh
+        if x + uw > w:
+            x, y, row = 0, y + row, 0
+        u, v = x, y
+        x += uw
+        row = max(row, uh)
+        assert v + uh <= h, f"{name}: texture too small"
+        c = p["colour"]
+        for yy in range(v, v + uh):
+            for xx in range(u, u + uw):
+                k = 0.88 + r.random() * 0.24
+                px[xx, yy] = (min(255, int(c[0] * k)), min(255, int(c[1] * k)), min(255, int(c[2] * k)), p["alpha"])
+        if p["stripes"]:
+            sc = p["stripes"]
+            for i in range(bd):
+                if (i // 2) % 2 == 1:
+                    # side faces: columns run along the depth
+                    for yy in range(v + bd, v + bd + bh):
+                        px[u + bd - 1 - i, yy] = sc + (p["alpha"],)
+                        px[u + bd + bw + i, yy] = sc + (p["alpha"],)
+                    # top and bottom faces: rows run along the depth
+                    for xx in range(u + bd, u + bd + 2 * bw):
+                        px[xx, v + i] = sc + (p["alpha"],)
+        if p["eyes"] == "front":
+            ey = v + bd + max(0, int(bh * 0.3))
+            s = 2 if bw >= 7 else 1
+            for ex in (u + bd + max(0, int(bw * 0.2)), u + bd + bw - s - max(0, int(bw * 0.2))):
+                for dx in range(s):
+                    for dy in range(s):
+                        px[ex + dx, ey + dy] = (25, 25, 35, 255) if name != "phantom" else (120, 255, 60, 255)
+        elif p["eyes"] == "side":
+            ey = v + bd + max(0, int(bh * 0.3))
+            px[u + bd - 2, ey] = (20, 20, 25, 255)
+            px[u + bd + bw + 1, ey] = (20, 20, 25, 255)
+        part = {"uv": [u, v], "box": p["box"], "pivot": p["pivot"], "role": p["role"]}
+        if p["name"]:
+            part["name"] = p["name"]
+        if p["parent"]:
+            part["parent"] = p["parent"]
+        out.append(part)
+    save(img, "entity/sythix/" + name)
+    return {"tex": [w, h], "parts": out}
+
+
+def mobs():
+    for name, (src, mode, arg) in MOB_RECOLOURS.items():
+        img = load("entity/" + src)
+        if mode == "hue":
+            img = hue(img, arg[0], arg[1], arg[2])
+        elif mode == "dark":
+            img = colorize(img, arg, contrast=1.6, bright=1.5)
+        else:
+            img = colorize(img, arg, contrast=1.2)
+        if name == "panda":  # black eye patches and ears
+            px = img.load()
+            for (x, y) in ((8, 9), (9, 9), (8, 10), (12, 9), (11, 9), (12, 10), (1, 0), (2, 0), (5, 0), (6, 0)):
+                if x < img.width and y < img.height:
+                    px[x, y] = (30, 30, 35, px[x, y][3])
+        save(img, "entity/sythix/" + name)
+    models_json = {}
+    for i, (name, (w, h, parts)) in enumerate(MOB_MODELS.items()):
+        models_json[name] = mob_texture(name, w, h, parts, 500 + i)
+    os.makedirs(ROOT + "/sythix", exist_ok=True)
+    with open(ROOT + "/sythix/mob_models.json", "w") as f:
+        json.dump(models_json, f, indent=1)
+    # the new mob drops
+    for name, kind, rgb in (("turtle_scute", "shell", (90, 160, 70)), ("armadillo_scute", "shell", (180, 120, 110)),
+                            ("glow_ink_sac", "orb", (70, 210, 190)), ("goat_horn", "shard", (200, 190, 170))):
+        save(item_shape(kind, rgb, seed=len(name)), "items/" + name)
+        item_flat(name, "items/" + name)
+
+
+MOB_NAMES = {"drowned": "Drowned", "bogged": "Bogged", "pillager": "Pillager", "ravager": "Ravager", "hoglin": "Hoglin", "zoglin": "Zoglin",
+             "piglin": "Piglin", "piglin_brute": "Piglin Brute", "phantom": "Phantom", "warden": "Warden", "breeze": "Breeze", "creaking": "Creaking",
+             "zombie_nautilus": "Zombie Nautilus", "cod": "Cod", "salmon": "Salmon", "tropical_fish": "Tropical Fish", "pufferfish": "Pufferfish",
+             "tadpole": "Tadpole", "dolphin": "Dolphin", "axolotl": "Axolotl", "glow_squid": "Glow Squid", "turtle": "Turtle", "frog": "Frog",
+             "fox": "Fox", "panda": "Panda", "bee": "Bee", "goat": "Goat", "camel": "Camel", "trader_llama": "Trader Llama",
+             "wandering_trader": "Wandering Trader", "sniffer": "Sniffer", "armadillo": "Armadillo", "allay": "Allay", "strider": "Strider",
+             "happy_ghast": "Happy Ghast"}
+
+
+def mobs_lang():
+    lines = ["", "# Sythix: mobs from Minecraft 1.13-1.21"]
+    for k, v in MOB_NAMES.items():
+        lines.append(f"entity.sythix.{k}.name={v}")
+    for k in ("turtle_scute", "armadillo_scute", "glow_ink_sac", "goat_horn"):
+        lines.append(f"item.m.{k}.name={pretty(k)}")
+    path = ROOT + "/lang/en_us.lang"
+    text = open(path, encoding="utf-8").read()
+    marker = "\n# Sythix: mobs from Minecraft 1.13-1.21"
+    if marker in text:
+        text = text[:text.index(marker)].rstrip("\n") + "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n" + "\n".join(lines) + "\n")
+
+
 if __name__ == "__main__":
     textures()
     models()
@@ -982,4 +1181,6 @@ if __name__ == "__main__":
     item_lang_and_sounds()
     item_recipes()
     effects_lang()
+    mobs()
+    mobs_lang()
     print("modern assets written")

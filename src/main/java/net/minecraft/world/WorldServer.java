@@ -203,6 +203,7 @@ public class WorldServer extends World implements IThreadListener
         if (this.getGameRules().getBoolean("doMobSpawning") && this.worldInfo.getTerrainType() != WorldType.DEBUG_ALL_BLOCK_STATES)
         {
             this.entitySpawner.findChunksForSpawning(this, this.spawnHostileMobs, this.spawnPeacefulMobs, this.worldInfo.getWorldTotalTime() % 400L == 0L);
+            net.sythix.modern.mob.ModernMobs.worldTick(this);
         }
 
         this.profiler.endStartSection("chunkSource");

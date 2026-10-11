@@ -164,6 +164,14 @@ public final class SelfTest
             return;
         }
 
+        if ("mobs".equals(System.getProperty("sythix.selftest")))
+        {
+            mobSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("replay".equals(System.getProperty("sythix.selftest")))
         {
             replaySteps();
@@ -761,6 +769,284 @@ public final class SelfTest
     }
 
     /** New default world: checks that the 1.21 blocks are generated. */
+    private static final List<net.minecraft.entity.Entity> MOBS = new ArrayList<net.minecraft.entity.Entity>();
+
+    private static net.minecraft.entity.Entity spawnMob(net.minecraft.world.WorldServer world, String name, double x, double y, double z, boolean noAi)
+    {
+        net.minecraft.entity.Entity e = net.minecraft.entity.EntityList.createEntityByIDFromName(new net.minecraft.util.ResourceLocation(name), world);
+        e.setLocationAndAngles(x, y, z, 180.0F, 0.0F);
+
+        if (e instanceof net.minecraft.entity.EntityLiving)
+        {
+            net.minecraft.entity.EntityLiving l = (net.minecraft.entity.EntityLiving)e;
+            l.rotationYawHead = 180.0F;
+            l.renderYawOffset = 180.0F;
+            l.onInitialSpawn(world.getDifficultyForLocation(new net.minecraft.util.math.BlockPos(e)), null);
+            l.enablePersistence();
+            l.setNoAI(noAi);
+        }
+
+        world.spawnEntity(e);
+        return e;
+    }
+
+    /** Spawns every new mob in a flat test world, checks they exist on both sides, and tests some behaviours. */
+    private static void mobSteps()
+    {
+        String[] water = new String[] {"cod", "salmon", "tropical_fish", "pufferfish", "tadpole", "dolphin", "axolotl", "glow_squid", "zombie_nautilus", "drowned"};
+        add("create mob test world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-mobs"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            mc().launchIntegratedServer("sythix-mobs", "Sythix Mob Test", new WorldSettings(1L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands());
+        });
+        add("wait for mob world", 1, SelfTest::waitForWorld);
+        add("build arena and spawn mobs", 20, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            world.setWorldTime(6000L);
+            world.getGameRules().setOrCreateGameRule("doMobSpawning", "false");
+            world.getGameRules().setOrCreateGameRule("doDaylightCycle", "false");
+            int g = 4;
+
+            // the flat world's spawn point is not at 0,0: load the arena's chunks first
+            for (int cx = -4; cx <= 2; ++cx)
+            {
+                for (int cz = -3; cz <= 2; ++cz)
+                {
+                    world.getChunkFromChunkCoords(cx, cz);
+                }
+            }
+
+            // a water pool for the swimmers and a lava pool for the strider
+            for (int x = -40; x <= -24; ++x)
+            {
+                for (int z = 0; z <= 12; ++z)
+                {
+                    for (int y = g - 3; y < g; ++y)
+                    {
+                        world.setBlockState(new net.minecraft.util.math.BlockPos(x, y, z), net.minecraft.init.Blocks.WATER.getDefaultState(), 2);
+                    }
+                }
+            }
+
+            for (int x = 20; x <= 24; ++x)
+            {
+                for (int z = 0; z <= 4; ++z)
+                {
+                    world.setBlockState(new net.minecraft.util.math.BlockPos(x, g - 1, z), net.minecraft.init.Blocks.LAVA.getDefaultState(), 2);
+                }
+            }
+
+            MOBS.clear();
+            List<String> land = new ArrayList<String>(net.sythix.modern.mob.ModernMobs.names());
+            land.removeAll(java.util.Arrays.asList(water));
+            land.remove("happy_ghast");
+            land.remove("strider");
+            int i = 0;
+
+            for (String name : land)
+            {
+                double x = -9.0D + (i % 7) * 3.0D;
+                double z = 6.0D + (i / 7) * 4.5D;
+                MOBS.add(spawnMob(world, name, x + 0.5D, g, z, true));
+                ++i;
+            }
+
+            MOBS.add(spawnMob(world, "happy_ghast", 0.5D, g + 9, 32.0D, true));
+            MOBS.add(spawnMob(world, "strider", 22.5D, g, 2.5D, false));
+            i = 0;
+
+            for (String name : water)
+            {
+                // the axolotl would hunt the fish, so it stays still here
+                MOBS.add(spawnMob(world, name, -38.0D + (i % 5) * 3.0D, g - 1.5D, 3.0D + (i / 5) * 5.0D, "axolotl".equals(name)));
+                ++i;
+            }
+
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            p.capabilities.isFlying = true;
+            p.sendPlayerAbilities();
+            p.connection.setPlayerLocation(0.5D, g + 13, -5.0D, 0.0F, 42.0F);
+        }));
+        add("let mobs live", 100, () -> {});
+        add("all mobs exist", 1, () -> {
+            List<String> missing = new ArrayList<String>();
+            List<String> dead = new ArrayList<String>();
+
+            for (net.minecraft.entity.Entity e : MOBS)
+            {
+                String name = net.minecraft.entity.EntityList.getKey(e).getResourcePath();
+                boolean client = false;
+
+                for (net.minecraft.entity.Entity c : mc().world.loadedEntityList)
+                {
+                    client |= c.getClass() == e.getClass();
+                }
+
+                if (!client)
+                {
+                    missing.add(name);
+                }
+
+                if (!e.isEntityAlive() && !"tadpole".equals(name))
+                {
+                    dead.add(name);
+                }
+            }
+
+            int eggs = 0;
+
+            for (String n : net.sythix.modern.mob.ModernMobs.names())
+            {
+                eggs += net.minecraft.entity.EntityList.ENTITY_EGGS.containsKey(new net.minecraft.util.ResourceLocation(n)) ? 1 : 0;
+            }
+
+            if (missing.isEmpty() && dead.isEmpty() && eggs == net.sythix.modern.mob.ModernMobs.count() && MOBS.size() == eggs)
+            {
+                pass(MOBS.size() + " new mobs spawned, alive and sent to the client; " + eggs + " spawn eggs");
+            }
+            else
+            {
+                fail("new mobs", new IllegalStateException("not on client " + missing + ", died " + dead + ", eggs " + eggs + "/" + MOBS.size()));
+            }
+        });
+        add("screenshot mobs", 1, () -> shot("mobs-land"));
+        add("dive into the pool", 5, () -> onServer(() -> mc().getIntegratedServer().getPlayerList().getPlayers().get(0).connection.setPlayerLocation(-31.5D, 2.0D, 0.5D, 0.0F, 5.0F)));
+        add("screenshot water mobs", 20, () -> shot("mobs-water"));
+        add("mob save round trip", 1, () -> onServer(() -> {
+            List<String> bad = new ArrayList<String>();
+
+            for (net.minecraft.entity.Entity e : MOBS)
+            {
+                try
+                {
+                    net.minecraft.nbt.NBTTagCompound tag = new net.minecraft.nbt.NBTTagCompound();
+                    e.writeToNBTOptional(tag);
+                    net.minecraft.entity.Entity copy = net.minecraft.entity.EntityList.createEntityFromNBT(tag, e.world);
+
+                    if (copy == null || copy.getClass() != e.getClass())
+                    {
+                        bad.add(String.valueOf(net.minecraft.entity.EntityList.getKey(e)));
+                    }
+                }
+                catch (Throwable t)
+                {
+                    bad.add(net.minecraft.entity.EntityList.getKey(e) + ": " + t);
+                }
+            }
+
+            if (bad.isEmpty())
+            {
+                pass("all new mobs save and load");
+            }
+            else
+            {
+                fail("mob saving", new IllegalStateException(bad.toString()));
+            }
+        }));
+        add("piglin barter and allay", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            p.connection.setPlayerLocation(0.5D, 4.0D, -20.0D, 0.0F, 0.0F);
+            net.minecraft.entity.Entity piglin = spawnMob(world, "piglin", 3.5D, 4.0D, -18.0D, false);
+            p.setHeldItem(net.minecraft.util.EnumHand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.init.Items.GOLD_INGOT, 4));
+            piglin.processInitialInteract(p, net.minecraft.util.EnumHand.MAIN_HAND);
+            MOBS.add(piglin);
+            net.minecraft.entity.Entity allay = spawnMob(world, "allay", -3.5D, 5.0D, -18.0D, false);
+            p.setHeldItem(net.minecraft.util.EnumHand.MAIN_HAND, new net.minecraft.item.ItemStack(net.minecraft.init.Blocks.COBBLESTONE, 1));
+            allay.processInitialInteract(p, net.minecraft.util.EnumHand.MAIN_HAND);
+            MOBS.add(allay);
+            net.minecraft.entity.item.EntityItem loot = new net.minecraft.entity.item.EntityItem(world, -10.5D, 4.2D, -26.5D, new net.minecraft.item.ItemStack(net.minecraft.init.Blocks.COBBLESTONE, 5));
+            world.spawnEntity(loot);
+            p.setHeldItem(net.minecraft.util.EnumHand.MAIN_HAND, net.minecraft.item.ItemStack.EMPTY);
+        }));
+        add("wait for barter and allay", 400, () -> {});
+        add("check barter and allay", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.Entity piglin = MOBS.get(MOBS.size() - 2);
+            net.minecraft.entity.Entity allay = MOBS.get(MOBS.size() - 1);
+            int drops = 0;
+            int cobbleNearPlayer = 0;
+            int cobbleFar = 0;
+
+            for (net.minecraft.entity.item.EntityItem it : world.getEntitiesWithinAABB(net.minecraft.entity.item.EntityItem.class, new net.minecraft.util.math.AxisAlignedBB(-30, 0, -40, 30, 20, 0)))
+            {
+                if (it.getItem().getItem() == net.minecraft.item.Item.getItemFromBlock(net.minecraft.init.Blocks.COBBLESTONE))
+                {
+                    if (it.getDistanceSq(0.5D, 4.0D, -20.0D) < 16.0D)
+                    {
+                        cobbleNearPlayer += it.getItem().getCount();
+                    }
+                    else if (it.getDistanceSq(-10.5D, 4.0D, -26.5D) < 4.0D)
+                    {
+                        cobbleFar += it.getItem().getCount();
+                    }
+                }
+                else if (it.getDistanceSqToEntity(piglin) < 16.0D)
+                {
+                    ++drops;
+                }
+            }
+
+            // the creative player may already have picked the delivered items up
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+
+            for (net.minecraft.item.ItemStack st : p.inventory.mainInventory)
+            {
+                if (st.getItem() == net.minecraft.item.Item.getItemFromBlock(net.minecraft.init.Blocks.COBBLESTONE))
+                {
+                    cobbleNearPlayer += st.getCount();
+                }
+            }
+
+            boolean allayOk = cobbleFar == 0 && cobbleNearPlayer > 0;
+
+            if (drops > 0 && allayOk)
+            {
+                pass("piglin bartered a gold ingot (" + drops + " drop), allay collected the cobblestone (" + cobbleNearPlayer + " delivered)");
+            }
+            else
+            {
+                fail("piglin / allay", new IllegalStateException("barter drops " + drops + ", cobble near player " + cobbleNearPlayer + ", left behind " + cobbleFar));
+            }
+        }));
+        add("warden from shrieker", 40, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            world.setBlockState(new net.minecraft.util.math.BlockPos(30, 3, -30), net.sythix.modern.ModernBlocks.get("sculk_shrieker").getDefaultState());
+            p.setGameType(GameType.SURVIVAL);
+            p.connection.setPlayerLocation(30.5D, 3.6D, -29.5D, 0.0F, 0.0F);
+            p.setPosition(30.5D, 3.6D, -29.5D);
+            int before = world.getEntities(net.sythix.modern.mob.Warden.class, e -> true).size();
+
+            for (int i = 0; i < 60; ++i)
+            {
+                net.sythix.modern.mob.ModernMobs.shriekers(world);
+            }
+
+            int after = world.getEntities(net.sythix.modern.mob.Warden.class, e -> true).size();
+            p.setGameType(GameType.CREATIVE);
+
+            if (after > before)
+            {
+                pass("stepping on a sculk shrieker four times summoned a warden");
+            }
+            else
+            {
+                fail("warden summoning", new IllegalStateException("wardens " + before + " -> " + after));
+            }
+        }));
+        add("leave mob world", 40, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+    }
+
     private static void worldgenSteps()
     {
         add("create generated world", 1, () -> {
