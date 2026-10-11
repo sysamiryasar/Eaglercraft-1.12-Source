@@ -56,6 +56,8 @@ import net.sythix.client.module.pvp.ViewmodelModule;
 import net.sythix.client.ui.GuiHudEditor;
 import net.sythix.client.ui.SythixTheme;
 import net.sythix.client.ui.GuiModMenu;
+import net.sythix.client.module.recording.RecordingTools;
+import net.sythix.client.module.recording.ScreenshotManager;
 
 /**
  * Entry points called from Minecraft's own code. Every method is safe to call before the client
@@ -218,9 +220,12 @@ public final class Hooks
             return;
         }
 
+        RecordingTools recording = on(RecordingTools.class);
+        boolean recordingClean = recording != null && recording.hidesHud();
+
         for (HudModule module : m.getHudModules())
         {
-            if (module.isEnabled())
+            if (module.isEnabled() && (!recordingClean || module == recording))
             {
                 try
                 {
@@ -277,6 +282,13 @@ public final class Hooks
 
     public static int limitFramerate(int vanilla)
     {
+        RecordingTools recording = on(RecordingTools.class);
+
+        if (recording != null && recording.fpsLock() > 0)
+        {
+            return recording.fpsLock();
+        }
+
         PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
 
         if (optimizer == null)
@@ -918,5 +930,46 @@ public final class Hooks
     public static String filterText(String text)
     {
         return SythixClient.get() == null ? text : PrivacyControls.filterText(text);
+    }
+
+    // ---- Recording ---------------------------------------------------------------------------
+
+    /** A custom screenshot file, or null for the vanilla name. */
+    public static java.io.File screenshotFile(java.io.File dir)
+    {
+        ScreenshotManager manager = on(ScreenshotManager.class);
+
+        try
+        {
+            return manager == null ? null : manager.nextFile(dir);
+        }
+        catch (Throwable t)
+        {
+            fail(ScreenshotManager.class, "screenshot name", t);
+            return null;
+        }
+    }
+
+    public static void onScreenshotSaved(java.io.File file)
+    {
+        ScreenshotManager manager = on(ScreenshotManager.class);
+
+        try
+        {
+            if (manager != null)
+            {
+                manager.onSaved(file);
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(ScreenshotManager.class, "screenshot saved", t);
+        }
+    }
+
+    public static boolean hideChat()
+    {
+        RecordingTools recording = on(RecordingTools.class);
+        return recording != null && recording.hidesChat();
     }
 }

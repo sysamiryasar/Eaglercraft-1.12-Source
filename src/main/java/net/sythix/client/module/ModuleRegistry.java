@@ -1,6 +1,11 @@
 package net.sythix.client.module;
 
 import net.sythix.client.module.client.SearchDiscovery;
+import net.sythix.client.module.recording.PracticeTools;
+import net.sythix.client.module.recording.RecordingTools;
+import net.sythix.client.module.recording.ReplaySystem;
+import net.sythix.client.module.recording.ScreenshotManager;
+import net.sythix.client.module.recording.StatisticsTracker;
 import net.sythix.client.module.hud.ArrayListModule;
 import net.sythix.client.module.multiplayer.ConnectionMonitor;
 import net.sythix.client.module.multiplayer.FriendsManager;
@@ -111,6 +116,12 @@ final class ModuleRegistry
         m.register(new PartyTools());
         m.register(new ServerProfiles());
         m.register(new ChatUtilities());
+        // H. Recording and statistics
+        m.register(new ScreenshotManager());
+        m.register(new RecordingTools());
+        m.register(new ReplaySystem());
+        m.register(new StatisticsTracker());
+        m.register(new PracticeTools());
         // I. Client configuration
         m.register(new SearchDiscovery());
     }

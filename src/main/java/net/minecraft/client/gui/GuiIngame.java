@@ -386,7 +386,10 @@ public class GuiIngame extends Gui
         GlStateManager.pushMatrix();
         GlStateManager.translate(0.0F, (float)(j - 48), 0.0F);
         this.mc.mcProfiler.startSection("chat");
-        this.persistantChatGUI.drawChat(this.updateCounter);
+        if (!net.sythix.client.core.Hooks.hideChat())
+        {
+            this.persistantChatGUI.drawChat(this.updateCounter);
+        }
         this.mc.mcProfiler.endSection();
         GlStateManager.popMatrix();
         scoreobjective1 = scoreboard.getObjectiveInDisplaySlot(0);
