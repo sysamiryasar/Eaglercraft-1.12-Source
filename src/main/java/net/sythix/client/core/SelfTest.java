@@ -452,6 +452,8 @@ public final class SelfTest
 
     private static BlockPosHolder modernOrigin = new BlockPosHolder();
     private static net.minecraft.entity.Entity[] modernEntities;
+    private static net.minecraft.entity.Entity modernFloater;
+    private static int slimesBefore;
 
     private static final class BlockPosHolder
     {
@@ -595,7 +597,63 @@ public final class SelfTest
                 fail("modern items", new IllegalStateException(problems.toString()));
             }
         }));
+        add("modern effects", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.player.EntityPlayerMP sp = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            List<String> problems = new ArrayList<String>();
+
+            if (net.sythix.modern.ModernEffects.effects().size() != 12 || net.sythix.modern.ModernEffects.enchantments().size() != 12)
+            {
+                problems.add("effects=" + net.sythix.modern.ModernEffects.effects().size() + " enchantments=" + net.sythix.modern.ModernEffects.enchantments().size());
+            }
+
+            // Brewing: awkward potion + phantom membrane = slow falling
+            net.minecraft.item.ItemStack awkward = net.minecraft.potion.PotionUtils.addPotionToItemStack(new net.minecraft.item.ItemStack(net.minecraft.init.Items.POTIONITEM), net.minecraft.init.PotionTypes.AWKWARD);
+            net.minecraft.item.ItemStack brewed = net.minecraft.potion.PotionHelper.doReaction(new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("phantom_membrane")), awkward);
+
+            if (net.minecraft.potion.PotionUtils.getPotionFromItem(brewed) != net.minecraft.potion.PotionType.getPotionTypeForName("slow_falling"))
+            {
+                problems.add("brewing gave " + net.minecraft.potion.PotionUtils.getPotionFromItem(brewed).getNamePrefixed(""));
+            }
+
+            // A zombie with Slow Falling high in the air, and one with Oozing that dies
+            net.minecraft.entity.monster.EntityZombie floater = new net.minecraft.entity.monster.EntityZombie(world);
+            floater.setLocationAndAngles(sp.posX + 4.0D, sp.posY + 20.0D, sp.posZ, 0.0F, 0.0F);
+            floater.addPotionEffect(new net.minecraft.potion.PotionEffect(net.sythix.modern.ModernEffects.effect("slow_falling"), 600));
+            world.spawnEntity(floater);
+            net.minecraft.entity.monster.EntityZombie oozer = new net.minecraft.entity.monster.EntityZombie(world);
+            oozer.setLocationAndAngles(sp.posX - 4.0D, sp.posY, sp.posZ, 0.0F, 0.0F);
+            oozer.addPotionEffect(new net.minecraft.potion.PotionEffect(net.sythix.modern.ModernEffects.effect("oozing"), 600));
+            world.spawnEntity(oozer);
+            slimesBefore = world.getEntities(net.minecraft.entity.monster.EntitySlime.class, x -> true).size();
+            oozer.attackEntityFrom(net.minecraft.util.DamageSource.OUT_OF_WORLD, 1000.0F);
+            modernFloater = floater;
+
+            if (problems.isEmpty())
+            {
+                pass("12 effects, 12 enchantments; brewing slow falling works");
+            }
+            else
+            {
+                fail("modern effects", new IllegalStateException(problems.toString()));
+            }
+        }));
         add("wait projectiles", 120, () -> {});
+        add("check effects", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            int slimes = world.getEntities(net.minecraft.entity.monster.EntitySlime.class, x -> true).size();
+            double perTick = modernFloater.prevPosY - modernFloater.posY;
+            boolean slow = perTick < 0.08D && !modernFloater.onGround;
+
+            if (slimes >= slimesBefore + 2 && slow)
+            {
+                pass("Oozing spawned slimes on death; Slow Falling zombie floats down (motionY " + String.format("%.3f", modernFloater.motionY) + ")");
+            }
+            else
+            {
+                fail("effects behaviour", new IllegalStateException("slimes " + slimesBefore + "->" + slimes + " floater falls " + perTick + "/tick, onGround=" + modernFloater.onGround));
+            }
+        }));
         add("check projectiles", 1, () -> {
             boolean landed = modernEntities[0].isDead && modernEntities[1].isDead;
 

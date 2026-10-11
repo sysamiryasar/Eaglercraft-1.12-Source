@@ -61,6 +61,12 @@ public class EntityWindCharge extends net.minecraft.entity.projectile.EntityThro
         }
     }
 
+    /** Bursts right here (used by the Wind Charged effect when a mob dies). */
+    public void burstNow()
+    {
+        this.burst(null);
+    }
+
     private void burst(Entity direct)
     {
         if (direct != null)

@@ -233,6 +233,14 @@ public final class Hooks
             return;
         }
 
+        float darkness = net.sythix.modern.ModernEffects.darkness();
+
+        if (darkness > 0.0F)
+        {
+            // Darkness effect: the screen fades in and out of black
+            SythixTheme.drawRect(0.0F, 0.0F, (float)res.getScaledWidth(), (float)res.getScaledHeight(), (int)(darkness * 200.0F) << 24);
+        }
+
         if (net.sythix.client.module.performance.Benchmark.isRunning())
         {
             String text = "Benchmark " + Math.round(net.sythix.client.module.performance.Benchmark.progress() * 100.0F) + "% - FPS " + Minecraft.getDebugFPS();

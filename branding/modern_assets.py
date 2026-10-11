@@ -944,6 +944,34 @@ def item_recipes():
     shaped("turtle_helmet", ["NNN", "N N"], {"N": item("nautilus_shell")}, "turtle_helmet")
 
 
+# ---- part 3: effects, enchantments, potions ------------------------------------------------------
+
+def effects_lang():
+    effects = {"slow_falling": "Slow Falling", "conduit_power": "Conduit Power", "dolphins_grace": "Dolphin's Grace", "bad_omen": "Bad Omen",
+               "hero_of_the_village": "Hero of the Village", "darkness": "Darkness", "trial_omen": "Trial Omen", "raid_omen": "Raid Omen",
+               "wind_charged": "Wind Charged", "weaving": "Weaving", "oozing": "Oozing", "infested": "Infested"}
+    enchants = {"swift_sneak": "Swift Sneak", "soul_speed": "Soul Speed", "density": "Density", "breach": "Breach", "wind_burst": "Wind Burst",
+                "multishot": "Multishot", "piercing": "Piercing", "quick_charge": "Quick Charge", "impaling": "Impaling", "loyalty": "Loyalty",
+                "riptide": "Riptide", "channeling": "Channeling"}
+    potions = ["slow_falling", "wind_charged", "weaving", "oozing", "infested"]
+    lines = ["", "# Sythix: effects and enchantments from Minecraft 1.13-1.21"]
+    for k, v in effects.items():
+        lines.append(f"effect.m.{k}={v}")
+    for k, v in enchants.items():
+        lines.append(f"enchantment.m.{k}={v}")
+    for k in potions:
+        v = effects[k]
+        lines += [f"potion.effect.{k}=Potion of {v}", f"splash_potion.effect.{k}=Splash Potion of {v}",
+                  f"lingering_potion.effect.{k}=Lingering Potion of {v}", f"tipped_arrow.effect.{k}=Arrow of {v}"]
+    path = ROOT + "/lang/en_us.lang"
+    text = open(path, encoding="utf-8").read()
+    marker = "\n# Sythix: effects and enchantments from Minecraft 1.13-1.21"
+    if marker in text:
+        text = text[:text.index(marker)].rstrip("\n") + "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n" + "\n".join(lines) + "\n")
+
+
 if __name__ == "__main__":
     textures()
     models()
@@ -953,4 +981,5 @@ if __name__ == "__main__":
     item_models()
     item_lang_and_sounds()
     item_recipes()
+    effects_lang()
     print("modern assets written")

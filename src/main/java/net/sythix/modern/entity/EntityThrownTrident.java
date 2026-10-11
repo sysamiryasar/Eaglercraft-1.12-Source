@@ -55,14 +55,37 @@ public class EntityThrownTrident extends net.minecraft.entity.projectile.EntityT
 
         if (result.entityHit != null && result.entityHit != this.getThrower())
         {
-            result.entityHit.attackEntityFrom(DamageSource.causeThrownDamage(this, this.getThrower()), 8.0F);
+            float damage = 8.0F;
+
+            // Impaling: extra damage to water creatures
+            if (result.entityHit instanceof net.minecraft.entity.passive.EntityWaterMob || result.entityHit instanceof net.minecraft.entity.monster.EntityGuardian)
+            {
+                damage += 2.5F * (float)net.sythix.modern.ModernEffects.level("impaling", this.stack);
+            }
+
+            result.entityHit.attackEntityFrom(DamageSource.causeThrownDamage(this, this.getThrower()), damage);
+
+            // Channeling: calls lightning during a thunderstorm
+            if (net.sythix.modern.ModernEffects.level("channeling", this.stack) > 0 && this.world.isThundering() && this.world.canSeeSky(result.entityHit.getPosition()))
+            {
+                this.world.addWeatherEffect(new net.minecraft.entity.effect.EntityLightningBolt(this.world, result.entityHit.posX, result.entityHit.posY, result.entityHit.posZ, false));
+            }
             this.world.playSound(null, this.posX, this.posY, this.posZ, SoundEvents.ENTITY_ARROW_HIT, SoundCategory.PLAYERS, 1.0F, 0.6F);
         }
 
         if (this.dropItem)
         {
             ItemStack drop = this.stack.isEmpty() ? new ItemStack(ModernItems.get("trident")) : this.stack;
-            this.world.spawnEntity(new EntityItem(this.world, this.posX, this.posY, this.posZ, drop));
+
+            // Loyalty: the trident comes straight back to its thrower
+            if (net.sythix.modern.ModernEffects.level("loyalty", drop) > 0 && this.getThrower() instanceof net.minecraft.entity.player.EntityPlayer && ((net.minecraft.entity.player.EntityPlayer)this.getThrower()).inventory.addItemStackToInventory(drop))
+            {
+                this.world.playSound(null, this.getThrower().posX, this.getThrower().posY, this.getThrower().posZ, SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.6F, 0.8F);
+            }
+            else
+            {
+                this.world.spawnEntity(new EntityItem(this.world, this.posX, this.posY, this.posZ, drop));
+            }
         }
 
         this.setDead();

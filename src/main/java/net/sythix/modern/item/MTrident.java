@@ -46,6 +46,26 @@ public class MTrident extends MWeapon
         }
 
         EntityPlayer player = (EntityPlayer)entityLiving;
+        int riptide = net.sythix.modern.ModernEffects.level("riptide", stack);
+
+        if (riptide > 0)
+        {
+            // Riptide: launch yourself while in water or rain instead of throwing
+            if (player.isWet())
+            {
+                float yaw = player.rotationYaw * 0.017453292F;
+                float pitch = player.rotationPitch * 0.017453292F;
+                double power = 1.0D + 0.75D * (double)riptide;
+                player.motionX = -Math.sin(yaw) * Math.cos(pitch) * power;
+                player.motionY = -Math.sin(pitch) * power;
+                player.motionZ = Math.cos(yaw) * Math.cos(pitch) * power;
+                player.fallDistance = 0.0F;
+                stack.damageItem(1, player);
+                worldIn.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_PLAYER_SPLASH, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            }
+
+            return;
+        }
 
         if (!worldIn.isRemote)
         {

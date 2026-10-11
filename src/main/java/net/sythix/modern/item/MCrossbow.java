@@ -34,7 +34,7 @@ public class MCrossbow extends Item
         {
             public float apply(ItemStack stack, @Nullable World worldIn, @Nullable EntityLivingBase entityIn)
             {
-                return entityIn == null || entityIn.getActiveItemStack().getItem() != MCrossbow.this ? 0.0F : (float)(stack.getMaxItemUseDuration() - entityIn.getItemInUseCount()) / 25.0F;
+                return entityIn == null || entityIn.getActiveItemStack().getItem() != MCrossbow.this ? 0.0F : (float)(stack.getMaxItemUseDuration() - entityIn.getItemInUseCount()) / (float)chargeTime(stack);
             }
         });
         this.addPropertyOverride(new ResourceLocation("pulling"), new IItemPropertyGetter()
@@ -91,19 +91,28 @@ public class MCrossbow extends Item
         {
             if (!worldIn.isRemote)
             {
-                ItemArrow arrowItem = (ItemArrow)Items.ARROW;
-                EntityArrow arrow = arrowItem.createArrow(worldIn, new ItemStack(Items.ARROW), playerIn);
-                arrow.setAim(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, 0.0F, 3.15F, 1.0F);
-                arrow.setDamage(arrow.getDamage() + 1.5D + EnchantmentHelper.getEnchantmentLevel(Enchantments.POWER, stack) * 0.5D);
-                arrow.setIsCritical(true);
+                // Multishot fires three arrows in a spread
+                boolean multi = net.sythix.modern.ModernEffects.level("multishot", stack) > 0;
+                int pierce = net.sythix.modern.ModernEffects.level("piercing", stack);
 
-                if (playerIn.capabilities.isCreativeMode)
+                for (int i = multi ? -1 : 0; i <= (multi ? 1 : 0); ++i)
                 {
-                    arrow.pickupStatus = EntityArrow.PickupStatus.CREATIVE_ONLY;
+                    ItemArrow arrowItem = (ItemArrow)Items.ARROW;
+                    EntityArrow arrow = arrowItem.createArrow(worldIn, new ItemStack(Items.ARROW), playerIn);
+                    arrow.setAim(playerIn, playerIn.rotationPitch, playerIn.rotationYaw + (float)i * 10.0F, 0.0F, 3.15F, 1.0F);
+                    // Piercing: harder hits (1.12 arrows cannot pass through entities)
+                    arrow.setDamage(arrow.getDamage() + 1.5D + pierce * 0.5D);
+                    arrow.setIsCritical(true);
+
+                    if (playerIn.capabilities.isCreativeMode || i != 0)
+                    {
+                        arrow.pickupStatus = EntityArrow.PickupStatus.CREATIVE_ONLY;
+                    }
+
+                    worldIn.spawnEntity(arrow);
                 }
 
-                worldIn.spawnEntity(arrow);
-                stack.damageItem(1, playerIn);
+                stack.damageItem(multi ? 3 : 1, playerIn);
             }
 
             setCharged(stack, false);
@@ -122,7 +131,7 @@ public class MCrossbow extends Item
 
     public void onPlayerStoppedUsing(ItemStack stack, World worldIn, EntityLivingBase entityLiving, int timeLeft)
     {
-        if (!(entityLiving instanceof EntityPlayer) || this.getMaxItemUseDuration(stack) - timeLeft < 25)
+        if (!(entityLiving instanceof EntityPlayer) || this.getMaxItemUseDuration(stack) - timeLeft < chargeTime(stack))
         {
             return;
         }
@@ -143,6 +152,12 @@ public class MCrossbow extends Item
 
         setCharged(stack, true);
         worldIn.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.PLAYERS, 0.6F, 1.6F);
+    }
+
+    /** Ticks to load (Quick Charge makes it faster). */
+    static int chargeTime(ItemStack stack)
+    {
+        return Math.max(5, 25 - 5 * net.sythix.modern.ModernEffects.level("quick_charge", stack));
     }
 
     public int getMaxItemUseDuration(ItemStack stack)

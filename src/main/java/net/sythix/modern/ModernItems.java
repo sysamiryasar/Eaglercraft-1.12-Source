@@ -155,8 +155,26 @@ public final class ModernItems
         }
 
         float fall = player.fallDistance;
+        net.minecraft.item.ItemStack held = player.getHeldItemMainhand();
         float bonus = Math.min(fall, 3.0F) * 4.0F + Math.max(0.0F, Math.min(fall - 3.0F, 5.0F)) * 2.0F + Math.max(0.0F, fall - 8.0F);
+        // Density: more damage per block fallen
+        bonus += fall * 0.5F * (float)ModernEffects.level("density", held);
+
+        // Breach: hits through armour
+        if (target instanceof EntityLivingBase && ((EntityLivingBase)target).getTotalArmorValue() > 0)
+        {
+            bonus += (6.0F + bonus) * 0.15F * (float)ModernEffects.level("breach", held);
+        }
+
         player.fallDistance = 0.0F;
+        int burst = ModernEffects.level("wind_burst", held);
+
+        // Wind Burst: bounce back up after a smash
+        if (burst > 0)
+        {
+            player.motionY = 0.5D + 0.35D * (double)burst;
+            player.velocityChanged = true;
+        }
 
         if (!player.world.isRemote)
         {

@@ -42,7 +42,13 @@ public class MConduit extends MBlock
         {
             if (p.isInWater())
             {
-                p.addPotionEffect(new PotionEffect(MobEffects.WATER_BREATHING, 260, 0, true, true));
+                net.minecraft.potion.Potion power = net.sythix.modern.ModernEffects.effect("conduit_power");
+
+                if (power != null)
+                {
+                    p.addPotionEffect(new PotionEffect(power, 260, 0, true, true));
+                }
+
                 p.addPotionEffect(new PotionEffect(MobEffects.NIGHT_VISION, 260, 0, true, true));
                 p.addPotionEffect(new PotionEffect(MobEffects.HASTE, 260, 0, true, true));
             }

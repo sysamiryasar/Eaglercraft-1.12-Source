@@ -1014,6 +1014,10 @@ public abstract class EntityLivingBase extends Entity
         {
             return false;
         }
+        else if (net.sythix.modern.ModernEffects.onHurt(this, source, amount))
+        {
+            return false;
+        }
         else
         {
             this.idleTime = 0;
@@ -1324,6 +1328,7 @@ public abstract class EntityLivingBase extends Entity
     {
         if (!this.dead)
         {
+            net.sythix.modern.ModernEffects.onDeath(this);
             Entity entity = cause.getTrueSource();
             EntityLivingBase entitylivingbase = this.getAttackingEntity();
 
@@ -2340,6 +2345,7 @@ public abstract class EntityLivingBase extends Entity
      */
     public void onUpdate()
     {
+        net.sythix.modern.ModernEffects.livingTick(this);
         super.onUpdate();
         this.updateActiveHand();
 
