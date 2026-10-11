@@ -4,7 +4,9 @@ import net.minecraft.client.settings.GameSettings;
 import net.sythix.client.core.Notifications;
 import net.sythix.client.module.Category;
 import net.sythix.client.module.Module;
+import net.sythix.client.setting.BooleanSetting;
 import net.sythix.client.setting.ButtonSetting;
+import net.sythix.client.setting.InfoSetting;
 import net.sythix.client.setting.GameOptionSetting;
 import net.sythix.client.setting.ModeSetting;
 import net.sythix.client.setting.NumberSetting;
@@ -19,6 +21,14 @@ public class PerformanceOptimizer extends Module
     private final NumberSetting unfocusedFps;
     private final NumberSetting menuFps;
     private final NumberSetting entityDistance;
+    private final NumberSetting benchSeconds;
+    private final BooleanSetting benchSpin;
+    private final BooleanSetting adaptive;
+    private final NumberSetting targetFps;
+    private final NumberSetting minDistance;
+    private int adaptiveBase = -1;
+    private int adaptiveSet = -1;
+    private int ticks;
 
     public PerformanceOptimizer()
     {
@@ -37,6 +47,95 @@ public class PerformanceOptimizer extends Module
         this.unfocusedFps = this.add(new NumberSetting("Background FPS", "Frame rate when the game window is not focused. 0 = no limit.", 15.0D, 0.0D, 60.0D, 5.0D, " fps"));
         this.menuFps = this.add(new NumberSetting("Menu FPS", "Frame rate while a menu is open in a world. 0 = no limit.", 0.0D, 0.0D, 120.0D, 10.0D, " fps"));
         this.entityDistance = this.add(new NumberSetting("Entity Distance", "Hide mobs and items further than this (players are always drawn). 0 = vanilla.", 0.0D, 0.0D, 128.0D, 8.0D, " blocks"));
+        this.add(new GameOptionSetting("Do more chunk updates while you stand still.", GameSettings.Options.CHUNK_UPDATES_DYNAMIC));
+        this.adaptive = this.add(new BooleanSetting("Adaptive Render Distance", "Lower the render distance when FPS drops below the target, and raise it again when there is room.", false));
+        this.targetFps = this.add(new NumberSetting("Target FPS", "FPS the adaptive render distance tries to keep.", 60.0D, 30.0D, 240.0D, 10.0D, " fps")).visibleWhen(this.adaptive::isOn);
+        this.minDistance = this.add(new NumberSetting("Lowest Distance", "Adaptive render distance never goes below this.", 4.0D, 2.0D, 16.0D, 1.0D, " chunks")).visibleWhen(this.adaptive::isOn);
+        this.add(new InfoSetting("Adaptive Now", "Render distance chosen by adaptive mode.", () -> this.adaptiveSet < 0 ? "Not active" : this.adaptiveSet + " of " + this.adaptiveBase + " chunks")).visibleWhen(this.adaptive::isOn);
+        this.benchSeconds = this.add(new NumberSetting("Benchmark Length", "How long the benchmark measures.", 20.0D, 10.0D, 60.0D, 5.0D, " s"));
+        this.benchSpin = this.add(new BooleanSetting("Benchmark Camera Turn", "Turn the camera once around during the benchmark for a fair result (singleplayer only).", true));
+        this.add(new ButtonSetting("Run Benchmark", "Measure your FPS with the current settings (in a world).", "Run", () -> Benchmark.start(this.benchSeconds.getInt(), this.benchSpin.isOn(), this.mc.gameSettings.renderDistanceChunks + " chunks")));
+        this.add(new ButtonSetting("Benchmark Results", "Compare your benchmark results.", "Open", () -> this.mc.displayGuiScreen(new GuiBenchmarks(this.mc.currentScreen))));
+        this.add(new ButtonSetting("Free Memory", "Ask Java to clean up unused memory now.", "Clean", () -> {
+            Runtime rt = Runtime.getRuntime();
+            long before = rt.totalMemory() - rt.freeMemory();
+            System.gc();
+            long freed = Math.max(0L, before - (rt.totalMemory() - rt.freeMemory())) / 1048576L;
+            Notifications.post("Memory cleaned", freed + " MB freed.", Notifications.Kind.SUCCESS);
+        }));
+    }
+
+    public net.minecraft.client.gui.GuiScreen createScreen(net.minecraft.client.gui.GuiScreen parent)
+    {
+        return new GuiBenchmarks(parent);
+    }
+
+    public void onTick()
+    {
+        if (!this.adaptive.isOn() || this.mc.world == null || Benchmark.isRunning())
+        {
+            this.restoreAdaptive();
+            return;
+        }
+
+        GameSettings gs = this.mc.gameSettings;
+
+        // The player changed the render distance themselves: that becomes the new maximum
+        if (this.adaptiveSet < 0 || gs.renderDistanceChunks != this.adaptiveSet)
+        {
+            this.adaptiveBase = gs.renderDistanceChunks;
+            this.adaptiveSet = gs.renderDistanceChunks;
+        }
+
+        if (++this.ticks < 60)
+        {
+            return;
+        }
+
+        this.ticks = 0;
+        int fps = net.minecraft.client.Minecraft.getDebugFPS();
+        int target = this.targetFps.getInt();
+        int rd = this.adaptiveSet;
+
+        if (fps < target * 9 / 10 && rd > this.minDistance.getInt())
+        {
+            --rd;
+        }
+        else if (fps > target * 13 / 10 && rd < this.adaptiveBase)
+        {
+            ++rd;
+        }
+
+        if (rd != this.adaptiveSet)
+        {
+            this.adaptiveSet = rd;
+            gs.setOptionFloatValue(GameSettings.Options.RENDER_DISTANCE, (float)rd);
+        }
+    }
+
+    protected void onDisable()
+    {
+        this.restoreAdaptive();
+    }
+
+    /** Puts the player's own render distance back. */
+    private void restoreAdaptive()
+    {
+        if (this.adaptiveSet >= 0)
+        {
+            if (this.mc.gameSettings.renderDistanceChunks == this.adaptiveSet && this.adaptiveBase > 0 && this.adaptiveSet != this.adaptiveBase)
+            {
+                this.mc.gameSettings.setOptionFloatValue(GameSettings.Options.RENDER_DISTANCE, (float)this.adaptiveBase);
+            }
+
+            this.adaptiveSet = -1;
+        }
+    }
+
+    /** Render distance to save in options.txt (the player's own value, not the adaptive one). */
+    public int savedRenderDistance(int current)
+    {
+        return this.adaptiveSet >= 0 && current == this.adaptiveSet && this.adaptiveBase > 0 ? this.adaptiveBase : current;
     }
 
     /** Frame-rate cap from this module, or -1 to keep the game's own limit. */

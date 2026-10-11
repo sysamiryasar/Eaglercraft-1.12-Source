@@ -222,6 +222,13 @@ public final class Hooks
             return;
         }
 
+        if (net.sythix.client.module.performance.Benchmark.isRunning())
+        {
+            String text = "Benchmark " + Math.round(net.sythix.client.module.performance.Benchmark.progress() * 100.0F) + "% - FPS " + Minecraft.getDebugFPS();
+            mc.fontRenderer.drawString(text, (float)(res.getScaledWidth() / 2 - mc.fontRenderer.getStringWidth(text) / 2), 4.0F, SythixTheme.LIGHT_BLUE, true);
+            return;
+        }
+
         RecordingTools recording = on(RecordingTools.class);
         boolean recordingClean = recording != null && recording.hidesHud();
 
@@ -1261,6 +1268,33 @@ public final class Hooks
             {
                 fail(NotificationsModule.class, "notifications", t);
             }
+        }
+    }
+
+    /** The render distance written to options.txt (adaptive mode never saves its own value). */
+    public static int savedRenderDistance(int current)
+    {
+        try
+        {
+            PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
+            return optimizer == null ? current : optimizer.savedRenderDistance(current);
+        }
+        catch (Throwable t)
+        {
+            return current;
+        }
+    }
+
+    /** Once per rendered frame, after everything (including notifications) is drawn. */
+    public static void onFrame()
+    {
+        try
+        {
+            net.sythix.client.module.performance.Benchmark.onFrame();
+        }
+        catch (Throwable t)
+        {
+            fail(PerformanceOptimizer.class, "benchmark", t);
         }
     }
 

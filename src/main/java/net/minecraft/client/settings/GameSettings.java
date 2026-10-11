@@ -1435,7 +1435,7 @@ public class GameSettings
             printwriter.println("fov:" + (this.fovSetting - 70.0F) / 40.0F);
             printwriter.println("gamma:" + this.gammaSetting);
             printwriter.println("saturation:" + this.saturation);
-            printwriter.println("renderDistance:" + this.renderDistanceChunks);
+            printwriter.println("renderDistance:" + net.sythix.client.core.Hooks.savedRenderDistance(this.renderDistanceChunks));
             printwriter.println("guiScale:" + this.guiScale);
             printwriter.println("particles:" + this.particleSetting);
             printwriter.println("bobView:" + this.viewBobbing);

@@ -1224,6 +1224,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             this.mcProfiler.endStartSection("toasts");
             this.toastGui.drawToast(new ScaledResolution(this));
             net.sythix.client.core.Hooks.renderNotifications(new ScaledResolution(this));
+            net.sythix.client.core.Hooks.onFrame();
             this.mcProfiler.endSection();
         }
 
