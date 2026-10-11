@@ -16,6 +16,10 @@ public final class ModuleErrors
 {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final List<String> REPORTS = new ArrayList<String>();
+    private static final java.util.Set<Module> DISABLED = new java.util.LinkedHashSet<Module>();
+
+    /** When false, no notification is shown for module errors. */
+    public static boolean notify = true;
 
     /** When false, failing modules stay on (only for debugging). */
     public static boolean autoDisable = true;
@@ -40,7 +44,12 @@ public final class ModuleErrors
         if (module != null && autoDisable && !module.isCore() && module.isEnabled())
         {
             module.setEnabled(false);
-            Notifications.post("Module disabled", name + " hit an error and was switched off.", Notifications.Kind.ERROR);
+            DISABLED.add(module);
+
+            if (notify)
+            {
+                Notifications.post("Module disabled", name + " hit an error and was switched off.", Notifications.Kind.ERROR);
+            }
         }
     }
 
@@ -52,5 +61,25 @@ public final class ModuleErrors
     public static synchronized void clear()
     {
         REPORTS.clear();
+    }
+
+    /** Modules switched off because of an error (this session). */
+    public static synchronized List<Module> getDisabled()
+    {
+        return new ArrayList<Module>(DISABLED);
+    }
+
+    /** Turns the auto-disabled modules back on; returns how many. */
+    public static synchronized int reenableAll()
+    {
+        int n = DISABLED.size();
+
+        for (Module module : DISABLED)
+        {
+            module.setEnabled(true);
+        }
+
+        DISABLED.clear();
+        return n;
     }
 }

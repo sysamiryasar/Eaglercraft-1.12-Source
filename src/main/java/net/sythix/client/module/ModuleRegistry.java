@@ -1,6 +1,19 @@
 package net.sythix.client.module;
 
 import net.sythix.client.module.client.SearchDiscovery;
+import net.sythix.client.module.client.Accessibility;
+import net.sythix.client.module.client.HelpCenter;
+import net.sythix.client.module.client.KeybindManager;
+import net.sythix.client.module.client.ProfileManager;
+import net.sythix.client.module.client.SettingsManager;
+import net.sythix.client.module.advanced.BrowserCompatibility;
+import net.sythix.client.module.advanced.DeveloperTools;
+import net.sythix.client.module.advanced.Diagnostics;
+import net.sythix.client.module.advanced.ErrorHandler;
+import net.sythix.client.module.advanced.Localization;
+import net.sythix.client.module.advanced.PluginFramework;
+import net.sythix.client.module.advanced.SafeMode;
+import net.sythix.client.module.advanced.UpdateManager;
 import net.sythix.client.module.recording.PracticeTools;
 import net.sythix.client.module.recording.RecordingTools;
 import net.sythix.client.module.recording.ReplaySystem;
@@ -123,6 +136,21 @@ final class ModuleRegistry
         m.register(new StatisticsTracker());
         m.register(new PracticeTools());
         // I. Client configuration
+        m.register(new KeybindManager());
+        m.register(new ProfileManager());
+        m.register(new SettingsManager());
         m.register(new SearchDiscovery());
+        m.register(new Accessibility());
+        m.register(new HelpCenter());
+        // J. Advanced and system
+        m.register(new Diagnostics());
+        m.register(new ErrorHandler());
+        m.register(new SafeMode());
+        m.register(new UpdateManager());
+        m.register(new PluginFramework());
+        m.register(new DeveloperTools());
+        m.register(new PrivacyControls());
+        m.register(new BrowserCompatibility());
+        m.register(new Localization());
     }
 }

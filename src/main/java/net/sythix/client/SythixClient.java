@@ -43,6 +43,14 @@ public final class SythixClient
         {
             instance = new SythixClient(mc);
             instance.configManager.load();
+            net.sythix.client.module.advanced.PluginFramework plugins = instance.moduleManager.get(net.sythix.client.module.advanced.PluginFramework.class);
+
+            if (plugins != null && plugins.shouldLoad() && net.sythix.client.plugin.PluginLoader.load(mc.mcDataDir, instance.moduleManager) > 0)
+            {
+                // Load again so the new plugin modules get their saved settings
+                instance.configManager.load();
+            }
+
             LOGGER.info("[Sythix] {} {} started", FULL_NAME, VERSION);
         }
     }

@@ -228,7 +228,7 @@ public class StatisticsTracker extends TextHudModule
         protected List<Row> rows()
         {
             List<Row> rows = new ArrayList<Row>();
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            SimpleDateFormat fmt = net.sythix.client.module.advanced.Localization.dateTime(false);
 
             for (int i = StatisticsTracker.this.history.size() - 1; i >= 0; --i)
             {

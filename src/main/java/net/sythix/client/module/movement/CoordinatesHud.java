@@ -38,7 +38,7 @@ public class CoordinatesHud extends TextHudModule
 
     private String fmt(double v)
     {
-        return String.format("%." + this.decimals.getInt() + "f", v);
+        return net.sythix.client.module.advanced.Localization.number(v, this.decimals.getInt());
     }
 
     public void onKey(int keyCode)

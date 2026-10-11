@@ -45,9 +45,10 @@ public abstract class StyledHudModule extends HudModule
 
     protected void drawBox(int width, int height)
     {
-        if (this.background.isOn())
+        if (this.background.isOn() || net.sythix.client.module.client.Accessibility.highContrast())
         {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)width, (float)height, this.backgroundColor.getColor());
+            int color = net.sythix.client.module.client.Accessibility.highContrast() ? 0xE8000000 : this.backgroundColor.getColor();
+            SythixTheme.drawRect(0.0F, 0.0F, (float)width, (float)height, color);
 
             if (this.accentLine.isOn())
             {
@@ -85,6 +86,6 @@ public abstract class StyledHudModule extends HudModule
     protected void drawText(String text, float x, float y, int color)
     {
         FontRenderer font = this.mc.fontRenderer;
-        font.drawString(text, x, y, color | 0xFF000000, this.textShadow.isOn());
+        font.drawString(text, x, y, color | 0xFF000000, this.textShadow.isOn() || net.sythix.client.module.client.Accessibility.highContrast());
     }
 }

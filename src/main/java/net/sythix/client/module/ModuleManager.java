@@ -18,6 +18,16 @@ public class ModuleManager
     private final List<Module> modules = new ArrayList<Module>();
     private final Map<Class<?>, Module> byClass = new HashMap<Class<?>, Module>();
 
+    /** Developer Tools: measure how long each module's events take. */
+    public static boolean timing;
+    private final Map<Module, long[]> timings = new java.util.LinkedHashMap<Module, long[]>();
+
+    /** Per module: {total nanoseconds, calls} since timing was switched on. */
+    public Map<Module, long[]> getTimings()
+    {
+        return this.timings;
+    }
+
     public ModuleManager()
     {
         ModuleRegistry.registerAll(this);
@@ -86,7 +96,17 @@ public class ModuleManager
             {
                 try
                 {
-                    action.accept(module);
+                    if (timing)
+                    {
+                        long start = System.nanoTime();
+                        action.accept(module);
+                        this.timings.computeIfAbsent(module, k -> new long[2])[0] += System.nanoTime() - start;
+                        ++this.timings.get(module)[1];
+                    }
+                    else
+                    {
+                        action.accept(module);
+                    }
                 }
                 catch (Throwable t)
                 {
@@ -108,9 +128,39 @@ public class ModuleManager
         {
             if (!module.isCore() && module.getToggleKey().getKey() == keyCode)
             {
-                module.toggle();
+                if (this.holdMode())
+                {
+                    module.setEnabled(true);
+                }
+                else
+                {
+                    module.toggle();
+                }
             }
         }
+    }
+
+    /** In hold mode, releasing a module's toggle key switches it off again. */
+    public void handleToggleRelease(int keyCode)
+    {
+        if (keyCode == 0 || !this.holdMode())
+        {
+            return;
+        }
+
+        for (Module module : this.modules)
+        {
+            if (!module.isCore() && module.getToggleKey().getKey() == keyCode)
+            {
+                module.setEnabled(false);
+            }
+        }
+    }
+
+    private boolean holdMode()
+    {
+        net.sythix.client.module.client.KeybindManager keys = this.get(net.sythix.client.module.client.KeybindManager.class);
+        return keys != null && keys.holdMode();
     }
 
     public void resetAll()

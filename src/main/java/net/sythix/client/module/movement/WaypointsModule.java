@@ -104,7 +104,7 @@ public class WaypointsModule extends Module
         if (dead && !this.wasDead && this.deathMarkers.isOn())
         {
             List<Waypoint> list = WaypointStore.current();
-            Waypoint w = new Waypoint("Death " + new SimpleDateFormat("HH:mm").format(new Date()), (int)Math.floor(this.mc.player.posX), (int)Math.floor(this.mc.player.posY), (int)Math.floor(this.mc.player.posZ), this.dimension(), this.deathColor.getArgb() & 0xFFFFFF);
+            Waypoint w = new Waypoint("Death " + net.sythix.client.module.advanced.Localization.time().format(new Date()), (int)Math.floor(this.mc.player.posX), (int)Math.floor(this.mc.player.posY), (int)Math.floor(this.mc.player.posZ), this.dimension(), this.deathColor.getArgb() & 0xFFFFFF);
             w.death = true;
             list.add(w);
             List<Waypoint> deaths = new ArrayList<Waypoint>();

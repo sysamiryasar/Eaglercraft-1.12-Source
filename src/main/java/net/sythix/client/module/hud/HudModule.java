@@ -66,7 +66,7 @@ public abstract class HudModule extends Module
 
     public float getScale()
     {
-        return this.scale.getFloat();
+        return this.scale.getFloat() * net.sythix.client.module.client.Accessibility.hudScale();
     }
 
     public float getScaledWidth()
@@ -81,7 +81,8 @@ public abstract class HudModule extends Module
 
     public float getScreenX(ScaledResolution res)
     {
-        return (float)(this.posX * Math.max(0.0F, (float)res.getScaledWidth() - this.getScaledWidth()));
+        double x = net.sythix.client.module.advanced.Localization.mirrorHud() ? 1.0D - this.posX : this.posX;
+        return (float)(x * Math.max(0.0F, (float)res.getScaledWidth() - this.getScaledWidth()));
     }
 
     public float getScreenY(ScaledResolution res)
@@ -95,6 +96,11 @@ public abstract class HudModule extends Module
         float freeX = (float)res.getScaledWidth() - this.getScaledWidth();
         float freeY = (float)res.getScaledHeight() - this.getScaledHeight();
         this.posX = freeX <= 0.0F ? 0.0D : Math.max(0.0D, Math.min(1.0D, (double)(x / freeX)));
+
+        if (net.sythix.client.module.advanced.Localization.mirrorHud())
+        {
+            this.posX = 1.0D - this.posX;
+        }
         this.posY = freeY <= 0.0F ? 0.0D : Math.max(0.0D, Math.min(1.0D, (double)(y / freeY)));
     }
 

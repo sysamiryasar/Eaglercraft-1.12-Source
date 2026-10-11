@@ -132,7 +132,7 @@ public class ReplaySystem extends Module
         protected List<Row> rows()
         {
             List<Row> rows = new ArrayList<Row>();
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat fmt = net.sythix.client.module.advanced.Localization.dateTime(true);
 
             for (int i = ReplaySystem.this.bookmarks.size() - 1; i >= 0; --i)
             {

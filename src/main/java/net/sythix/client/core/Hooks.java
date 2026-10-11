@@ -121,6 +121,7 @@ public final class Hooks
 
         if (m != null)
         {
+            m.handleToggleRelease(keyCode);
             m.forEachEnabled("key release", module -> module.onKeyRelease(keyCode));
         }
     }

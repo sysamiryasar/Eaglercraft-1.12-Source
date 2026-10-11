@@ -80,6 +80,14 @@ public class ConfigManager
                     }
                 }
             }
+
+            // Apply theme colours now so the first menu already uses them
+            net.sythix.client.module.hud.InterfaceThemeModule theme = this.modules.get(net.sythix.client.module.hud.InterfaceThemeModule.class);
+
+            if (theme != null)
+            {
+                theme.apply();
+            }
         }
     }
 
