@@ -179,6 +179,7 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
             }
         }
 
+        net.sythix.client.core.Hooks.modifyTooltip(p_191927_1_, list);
         return list;
     }
 

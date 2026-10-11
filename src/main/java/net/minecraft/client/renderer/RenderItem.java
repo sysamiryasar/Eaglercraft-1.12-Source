@@ -218,14 +218,14 @@ public class RenderItem implements IResourceManagerReloadListener
                 float f = (float)(Minecraft.getSystemTime() % 3000L) / 3000.0F / 8.0F;
                 GlStateManager.translate(f, 0.0F, 0.0F);
                 GlStateManager.rotate(-50.0F, 0.0F, 0.0F, 1.0F);
-                this.renderModel(model, -8372020);
+                this.renderModel(model, net.sythix.client.core.Hooks.itemGlint(-8372020));
                 GlStateManager.popMatrix();
                 GlStateManager.pushMatrix();
                 GlStateManager.scale(8.0F, 8.0F, 8.0F);
                 float f1 = (float)(Minecraft.getSystemTime() % 4873L) / 4873.0F / 8.0F;
                 GlStateManager.translate(-f1, 0.0F, 0.0F);
                 GlStateManager.rotate(10.0F, 0.0F, 0.0F, 1.0F);
-                this.renderModel(model, -8372020);
+                this.renderModel(model, net.sythix.client.core.Hooks.itemGlint(-8372020));
                 GlStateManager.popMatrix();
                 GlStateManager.matrixMode(5888);
                 GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);

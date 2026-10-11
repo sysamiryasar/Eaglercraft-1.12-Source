@@ -618,7 +618,13 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 flag = GameSettings.isKeyDown(this.mc.gameSettings.ofKeyBindZoom);
             }
 
-            if (flag)
+            float sythixZoom = useFOVSetting ? net.sythix.client.core.Hooks.zoomFov(f, flag) : -1.0F;
+
+            if (sythixZoom >= 0.0F)
+            {
+                f = sythixZoom;
+            }
+            else if (flag)
             {
                 if (!Config.zoomMode)
                 {
@@ -742,7 +748,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
         else if (this.mc.gameSettings.thirdPersonView > 0)
         {
-            double d3 = (double)(this.thirdPersonDistancePrev + (4.0F - this.thirdPersonDistancePrev) * partialTicks);
+            double d3 = (double)(this.thirdPersonDistancePrev + (net.sythix.client.core.Hooks.thirdPersonDistance() - this.thirdPersonDistancePrev) * partialTicks);
 
             if (this.mc.gameSettings.debugCamEnable)
             {
@@ -920,7 +926,9 @@ public class EntityRenderer implements IResourceManagerReloadListener
             GlStateManager.rotate(-((float)this.rendererUpdateCount + partialTicks) * (float)i, 0.0F, 1.0F, 1.0F);
         }
 
+        net.sythix.client.core.Hooks.preCamera(this.mc.getRenderViewEntity());
         this.orientCamera(partialTicks);
+        net.sythix.client.core.Hooks.postCamera(this.mc.getRenderViewEntity());
 
         if (this.debugView)
         {
@@ -1288,13 +1296,21 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 this.smoothCamPartialTicks = partialTicks;
                 f2 = this.smoothCamFilterX * f4;
                 f3 = this.smoothCamFilterY * f4;
-                this.mc.player.turn(f2, f3 * (float)i);
+
+                if (!net.sythix.client.core.Hooks.freelookTurn(f2, f3 * (float)i))
+                {
+                    this.mc.player.turn(f2, f3 * (float)i);
+                }
             }
             else
             {
                 this.smoothCamYaw = 0.0F;
                 this.smoothCamPitch = 0.0F;
-                this.mc.player.turn(f2, f3 * (float)i);
+
+                if (!net.sythix.client.core.Hooks.freelookTurn(f2, f3 * (float)i))
+                {
+                    this.mc.player.turn(f2, f3 * (float)i);
+                }
             }
         }
 
@@ -1890,6 +1906,8 @@ public class EntityRenderer implements IResourceManagerReloadListener
             Reflector.callVoid(Reflector.ForgeHooksClient_dispatchRenderLast, renderglobal, partialTicks);
         }
 
+        this.mc.mcProfiler.endStartSection("sythixWorld");
+        net.sythix.client.core.Hooks.onRenderWorld(partialTicks);
         this.mc.mcProfiler.endStartSection("hand");
 
         if (this.renderHand && !Shaders.isShadowPass)

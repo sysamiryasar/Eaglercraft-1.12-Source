@@ -178,7 +178,16 @@ public abstract class LayerArmorBase<T extends ModelBase> implements LayerRender
                 GlStateManager.disableLighting();
                 GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_COLOR, GlStateManager.DestFactor.ONE);
                 float f2 = 0.76F;
-                GlStateManager.color(0.38F, 0.19F, 0.608F, 1.0F);
+                float[] sythixGlint = net.sythix.client.core.Hooks.armorGlint();
+
+                if (sythixGlint != null)
+                {
+                    GlStateManager.color(sythixGlint[0], sythixGlint[1], sythixGlint[2], 1.0F);
+                }
+                else
+                {
+                    GlStateManager.color(0.38F, 0.19F, 0.608F, 1.0F);
+                }
                 GlStateManager.matrixMode(5890);
                 GlStateManager.loadIdentity();
                 float f3 = 0.33333334F;

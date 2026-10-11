@@ -13,6 +13,9 @@ import net.sythix.client.SythixClient;
 import net.sythix.client.module.Module;
 import net.sythix.client.module.ModuleManager;
 import net.sythix.client.module.hud.HudModule;
+import net.sythix.client.module.inventory.InventoryEnhancements;
+import net.sythix.client.module.inventory.ItemInformation;
+import net.sythix.client.module.movement.CameraTools;
 import net.sythix.client.module.performance.AnimationController;
 import net.sythix.client.module.performance.ParticleController;
 import net.sythix.client.module.performance.PerformanceMonitor;
@@ -343,5 +346,151 @@ public final class Hooks
     {
         MovementControls controls = on(MovementControls.class);
         return controls == null ? 1.0F : controls.bobbingAmount();
+    }
+
+    // ---- Camera Tools ---------------------------------------------------------------------------
+
+    /** Returns the zoomed FOV, or -1 when Camera Tools is off (vanilla/OptiFine zoom then applies). */
+    public static float zoomFov(float fov, boolean zoomKeyDown)
+    {
+        CameraTools tools = on(CameraTools.class);
+
+        if (tools == null)
+        {
+            return -1.0F;
+        }
+
+        try
+        {
+            return tools.zoomFov(fov, zoomKeyDown);
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "zoom", t);
+            return -1.0F;
+        }
+    }
+
+    /** Lets Camera Tools use the mouse wheel while zooming. Returns true when consumed. */
+    public static boolean consumeScroll(int wheel)
+    {
+        CameraTools tools = on(CameraTools.class);
+        return tools != null && tools.onScroll(wheel);
+    }
+
+    /** Freelook: returns true when mouse movement went to the free camera instead of the player. */
+    public static boolean freelookTurn(float yaw, float pitch)
+    {
+        CameraTools tools = on(CameraTools.class);
+        return tools != null && tools.turn(yaw, pitch);
+    }
+
+    public static void preCamera(Entity entity)
+    {
+        CameraTools tools = on(CameraTools.class);
+
+        if (tools != null)
+        {
+            tools.preCamera(entity);
+        }
+    }
+
+    public static void postCamera(Entity entity)
+    {
+        CameraTools tools = on(CameraTools.class);
+
+        if (tools != null)
+        {
+            tools.postCamera(entity);
+        }
+    }
+
+    public static float thirdPersonDistance()
+    {
+        CameraTools tools = on(CameraTools.class);
+        return tools == null ? 4.0F : tools.getThirdPersonDistance();
+    }
+
+    public static boolean skipFrontView()
+    {
+        CameraTools tools = on(CameraTools.class);
+        return tools != null && tools.skipFrontView();
+    }
+
+    // ---- Inventory and items -------------------------------------------------------------------
+
+    public static void modifyTooltip(ItemStack stack, java.util.List<String> lines)
+    {
+        ItemInformation info = on(ItemInformation.class);
+
+        if (info != null)
+        {
+            try
+            {
+                info.modifyTooltip(stack, lines);
+            }
+            catch (Throwable t)
+            {
+                fail(ItemInformation.class, "tooltip", t);
+            }
+        }
+    }
+
+    public static int heldNameTicks(int vanilla)
+    {
+        ItemInformation info = on(ItemInformation.class);
+        return info == null ? vanilla : info.getHeldNameTicks();
+    }
+
+    public static int itemGlint(int vanilla)
+    {
+        ItemInformation info = on(ItemInformation.class);
+        return info == null ? vanilla : info.itemGlint(vanilla);
+    }
+
+    public static float[] armorGlint()
+    {
+        ItemInformation info = on(ItemInformation.class);
+        return info == null ? null : info.armorGlint();
+    }
+
+    public static void drawContainerOverlay(net.minecraft.client.gui.inventory.GuiContainer gui, int mouseX, int mouseY)
+    {
+        InventoryEnhancements enh = on(InventoryEnhancements.class);
+
+        if (enh != null)
+        {
+            try
+            {
+                net.minecraft.client.renderer.GlStateManager.disableLighting();
+                net.minecraft.client.renderer.GlStateManager.disableDepth();
+                enh.draw(gui, mouseX, mouseY);
+            }
+            catch (Throwable t)
+            {
+                fail(InventoryEnhancements.class, "inventory overlay", t);
+            }
+        }
+    }
+
+    public static boolean containerClick(net.minecraft.client.gui.inventory.GuiContainer gui, int mouseX, int mouseY, int button)
+    {
+        InventoryEnhancements enh = on(InventoryEnhancements.class);
+
+        try
+        {
+            return enh != null && enh.click(gui, mouseX, mouseY, button);
+        }
+        catch (Throwable t)
+        {
+            fail(InventoryEnhancements.class, "inventory click", t);
+            return false;
+        }
+    }
+
+    public static boolean containerKey(net.minecraft.client.gui.inventory.GuiContainer gui, char typedChar, int keyCode)
+    {
+        InventoryEnhancements enh = on(InventoryEnhancements.class);
+        return enh != null && enh.key(gui, typedChar, keyCode);
     }
 }

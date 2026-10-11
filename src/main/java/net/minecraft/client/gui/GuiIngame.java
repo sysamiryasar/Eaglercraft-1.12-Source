@@ -1319,7 +1319,7 @@ public class GuiIngame extends Gui
             }
             else
             {
-                this.remainingHighlightTicks = 40;
+                this.remainingHighlightTicks = net.sythix.client.core.Hooks.heldNameTicks(40);
             }
 
             this.highlightingItemStack = itemstack;

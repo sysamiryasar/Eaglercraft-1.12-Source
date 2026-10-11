@@ -2259,7 +2259,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         {
             ++this.gameSettings.thirdPersonView;
 
-            if (this.gameSettings.thirdPersonView > 2)
+            if (this.gameSettings.thirdPersonView > 2 || (this.gameSettings.thirdPersonView == 2 && net.sythix.client.core.Hooks.skipFrontView()))
             {
                 this.gameSettings.thirdPersonView = 0;
             }
@@ -2435,6 +2435,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             if (j <= 200L)
             {
                 int k = Mouse.getEventDWheel();
+
+                if (k != 0 && this.currentScreen == null && net.sythix.client.core.Hooks.consumeScroll(k))
+                {
+                    k = 0;
+                }
 
                 if (k != 0)
                 {

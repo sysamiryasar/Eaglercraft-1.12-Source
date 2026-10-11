@@ -2,6 +2,16 @@ package net.sythix.client.module;
 
 import net.sythix.client.module.client.SearchDiscovery;
 import net.sythix.client.module.hud.CpsModule;
+import net.sythix.client.module.inventory.InventoryEnhancements;
+import net.sythix.client.module.inventory.InventoryHud;
+import net.sythix.client.module.inventory.ItemCounters;
+import net.sythix.client.module.inventory.ItemInformation;
+import net.sythix.client.module.inventory.WorldInformation;
+import net.sythix.client.module.movement.CameraTools;
+import net.sythix.client.module.movement.CompassHud;
+import net.sythix.client.module.movement.CoordinatesHud;
+import net.sythix.client.module.movement.MovementHud;
+import net.sythix.client.module.movement.WaypointsModule;
 import net.sythix.client.module.hud.KeystrokesModule;
 import net.sythix.client.module.performance.AnimationController;
 import net.sythix.client.module.performance.GraphicsController;
@@ -47,6 +57,18 @@ final class ModuleRegistry
         m.register(new PotionHud());
         m.register(new CombatTimers());
         m.register(new MovementControls());
+        // C. Movement and navigation
+        m.register(new CameraTools());
+        m.register(new MovementHud());
+        m.register(new CoordinatesHud());
+        m.register(new CompassHud());
+        m.register(new WaypointsModule());
+        // D. Inventory and items
+        m.register(new InventoryHud());
+        m.register(new ItemCounters());
+        m.register(new ItemInformation());
+        m.register(new InventoryEnhancements());
+        m.register(new WorldInformation());
         // I. Client configuration
         m.register(new SearchDiscovery());
     }
