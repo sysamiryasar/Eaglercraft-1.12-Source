@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.WeakHashMap;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.init.SoundEvents;
@@ -43,8 +42,10 @@ public class ChatModule extends Module
     private final NumberSetting history;
 
     /** Original message for each drawn line, and its highlight colour (0 = none). */
-    private final Map<ITextComponent, ITextComponent> lineToMessage = new WeakHashMap<ITextComponent, ITextComponent>();
-    private final Map<ITextComponent, Integer> lineHighlight = new WeakHashMap<ITextComponent, Integer>();
+    // Identity maps with weak keys: vanilla Style.hashCode() throws for styles without a colour,
+    // so chat components must never be hashed by value
+    private final Map<ITextComponent, ITextComponent> lineToMessage = new com.google.common.collect.MapMaker().weakKeys().makeMap();
+    private final Map<ITextComponent, Integer> lineHighlight = new com.google.common.collect.MapMaker().weakKeys().makeMap();
     private String lastText = "";
     private int lastCount;
     private int lastId;

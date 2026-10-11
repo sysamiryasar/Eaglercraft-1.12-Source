@@ -198,7 +198,7 @@ public class GuiProfile extends GuiScreen
 
         try
         {
-            this.drawPlayer(this.px + 6 + (left - 6) / 2, this.py + 30 + (int)(scale * 2.05F), scale);
+            this.drawPlayer(this.px + 6 + (left - 6) / 2, this.py + 42 + (int)(scale * 0.5F), scale);
         }
         catch (Throwable t)
         {
@@ -252,11 +252,15 @@ public class GuiProfile extends GuiScreen
 
         float age = (float)(Minecraft.getSystemTime() % 100000L) / 50.0F;
         GlStateManager.enableColorMaterial();
+        // Menus draw without depth writes; the model needs them so the cape stays behind the body
+        GlStateManager.depthMask(true);
+        GlStateManager.clear(256);
         GlStateManager.enableDepth();
         GlStateManager.pushMatrix();
         GlStateManager.translate((float)x, (float)y, 200.0F);
+        // Model space already has +Y pointing down like the screen. The GUI projection is mirrored,
+        // so mirror X once to keep face culling and depth correct
         GlStateManager.scale(-scale, scale, scale);
-        GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
         GlStateManager.rotate(this.yaw, 0.0F, 1.0F, 0.0F);
         RenderHelper.enableStandardItemLighting();
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);

@@ -77,11 +77,11 @@ public class KeybindManager extends Module
         if (this.warnConflicts.isOn() && !this.warned)
         {
             this.warned = true;
-            int conflicts = this.countConflicts();
+            int conflicts = this.countConflicts(true);
 
             if (conflicts > 0)
             {
-                Notifications.post("Key conflicts", conflicts + " keys share a key. Open Keybind Manager to fix.", Notifications.Kind.WARNING);
+                Notifications.post("Key conflicts", conflicts + " Sythix keys share a key with something else. Open Keybind Manager to fix.", Notifications.Kind.WARNING);
             }
         }
     }
@@ -128,13 +128,29 @@ public class KeybindManager extends Module
 
     public int countConflicts()
     {
+        return this.countConflicts(false);
+    }
+
+    /** Conflicting entries; sythixOnly counts only clashes that involve a Sythix key. */
+    public int countConflicts(boolean sythixOnly)
+    {
         List<Entry> entries = this.entries();
         Map<Integer, Integer> usage = this.keyUsage(entries);
         int count = 0;
 
+        Map<Integer, Integer> sythixUsage = new HashMap<Integer, Integer>();
+
         for (Entry e : entries)
         {
-            if (e.key() != 0 && usage.get(Integer.valueOf(e.key())).intValue() > 1)
+            if (e.setting != null && e.key() != 0)
+            {
+                sythixUsage.merge(Integer.valueOf(e.key()), Integer.valueOf(1), Integer::sum);
+            }
+        }
+
+        for (Entry e : entries)
+        {
+            if (e.key() != 0 && usage.get(Integer.valueOf(e.key())).intValue() > 1 && (!sythixOnly || sythixUsage.containsKey(Integer.valueOf(e.key()))))
             {
                 ++count;
             }

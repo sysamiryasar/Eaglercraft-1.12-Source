@@ -37,7 +37,7 @@ public class PracticeTools extends TextHudModule
 
     public PracticeTools()
     {
-        super("Practice Tools", "CPS test, interval training timer and a practice session HUD.", Category.RECORDING, false, 0.5D, 0.3D);
+        super("Practice Tools", "CPS test, interval training timer and a practice session HUD.", Category.RECORDING, false, 0.5D, 0.4D);
         this.cpsTestKey = this.add(new KeybindSetting("CPS Test Key", "Start a click-speed test, then click as fast as you can.", 0));
         this.cpsTestLength = this.add(new NumberSetting("CPS Test Length", "How long the test lasts.", 10.0D, 5.0D, 30.0D, 5.0D, "s"));
         this.timerKey = this.add(new KeybindSetting("Interval Timer Key", "Start or stop a beeping interval timer.", 0));

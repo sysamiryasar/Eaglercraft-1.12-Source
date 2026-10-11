@@ -145,6 +145,7 @@ public final class Hooks
     /** Start of every client tick. */
     public static void onTick()
     {
+        SelfTest.tick();
         ModuleManager m = modules();
 
         if (m == null)
@@ -269,69 +270,155 @@ public final class Hooks
     /** True if the crosshair should also be drawn in third person. */
     public static boolean crosshairInThirdPerson()
     {
-        CrosshairModule crosshair = on(CrosshairModule.class);
-        return crosshair != null && crosshair.showInThirdPerson();
+        try
+        {
+            CrosshairModule crosshair = on(CrosshairModule.class);
+            return crosshair != null && crosshair.showInThirdPerson();
+        }
+        catch (Throwable t)
+        {
+            fail(CrosshairModule.class, "crosshairInThirdPerson", t);
+            CrosshairModule crosshair = (CrosshairModule)null;
+            return crosshair != null && crosshair.showInThirdPerson();
+        }
     }
 
     public static boolean hideVanillaPotionIcons()
     {
-        PotionHud hud = on(PotionHud.class);
-        return hud != null && hud.hideVanillaOverlay();
+        try
+        {
+            PotionHud hud = on(PotionHud.class);
+            return hud != null && hud.hideVanillaOverlay();
+        }
+        catch (Throwable t)
+        {
+            fail(PotionHud.class, "hideVanillaPotionIcons", t);
+            PotionHud hud = (PotionHud)null;
+            return hud != null && hud.hideVanillaOverlay();
+        }
     }
 
     // ---- Performance --------------------------------------------------------------------------
 
     public static int limitFramerate(int vanilla)
     {
-        RecordingTools recording = on(RecordingTools.class);
-
-        if (recording != null && recording.fpsLock() > 0)
+        try
         {
-            return recording.fpsLock();
+            RecordingTools recording = on(RecordingTools.class);
+
+            if (recording != null && recording.fpsLock() > 0)
+            {
+                return recording.fpsLock();
+            }
+
+            PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
+
+            if (optimizer == null)
+            {
+                return vanilla;
+            }
+
+            Minecraft mc = Minecraft.getMinecraft();
+            int limit = optimizer.getFramerateLimit(org.lwjgl.opengl.Display.isActive(), mc.world != null && mc.currentScreen != null);
+            return limit > 0 ? Math.min(vanilla, limit) : vanilla;
         }
-
-        PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
-
-        if (optimizer == null)
+        catch (Throwable t)
         {
-            return vanilla;
-        }
+            fail(RecordingTools.class, "limitFramerate", t);
+            RecordingTools recording = (RecordingTools)null;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        int limit = optimizer.getFramerateLimit(org.lwjgl.opengl.Display.isActive(), mc.world != null && mc.currentScreen != null);
-        return limit > 0 ? Math.min(vanilla, limit) : vanilla;
+            if (recording != null && recording.fpsLock() > 0)
+            {
+                return recording.fpsLock();
+            }
+
+            PerformanceOptimizer optimizer = (PerformanceOptimizer)null;
+
+            if (optimizer == null)
+            {
+                return vanilla;
+            }
+
+            Minecraft mc = Minecraft.getMinecraft();
+            int limit = optimizer.getFramerateLimit(org.lwjgl.opengl.Display.isActive(), mc.world != null && mc.currentScreen != null);
+            return limit > 0 ? Math.min(vanilla, limit) : vanilla;
+        }
     }
 
     public static boolean shouldRenderEntity(Entity entity)
     {
-        PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
-
-        if (optimizer == null || optimizer.getEntityDistance() <= 0 || entity instanceof EntityPlayer)
+        try
         {
-            return true;
-        }
+            PerformanceOptimizer optimizer = on(PerformanceOptimizer.class);
 
-        Entity viewer = Minecraft.getMinecraft().getRenderViewEntity();
-        int max = optimizer.getEntityDistance();
-        return viewer == null || viewer.getDistanceSqToEntity(entity) <= (double)(max * max);
+            if (optimizer == null || optimizer.getEntityDistance() <= 0 || entity instanceof EntityPlayer)
+            {
+                return true;
+            }
+
+            Entity viewer = Minecraft.getMinecraft().getRenderViewEntity();
+            int max = optimizer.getEntityDistance();
+            return viewer == null || viewer.getDistanceSqToEntity(entity) <= (double)(max * max);
+        }
+        catch (Throwable t)
+        {
+            fail(PerformanceOptimizer.class, "shouldRenderEntity", t);
+            PerformanceOptimizer optimizer = (PerformanceOptimizer)null;
+
+            if (optimizer == null || optimizer.getEntityDistance() <= 0 || entity instanceof EntityPlayer)
+            {
+                return true;
+            }
+
+            Entity viewer = Minecraft.getMinecraft().getRenderViewEntity();
+            int max = optimizer.getEntityDistance();
+            return viewer == null || viewer.getDistanceSqToEntity(entity) <= (double)(max * max);
+        }
     }
 
     public static boolean allowParticle(Particle particle)
     {
-        ParticleController controller = on(ParticleController.class);
-        return controller == null || controller.allow(particle);
+        try
+        {
+            ParticleController controller = on(ParticleController.class);
+            return controller == null || controller.allow(particle);
+        }
+        catch (Throwable t)
+        {
+            fail(ParticleController.class, "allowParticle", t);
+            ParticleController controller = (ParticleController)null;
+            return controller == null || controller.allow(particle);
+        }
     }
 
     public static boolean itemSpin()
     {
-        AnimationController controller = on(AnimationController.class);
-        return controller == null || controller.itemSpin();
+        try
+        {
+            AnimationController controller = on(AnimationController.class);
+            return controller == null || controller.itemSpin();
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "itemSpin", t);
+            AnimationController controller = (AnimationController)null;
+            return controller == null || controller.itemSpin();
+        }
     }
 
     public static boolean itemBob()
     {
-        AnimationController controller = on(AnimationController.class);
-        return controller == null || controller.itemBob();
+        try
+        {
+            AnimationController controller = on(AnimationController.class);
+            return controller == null || controller.itemBob();
+        }
+        catch (Throwable t)
+        {
+            fail(AnimationController.class, "itemBob", t);
+            AnimationController controller = (AnimationController)null;
+            return controller == null || controller.itemBob();
+        }
     }
 
     // ---- First person and camera --------------------------------------------------------------
@@ -339,55 +426,128 @@ public final class Hooks
     /** Arm swing duration for the local player (vanilla value passed in). */
     public static int swingDuration(Entity entity, int vanilla)
     {
-        CombatAnimations anim = on(CombatAnimations.class);
-
-        if (anim == null || entity != Minecraft.getMinecraft().player)
+        try
         {
-            return vanilla;
-        }
+            CombatAnimations anim = on(CombatAnimations.class);
 
-        return Math.max(1, Math.round((float)vanilla / anim.getSwingSpeed()));
+            if (anim == null || entity != Minecraft.getMinecraft().player)
+            {
+                return vanilla;
+            }
+
+            return Math.max(1, Math.round((float)vanilla / anim.getSwingSpeed()));
+        }
+        catch (Throwable t)
+        {
+            fail(CombatAnimations.class, "swingDuration", t);
+            CombatAnimations anim = (CombatAnimations)null;
+
+            if (anim == null || entity != Minecraft.getMinecraft().player)
+            {
+                return vanilla;
+            }
+
+            return Math.max(1, Math.round((float)vanilla / anim.getSwingSpeed()));
+        }
     }
 
     public static boolean classicBlocking(ItemStack mainHand)
     {
-        CombatAnimations anim = on(CombatAnimations.class);
-        return anim != null && anim.isClassicBlocking(mainHand);
+        try
+        {
+            CombatAnimations anim = on(CombatAnimations.class);
+            return anim != null && anim.isClassicBlocking(mainHand);
+        }
+        catch (Throwable t)
+        {
+            fail(CombatAnimations.class, "classicBlocking", t);
+            CombatAnimations anim = (CombatAnimations)null;
+            return anim != null && anim.isClassicBlocking(mainHand);
+        }
     }
 
     public static boolean swingWhileUsing()
     {
-        CombatAnimations anim = on(CombatAnimations.class);
-        return anim != null && anim.swingWhileUsing();
+        try
+        {
+            CombatAnimations anim = on(CombatAnimations.class);
+            return anim != null && anim.swingWhileUsing();
+        }
+        catch (Throwable t)
+        {
+            fail(CombatAnimations.class, "swingWhileUsing", t);
+            CombatAnimations anim = (CombatAnimations)null;
+            return anim != null && anim.swingWhileUsing();
+        }
     }
 
     public static boolean noEquipBounce()
     {
-        CombatAnimations anim = on(CombatAnimations.class);
-        return anim != null && anim.noEquipBounce();
+        try
+        {
+            CombatAnimations anim = on(CombatAnimations.class);
+            return anim != null && anim.noEquipBounce();
+        }
+        catch (Throwable t)
+        {
+            fail(CombatAnimations.class, "noEquipBounce", t);
+            CombatAnimations anim = (CombatAnimations)null;
+            return anim != null && anim.noEquipBounce();
+        }
     }
 
     /** Applies Viewmodel offsets for one hand. */
     public static void applyViewmodel(EnumHand hand, float sideSign)
     {
-        ViewmodelModule viewmodel = on(ViewmodelModule.class);
-
-        if (viewmodel != null)
+        try
         {
-            viewmodel.apply(hand, sideSign);
+            ViewmodelModule viewmodel = on(ViewmodelModule.class);
+
+            if (viewmodel != null)
+            {
+                viewmodel.apply(hand, sideSign);
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(ViewmodelModule.class, "applyViewmodel", t);
+            ViewmodelModule viewmodel = (ViewmodelModule)null;
+
+            if (viewmodel != null)
+            {
+                viewmodel.apply(hand, sideSign);
+            }
         }
     }
 
     public static boolean staticFov()
     {
-        MovementControls controls = on(MovementControls.class);
-        return controls != null && controls.staticFov();
+        try
+        {
+            MovementControls controls = on(MovementControls.class);
+            return controls != null && controls.staticFov();
+        }
+        catch (Throwable t)
+        {
+            fail(MovementControls.class, "staticFov", t);
+            MovementControls controls = (MovementControls)null;
+            return controls != null && controls.staticFov();
+        }
     }
 
     public static float bobbingAmount()
     {
-        MovementControls controls = on(MovementControls.class);
-        return controls == null ? 1.0F : controls.bobbingAmount();
+        try
+        {
+            MovementControls controls = on(MovementControls.class);
+            return controls == null ? 1.0F : controls.bobbingAmount();
+        }
+        catch (Throwable t)
+        {
+            fail(MovementControls.class, "bobbingAmount", t);
+            MovementControls controls = (MovementControls)null;
+            return controls == null ? 1.0F : controls.bobbingAmount();
+        }
     }
 
     // ---- Camera Tools ---------------------------------------------------------------------------
@@ -416,47 +576,109 @@ public final class Hooks
     /** Lets Camera Tools use the mouse wheel while zooming. Returns true when consumed. */
     public static boolean consumeScroll(int wheel)
     {
-        CameraTools tools = on(CameraTools.class);
-        return tools != null && tools.onScroll(wheel);
+        try
+        {
+            CameraTools tools = on(CameraTools.class);
+            return tools != null && tools.onScroll(wheel);
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "consumeScroll", t);
+            CameraTools tools = (CameraTools)null;
+            return tools != null && tools.onScroll(wheel);
+        }
     }
 
     /** Freelook: returns true when mouse movement went to the free camera instead of the player. */
     public static boolean freelookTurn(float yaw, float pitch)
     {
-        CameraTools tools = on(CameraTools.class);
-        return tools != null && tools.turn(yaw, pitch);
+        try
+        {
+            CameraTools tools = on(CameraTools.class);
+            return tools != null && tools.turn(yaw, pitch);
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "freelookTurn", t);
+            CameraTools tools = (CameraTools)null;
+            return tools != null && tools.turn(yaw, pitch);
+        }
     }
 
     public static void preCamera(Entity entity)
     {
-        CameraTools tools = on(CameraTools.class);
-
-        if (tools != null)
+        try
         {
-            tools.preCamera(entity);
+            CameraTools tools = on(CameraTools.class);
+
+            if (tools != null)
+            {
+                tools.preCamera(entity);
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "preCamera", t);
+            CameraTools tools = (CameraTools)null;
+
+            if (tools != null)
+            {
+                tools.preCamera(entity);
+            }
         }
     }
 
     public static void postCamera(Entity entity)
     {
-        CameraTools tools = on(CameraTools.class);
-
-        if (tools != null)
+        try
         {
-            tools.postCamera(entity);
+            CameraTools tools = on(CameraTools.class);
+
+            if (tools != null)
+            {
+                tools.postCamera(entity);
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "postCamera", t);
+            CameraTools tools = (CameraTools)null;
+
+            if (tools != null)
+            {
+                tools.postCamera(entity);
+            }
         }
     }
 
     public static float thirdPersonDistance()
     {
-        CameraTools tools = on(CameraTools.class);
-        return tools == null ? 4.0F : tools.getThirdPersonDistance();
+        try
+        {
+            CameraTools tools = on(CameraTools.class);
+            return tools == null ? 4.0F : tools.getThirdPersonDistance();
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "thirdPersonDistance", t);
+            CameraTools tools = (CameraTools)null;
+            return tools == null ? 4.0F : tools.getThirdPersonDistance();
+        }
     }
 
     public static boolean skipFrontView()
     {
-        CameraTools tools = on(CameraTools.class);
-        return tools != null && tools.skipFrontView();
+        try
+        {
+            CameraTools tools = on(CameraTools.class);
+            return tools != null && tools.skipFrontView();
+        }
+        catch (Throwable t)
+        {
+            fail(CameraTools.class, "skipFrontView", t);
+            CameraTools tools = (CameraTools)null;
+            return tools != null && tools.skipFrontView();
+        }
     }
 
     // ---- Inventory and items -------------------------------------------------------------------
@@ -480,20 +702,47 @@ public final class Hooks
 
     public static int heldNameTicks(int vanilla)
     {
-        ItemInformation info = on(ItemInformation.class);
-        return info == null ? vanilla : info.getHeldNameTicks();
+        try
+        {
+            ItemInformation info = on(ItemInformation.class);
+            return info == null ? vanilla : info.getHeldNameTicks();
+        }
+        catch (Throwable t)
+        {
+            fail(ItemInformation.class, "heldNameTicks", t);
+            ItemInformation info = (ItemInformation)null;
+            return info == null ? vanilla : info.getHeldNameTicks();
+        }
     }
 
     public static int itemGlint(int vanilla)
     {
-        ItemInformation info = on(ItemInformation.class);
-        return info == null ? vanilla : info.itemGlint(vanilla);
+        try
+        {
+            ItemInformation info = on(ItemInformation.class);
+            return info == null ? vanilla : info.itemGlint(vanilla);
+        }
+        catch (Throwable t)
+        {
+            fail(ItemInformation.class, "itemGlint", t);
+            ItemInformation info = (ItemInformation)null;
+            return info == null ? vanilla : info.itemGlint(vanilla);
+        }
     }
 
     public static float[] armorGlint()
     {
-        ItemInformation info = on(ItemInformation.class);
-        return info == null ? null : info.armorGlint();
+        try
+        {
+            ItemInformation info = on(ItemInformation.class);
+            return info == null ? null : info.armorGlint();
+        }
+        catch (Throwable t)
+        {
+            fail(ItemInformation.class, "armorGlint", t);
+            ItemInformation info = (ItemInformation)null;
+            return info == null ? null : info.armorGlint();
+        }
     }
 
     public static void drawContainerOverlay(net.minecraft.client.gui.inventory.GuiContainer gui, int mouseX, int mouseY)
@@ -532,8 +781,17 @@ public final class Hooks
 
     public static boolean containerKey(net.minecraft.client.gui.inventory.GuiContainer gui, char typedChar, int keyCode)
     {
-        InventoryEnhancements enh = on(InventoryEnhancements.class);
-        return enh != null && enh.key(gui, typedChar, keyCode);
+        try
+        {
+            InventoryEnhancements enh = on(InventoryEnhancements.class);
+            return enh != null && enh.key(gui, typedChar, keyCode);
+        }
+        catch (Throwable t)
+        {
+            fail(InventoryEnhancements.class, "containerKey", t);
+            InventoryEnhancements enh = (InventoryEnhancements)null;
+            return enh != null && enh.key(gui, typedChar, keyCode);
+        }
     }
 
     // ---- HUD and interface ---------------------------------------------------------------------
@@ -541,80 +799,181 @@ public final class Hooks
     /** Returns true when the Scoreboard module draws the sidebar instead of vanilla. */
     public static boolean captureScoreboard(ScoreObjective objective)
     {
-        ScoreboardModule scoreboard = on(ScoreboardModule.class);
-        return scoreboard != null && scoreboard.capture(objective);
+        try
+        {
+            ScoreboardModule scoreboard = on(ScoreboardModule.class);
+            return scoreboard != null && scoreboard.capture(objective);
+        }
+        catch (Throwable t)
+        {
+            fail(ScoreboardModule.class, "captureScoreboard", t);
+            ScoreboardModule scoreboard = (ScoreboardModule)null;
+            return scoreboard != null && scoreboard.capture(objective);
+        }
     }
 
     public static void renderTabList(GuiPlayerTabOverlay overlay, int width, Scoreboard scoreboard, ScoreObjective objective)
     {
-        TabListModule tab = on(TabListModule.class);
-        float scale = tab == null ? 1.0F : tab.getScale();
-
-        if (scale == 1.0F)
+        try
         {
-            overlay.renderPlayerlist(width, scoreboard, objective);
-            return;
-        }
+            TabListModule tab = on(TabListModule.class);
+            float scale = tab == null ? 1.0F : tab.getScale();
 
-        GlStateManager.pushMatrix();
-        GlStateManager.scale(scale, scale, 1.0F);
-        overlay.renderPlayerlist((int)((float)width / scale), scoreboard, objective);
-        GlStateManager.popMatrix();
+            if (scale == 1.0F)
+            {
+                overlay.renderPlayerlist(width, scoreboard, objective);
+                return;
+            }
+
+            GlStateManager.pushMatrix();
+            GlStateManager.scale(scale, scale, 1.0F);
+            overlay.renderPlayerlist((int)((float)width / scale), scoreboard, objective);
+            GlStateManager.popMatrix();
+        }
+        catch (Throwable t)
+        {
+            fail(TabListModule.class, "renderTabList", t);
+            TabListModule tab = (TabListModule)null;
+            float scale = tab == null ? 1.0F : tab.getScale();
+
+            if (scale == 1.0F)
+            {
+                overlay.renderPlayerlist(width, scoreboard, objective);
+                return;
+            }
+
+            GlStateManager.pushMatrix();
+            GlStateManager.scale(scale, scale, 1.0F);
+            overlay.renderPlayerlist((int)((float)width / scale), scoreboard, objective);
+            GlStateManager.popMatrix();
+        }
     }
 
     public static int tabBackground(int vanilla)
     {
-        TabListModule tab = on(TabListModule.class);
-        return tab == null ? vanilla : tab.background(vanilla);
+        try
+        {
+            TabListModule tab = on(TabListModule.class);
+            return tab == null ? vanilla : tab.background(vanilla);
+        }
+        catch (Throwable t)
+        {
+            fail(TabListModule.class, "tabBackground", t);
+            TabListModule tab = (TabListModule)null;
+            return tab == null ? vanilla : tab.background(vanilla);
+        }
     }
 
     public static int tabRow(int vanilla, String playerName)
     {
-        FriendsManager friends = on(FriendsManager.class);
-
-        if (friends != null && friends.highlightTab() && friends.isFriend(playerName))
+        try
         {
-            return SythixTheme.withAlpha(friends.getColor(), 0x50);
-        }
+            FriendsManager friends = on(FriendsManager.class);
 
-        TabListModule tab = on(TabListModule.class);
-        return tab == null ? vanilla : tab.rowColor(playerName);
+            if (friends != null && friends.highlightTab() && friends.isFriend(playerName))
+            {
+                return SythixTheme.withAlpha(friends.getColor(), 0x50);
+            }
+
+            TabListModule tab = on(TabListModule.class);
+            return tab == null ? vanilla : tab.rowColor(playerName);
+        }
+        catch (Throwable t)
+        {
+            fail(FriendsManager.class, "tabRow", t);
+            FriendsManager friends = (FriendsManager)null;
+
+            if (friends != null && friends.highlightTab() && friends.isFriend(playerName))
+            {
+                return SythixTheme.withAlpha(friends.getColor(), 0x50);
+            }
+
+            TabListModule tab = (TabListModule)null;
+            return tab == null ? vanilla : tab.rowColor(playerName);
+        }
     }
 
     public static boolean tabHeads(boolean vanilla)
     {
-        TabListModule tab = on(TabListModule.class);
-        return tab == null ? vanilla : tab.showHeads(vanilla);
+        try
+        {
+            TabListModule tab = on(TabListModule.class);
+            return tab == null ? vanilla : tab.showHeads(vanilla);
+        }
+        catch (Throwable t)
+        {
+            fail(TabListModule.class, "tabHeads", t);
+            TabListModule tab = (TabListModule)null;
+            return tab == null ? vanilla : tab.showHeads(vanilla);
+        }
     }
 
     public static boolean tabHeader()
     {
-        TabListModule tab = on(TabListModule.class);
-        return tab == null || tab.showHeader();
+        try
+        {
+            TabListModule tab = on(TabListModule.class);
+            return tab == null || tab.showHeader();
+        }
+        catch (Throwable t)
+        {
+            fail(TabListModule.class, "tabHeader", t);
+            TabListModule tab = (TabListModule)null;
+            return tab == null || tab.showHeader();
+        }
     }
 
     public static boolean tabFooter()
     {
-        TabListModule tab = on(TabListModule.class);
-        return tab == null || tab.showFooter();
+        try
+        {
+            TabListModule tab = on(TabListModule.class);
+            return tab == null || tab.showFooter();
+        }
+        catch (Throwable t)
+        {
+            fail(TabListModule.class, "tabFooter", t);
+            TabListModule tab = (TabListModule)null;
+            return tab == null || tab.showFooter();
+        }
     }
 
     /** Draws ping numbers; returns true when the vanilla ping bars should be skipped. */
     public static boolean tabPing(int width, int x, int y, NetworkPlayerInfo info)
     {
-        TabListModule tab = on(TabListModule.class);
-
-        if (tab == null)
+        try
         {
-            return false;
-        }
+            TabListModule tab = on(TabListModule.class);
 
-        if (tab.showNumbers())
+            if (tab == null)
+            {
+                return false;
+            }
+
+            if (tab.showNumbers())
+            {
+                tab.drawPingNumber(width, x, y, info, tab.showBars());
+            }
+
+            return !tab.showBars();
+        }
+        catch (Throwable t)
         {
-            tab.drawPingNumber(width, x, y, info, tab.showBars());
-        }
+            fail(TabListModule.class, "tabPing", t);
+            TabListModule tab = (TabListModule)null;
 
-        return !tab.showBars();
+            if (tab == null)
+            {
+                return false;
+            }
+
+            if (tab.showNumbers())
+            {
+                tab.drawPingNumber(width, x, y, info, tab.showBars());
+            }
+
+            return !tab.showBars();
+        }
     }
 
     /** Filters, stacks and timestamps an incoming chat line. Returns null to hide it. */
@@ -640,53 +999,125 @@ public final class Hooks
 
     public static void tagChatLines(ITextComponent message, java.util.List<ITextComponent> lines)
     {
-        ChatModule module = on(ChatModule.class);
-
-        if (module != null)
+        try
         {
-            ChatUtilities utilities = on(ChatUtilities.class);
-            module.tagLines(message, lines, utilities == null ? 0 : utilities.highlight(message));
+            ChatModule module = on(ChatModule.class);
+
+            if (module != null)
+            {
+                ChatUtilities utilities = on(ChatUtilities.class);
+                module.tagLines(message, lines, utilities == null ? 0 : utilities.highlight(message));
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "tagChatLines", t);
+            ChatModule module = (ChatModule)null;
+
+            if (module != null)
+            {
+                ChatUtilities utilities = (ChatUtilities)null;
+                module.tagLines(message, lines, utilities == null ? 0 : utilities.highlight(message));
+            }
         }
     }
 
     public static boolean chatTabAllows(ITextComponent message)
     {
-        ChatModule module = on(ChatModule.class);
-        return module == null || module.tabAllows(message);
+        try
+        {
+            ChatModule module = on(ChatModule.class);
+            return module == null || module.tabAllows(message);
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "chatTabAllows", t);
+            ChatModule module = (ChatModule)null;
+            return module == null || module.tabAllows(message);
+        }
     }
 
     public static int chatHistory(int vanilla)
     {
-        ChatModule module = on(ChatModule.class);
-        return module == null ? vanilla : module.getHistory();
+        try
+        {
+            ChatModule module = on(ChatModule.class);
+            return module == null ? vanilla : module.getHistory();
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "chatHistory", t);
+            ChatModule module = (ChatModule)null;
+            return module == null ? vanilla : module.getHistory();
+        }
     }
 
     public static int chatBackground(int alpha, ITextComponent line)
     {
-        ChatModule module = on(ChatModule.class);
-        return module == null ? alpha << 24 : module.background(alpha, line);
+        try
+        {
+            ChatModule module = on(ChatModule.class);
+            return module == null ? alpha << 24 : module.background(alpha, line);
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "chatBackground", t);
+            ChatModule module = (ChatModule)null;
+            return module == null ? alpha << 24 : module.background(alpha, line);
+        }
     }
 
     public static boolean chatShadow()
     {
-        ChatModule module = on(ChatModule.class);
-        return module == null || module.textShadow();
+        try
+        {
+            ChatModule module = on(ChatModule.class);
+            return module == null || module.textShadow();
+        }
+        catch (Throwable t)
+        {
+            fail(ChatModule.class, "chatShadow", t);
+            ChatModule module = (ChatModule)null;
+            return module == null || module.textShadow();
+        }
     }
 
     public static void onChatSent()
     {
-        ChatUtilities utilities = on(ChatUtilities.class);
-
-        if (utilities != null)
+        try
         {
-            utilities.onSent();
+            ChatUtilities utilities = on(ChatUtilities.class);
+
+            if (utilities != null)
+            {
+                utilities.onSent();
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(ChatUtilities.class, "onChatSent", t);
+            ChatUtilities utilities = (ChatUtilities)null;
+
+            if (utilities != null)
+            {
+                utilities.onSent();
+            }
         }
     }
 
     public static String outgoingChat(String message)
     {
-        ChatUtilities utilities = on(ChatUtilities.class);
-        return utilities == null || message.startsWith("/") ? message : utilities.applyShortcuts(message);
+        try
+        {
+            ChatUtilities utilities = on(ChatUtilities.class);
+            return utilities == null || message.startsWith("/") ? message : utilities.applyShortcuts(message);
+        }
+        catch (Throwable t)
+        {
+            fail(ChatUtilities.class, "outgoingChat", t);
+            ChatUtilities utilities = (ChatUtilities)null;
+            return utilities == null || message.startsWith("/") ? message : utilities.applyShortcuts(message);
+        }
     }
 
     private static final int TAB_W = 48;
@@ -694,60 +1125,123 @@ public final class Hooks
     /** Draws chat tabs above the chat input while chat is open. */
     public static void drawChatTabs(int width, int height, int mouseX, int mouseY)
     {
-        ChatModule module = on(ChatModule.class);
-
-        if (module == null || !module.tabsEnabled())
+        try
         {
-            return;
+            ChatModule module = on(ChatModule.class);
+
+            if (module == null || !module.tabsEnabled())
+            {
+                return;
+            }
+
+            Minecraft mc = Minecraft.getMinecraft();
+            int y = height - 26;
+
+            for (int i = 0; i < ChatModule.TABS.length; ++i)
+            {
+                int x = 2 + i * (TAB_W + 2);
+                boolean active = ChatModule.TABS[i].equals(ChatModule.getActiveTab());
+                boolean hover = mouseX >= x && mouseX < x + TAB_W && mouseY >= y && mouseY < y + 11;
+                net.sythix.client.ui.SythixTheme.drawRect((float)x, (float)y, (float)(x + TAB_W), (float)(y + 11), active ? 0xC0D81820 : (hover ? 0x90303038 : 0x90000000));
+                String label = ChatModule.TABS[i];
+                mc.fontRenderer.drawString(label, (float)(x + TAB_W / 2 - mc.fontRenderer.getStringWidth(label) / 2), (float)(y + 2), active ? 0xFFFFFFFF : 0xFFB0B0B8, false);
+            }
         }
-
-        Minecraft mc = Minecraft.getMinecraft();
-        int y = height - 26;
-
-        for (int i = 0; i < ChatModule.TABS.length; ++i)
+        catch (Throwable t)
         {
-            int x = 2 + i * (TAB_W + 2);
-            boolean active = ChatModule.TABS[i].equals(ChatModule.getActiveTab());
-            boolean hover = mouseX >= x && mouseX < x + TAB_W && mouseY >= y && mouseY < y + 11;
-            net.sythix.client.ui.SythixTheme.drawRect((float)x, (float)y, (float)(x + TAB_W), (float)(y + 11), active ? 0xC0D81820 : (hover ? 0x90303038 : 0x90000000));
-            String label = ChatModule.TABS[i];
-            mc.fontRenderer.drawString(label, (float)(x + TAB_W / 2 - mc.fontRenderer.getStringWidth(label) / 2), (float)(y + 2), active ? 0xFFFFFFFF : 0xFFB0B0B8, false);
+            fail(ChatModule.class, "drawChatTabs", t);
+            ChatModule module = (ChatModule)null;
+
+            if (module == null || !module.tabsEnabled())
+            {
+                return;
+            }
+
+            Minecraft mc = Minecraft.getMinecraft();
+            int y = height - 26;
+
+            for (int i = 0; i < ChatModule.TABS.length; ++i)
+            {
+                int x = 2 + i * (TAB_W + 2);
+                boolean active = ChatModule.TABS[i].equals(ChatModule.getActiveTab());
+                boolean hover = mouseX >= x && mouseX < x + TAB_W && mouseY >= y && mouseY < y + 11;
+                net.sythix.client.ui.SythixTheme.drawRect((float)x, (float)y, (float)(x + TAB_W), (float)(y + 11), active ? 0xC0D81820 : (hover ? 0x90303038 : 0x90000000));
+                String label = ChatModule.TABS[i];
+                mc.fontRenderer.drawString(label, (float)(x + TAB_W / 2 - mc.fontRenderer.getStringWidth(label) / 2), (float)(y + 2), active ? 0xFFFFFFFF : 0xFFB0B0B8, false);
+            }
         }
     }
 
     /** Handles chat tab clicks and Ctrl+click copy. Returns true when the click was used. */
     public static boolean chatScreenClick(int width, int height, int mouseX, int mouseY, int button)
     {
-        Minecraft mc = Minecraft.getMinecraft();
-        ChatModule module = on(ChatModule.class);
-
-        if (module != null && module.tabsEnabled() && button == 0 && mouseY >= height - 26 && mouseY < height - 15)
+        try
         {
-            int index = (mouseX - 2) / (TAB_W + 2);
+            Minecraft mc = Minecraft.getMinecraft();
+            ChatModule module = on(ChatModule.class);
 
-            if (mouseX >= 2 && index >= 0 && index < ChatModule.TABS.length)
+            if (module != null && module.tabsEnabled() && button == 0 && mouseY >= height - 26 && mouseY < height - 15)
             {
-                ChatModule.setActiveTab(ChatModule.TABS[index]);
-                mc.ingameGUI.getChatGUI().refreshChat();
-                return true;
+                int index = (mouseX - 2) / (TAB_W + 2);
+
+                if (mouseX >= 2 && index >= 0 && index < ChatModule.TABS.length)
+                {
+                    ChatModule.setActiveTab(ChatModule.TABS[index]);
+                    mc.ingameGUI.getChatGUI().refreshChat();
+                    return true;
+                }
             }
+
+            ChatUtilities utilities = on(ChatUtilities.class);
+
+            if (utilities != null && utilities.copyEnabled() && button == 0 && net.minecraft.client.gui.GuiScreen.isCtrlKeyDown())
+            {
+                ChatLine line = mc.ingameGUI.getChatGUI().getLineAtSythix(org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
+
+                if (line != null)
+                {
+                    ITextComponent message = module == null ? null : module.messageForLine(line.getChatComponent());
+                    utilities.copy(message != null ? message : line.getChatComponent());
+                    return true;
+                }
+            }
+
+            return false;
         }
-
-        ChatUtilities utilities = on(ChatUtilities.class);
-
-        if (utilities != null && utilities.copyEnabled() && button == 0 && net.minecraft.client.gui.GuiScreen.isCtrlKeyDown())
+        catch (Throwable t)
         {
-            ChatLine line = mc.ingameGUI.getChatGUI().getLineAtSythix(org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
+            fail(ChatModule.class, "chatScreenClick", t);
+            Minecraft mc = Minecraft.getMinecraft();
+            ChatModule module = (ChatModule)null;
 
-            if (line != null)
+            if (module != null && module.tabsEnabled() && button == 0 && mouseY >= height - 26 && mouseY < height - 15)
             {
-                ITextComponent message = module == null ? null : module.messageForLine(line.getChatComponent());
-                utilities.copy(message != null ? message : line.getChatComponent());
-                return true;
-            }
-        }
+                int index = (mouseX - 2) / (TAB_W + 2);
 
-        return false;
+                if (mouseX >= 2 && index >= 0 && index < ChatModule.TABS.length)
+                {
+                    ChatModule.setActiveTab(ChatModule.TABS[index]);
+                    mc.ingameGUI.getChatGUI().refreshChat();
+                    return true;
+                }
+            }
+
+            ChatUtilities utilities = (ChatUtilities)null;
+
+            if (utilities != null && utilities.copyEnabled() && button == 0 && net.minecraft.client.gui.GuiScreen.isCtrlKeyDown())
+            {
+                ChatLine line = mc.ingameGUI.getChatGUI().getLineAtSythix(org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
+
+                if (line != null)
+                {
+                    ITextComponent message = module == null ? null : module.messageForLine(line.getChatComponent());
+                    utilities.copy(message != null ? message : line.getChatComponent());
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /** Draws toast notifications above everything. */
@@ -832,11 +1326,24 @@ public final class Hooks
 
     public static void applyEmote(ModelBiped model, Entity entity, float ageInTicks)
     {
-        CosmeticsModule cosmetics = on(CosmeticsModule.class);
-
-        if (cosmetics != null && entity != null)
+        try
         {
-            cosmetics.applyEmote(model, entity, ageInTicks);
+            CosmeticsModule cosmetics = on(CosmeticsModule.class);
+
+            if (cosmetics != null && entity != null)
+            {
+                cosmetics.applyEmote(model, entity, ageInTicks);
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(CosmeticsModule.class, "applyEmote", t);
+            CosmeticsModule cosmetics = (CosmeticsModule)null;
+
+            if (cosmetics != null && entity != null)
+            {
+                cosmetics.applyEmote(model, entity, ageInTicks);
+            }
         }
     }
 
@@ -856,74 +1363,175 @@ public final class Hooks
 
     public static long worldTime()
     {
-        EnvironmentVisuals env = on(EnvironmentVisuals.class);
-        return env == null ? -1L : env.worldTime();
+        try
+        {
+            EnvironmentVisuals env = on(EnvironmentVisuals.class);
+            return env == null ? -1L : env.worldTime();
+        }
+        catch (Throwable t)
+        {
+            fail(EnvironmentVisuals.class, "worldTime", t);
+            EnvironmentVisuals env = (EnvironmentVisuals)null;
+            return env == null ? -1L : env.worldTime();
+        }
     }
 
     public static float rainStrength()
     {
-        EnvironmentVisuals env = on(EnvironmentVisuals.class);
-        return env == null ? -1.0F : env.rain();
+        try
+        {
+            EnvironmentVisuals env = on(EnvironmentVisuals.class);
+            return env == null ? -1.0F : env.rain();
+        }
+        catch (Throwable t)
+        {
+            fail(EnvironmentVisuals.class, "rainStrength", t);
+            EnvironmentVisuals env = (EnvironmentVisuals)null;
+            return env == null ? -1.0F : env.rain();
+        }
     }
 
     public static float thunderStrength()
     {
-        EnvironmentVisuals env = on(EnvironmentVisuals.class);
-        return env == null ? -1.0F : env.thunder();
+        try
+        {
+            EnvironmentVisuals env = on(EnvironmentVisuals.class);
+            return env == null ? -1.0F : env.thunder();
+        }
+        catch (Throwable t)
+        {
+            fail(EnvironmentVisuals.class, "thunderStrength", t);
+            EnvironmentVisuals env = (EnvironmentVisuals)null;
+            return env == null ? -1.0F : env.thunder();
+        }
     }
 
     public static float gamma(float vanilla)
     {
-        EnvironmentVisuals env = on(EnvironmentVisuals.class);
-        float g = env == null ? -1.0F : env.gamma();
-        return g >= 0.0F ? g : vanilla;
+        try
+        {
+            EnvironmentVisuals env = on(EnvironmentVisuals.class);
+            float g = env == null ? -1.0F : env.gamma();
+            return g >= 0.0F ? g : vanilla;
+        }
+        catch (Throwable t)
+        {
+            fail(EnvironmentVisuals.class, "gamma", t);
+            EnvironmentVisuals env = (EnvironmentVisuals)null;
+            float g = env == null ? -1.0F : env.gamma();
+            return g >= 0.0F ? g : vanilla;
+        }
     }
 
     public static float outlineWidth(float vanilla)
     {
-        BlockVisuals visuals = on(BlockVisuals.class);
-        return visuals == null ? vanilla : visuals.getWidth();
+        try
+        {
+            BlockVisuals visuals = on(BlockVisuals.class);
+            return visuals == null ? vanilla : visuals.getWidth();
+        }
+        catch (Throwable t)
+        {
+            fail(BlockVisuals.class, "outlineWidth", t);
+            BlockVisuals visuals = (BlockVisuals)null;
+            return visuals == null ? vanilla : visuals.getWidth();
+        }
     }
 
     public static float[] outlineColor()
     {
-        BlockVisuals visuals = on(BlockVisuals.class);
-        return visuals == null ? null : visuals.outline();
+        try
+        {
+            BlockVisuals visuals = on(BlockVisuals.class);
+            return visuals == null ? null : visuals.outline();
+        }
+        catch (Throwable t)
+        {
+            fail(BlockVisuals.class, "outlineColor", t);
+            BlockVisuals visuals = (BlockVisuals)null;
+            return visuals == null ? null : visuals.outline();
+        }
     }
 
     public static float[] outlineFill()
     {
-        BlockVisuals visuals = on(BlockVisuals.class);
-        return visuals == null ? null : visuals.fillColor();
+        try
+        {
+            BlockVisuals visuals = on(BlockVisuals.class);
+            return visuals == null ? null : visuals.fillColor();
+        }
+        catch (Throwable t)
+        {
+            fail(BlockVisuals.class, "outlineFill", t);
+            BlockVisuals visuals = (BlockVisuals)null;
+            return visuals == null ? null : visuals.fillColor();
+        }
     }
 
     // ---- Multiplayer ----------------------------------------------------------------------------
 
     public static String serverName(ServerData data)
     {
-        ServerManagerModule manager = on(ServerManagerModule.class);
-        return manager == null ? data.serverName : manager.decorateName(data);
+        try
+        {
+            ServerManagerModule manager = on(ServerManagerModule.class);
+            return manager == null ? data.serverName : manager.decorateName(data);
+        }
+        catch (Throwable t)
+        {
+            fail(ServerManagerModule.class, "serverName", t);
+            ServerManagerModule manager = (ServerManagerModule)null;
+            return manager == null ? data.serverName : manager.decorateName(data);
+        }
     }
 
     public static String nametag(Entity entity, String text)
     {
-        FriendsManager friends = on(FriendsManager.class);
-
-        if (friends != null && friends.highlightNames() && entity instanceof EntityPlayer && friends.isFriend(entity.getName()))
+        try
         {
-            return "\u00a7b\u2605 \u00a7r" + text;
-        }
+            FriendsManager friends = on(FriendsManager.class);
 
-        return text;
+            if (friends != null && friends.highlightNames() && entity instanceof EntityPlayer && friends.isFriend(entity.getName()))
+            {
+                return "\u00a7b\u2605 \u00a7r" + text;
+            }
+
+            return text;
+        }
+        catch (Throwable t)
+        {
+            fail(FriendsManager.class, "nametag", t);
+            FriendsManager friends = (FriendsManager)null;
+
+            if (friends != null && friends.highlightNames() && entity instanceof EntityPlayer && friends.isFriend(entity.getName()))
+            {
+                return "\u00a7b\u2605 \u00a7r" + text;
+            }
+
+            return text;
+        }
     }
 
     public static void onPacket()
     {
-        ConnectionMonitor monitor = on(ConnectionMonitor.class);
-
-        if (monitor != null)
+        try
         {
-            monitor.onPacket();
+            ConnectionMonitor monitor = on(ConnectionMonitor.class);
+
+            if (monitor != null)
+            {
+                monitor.onPacket();
+            }
+        }
+        catch (Throwable t)
+        {
+            fail(ConnectionMonitor.class, "onPacket", t);
+            ConnectionMonitor monitor = (ConnectionMonitor)null;
+
+            if (monitor != null)
+            {
+                monitor.onPacket();
+            }
         }
     }
 
@@ -970,7 +1578,16 @@ public final class Hooks
 
     public static boolean hideChat()
     {
-        RecordingTools recording = on(RecordingTools.class);
-        return recording != null && recording.hidesChat();
+        try
+        {
+            RecordingTools recording = on(RecordingTools.class);
+            return recording != null && recording.hidesChat();
+        }
+        catch (Throwable t)
+        {
+            fail(RecordingTools.class, "hideChat", t);
+            RecordingTools recording = (RecordingTools)null;
+            return recording != null && recording.hidesChat();
+        }
     }
 }

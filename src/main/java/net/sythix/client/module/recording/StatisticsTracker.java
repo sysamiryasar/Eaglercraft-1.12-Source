@@ -48,7 +48,7 @@ public class StatisticsTracker extends TextHudModule
 
     public StatisticsTracker()
     {
-        super("Statistics Tracker", "Session kills, deaths, K/D, streaks and match history.", Category.RECORDING, false, 0.995D, 0.62D);
+        super("Statistics Tracker", "Session kills, deaths, K/D, streaks and match history.", Category.RECORDING, false, 0.995D, 0.97D);
         this.killPattern = this.add(new TextSetting("Kill Pattern", "Regex for kill messages; {me} is your name.", "(?i)(?:was |)(?:slain|killed|shot|knocked|blown up|pummeled|thrown off)[^.]* by {me}\\b", 160));
         this.matchEndPattern = this.add(new TextSetting("Match End Pattern", "Regex for the end of a match.", "(?i)(won the game|game over|winner:|you (?:won|lost))", 120));
         this.showKd = this.add(new BooleanSetting("K/D", "Show the kill/death ratio.", true));
