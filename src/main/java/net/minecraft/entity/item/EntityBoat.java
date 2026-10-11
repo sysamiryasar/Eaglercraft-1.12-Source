@@ -212,6 +212,12 @@ public class EntityBoat extends Entity
     {
         switch (this.getBoatType())
         {
+            case MANGROVE:
+            case CHERRY:
+            case PALE_OAK:
+                Item modern = net.sythix.modern.ModernBlocks.item(this.getBoatType().getName() + "_boat");
+                return modern == null ? Items.BOAT : modern;
+
             case OAK:
             default:
                 return Items.BOAT;
@@ -903,7 +909,7 @@ public class EntityBoat extends Entity
                         {
                             for (int i = 0; i < 3; ++i)
                             {
-                                this.entityDropItem(new ItemStack(Item.getItemFromBlock(Blocks.PLANKS), 1, this.getBoatType().getMetadata()), 0.0F);
+                                this.entityDropItem(this.getBoatType().getMetadata() < 0 ? new ItemStack(net.sythix.modern.ModernBlocks.item(this.getBoatType().getName() + "_planks")) : new ItemStack(Item.getItemFromBlock(Blocks.PLANKS), 1, this.getBoatType().getMetadata()), 0.0F);
                             }
 
                             for (int j = 0; j < 2; ++j)
@@ -1027,7 +1033,11 @@ public class EntityBoat extends Entity
         BIRCH(BlockPlanks.EnumType.BIRCH.getMetadata(), "birch"),
         JUNGLE(BlockPlanks.EnumType.JUNGLE.getMetadata(), "jungle"),
         ACACIA(BlockPlanks.EnumType.ACACIA.getMetadata(), "acacia"),
-        DARK_OAK(BlockPlanks.EnumType.DARK_OAK.getMetadata(), "dark_oak");
+        DARK_OAK(BlockPlanks.EnumType.DARK_OAK.getMetadata(), "dark_oak"),
+        // Sythix: boats of the newer woods (metadata -1 = Sythix planks)
+        MANGROVE(-1, "mangrove"),
+        CHERRY(-1, "cherry"),
+        PALE_OAK(-1, "pale_oak");
 
         private final String name;
         private final int metadata;

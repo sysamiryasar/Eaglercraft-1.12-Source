@@ -451,6 +451,7 @@ public final class SelfTest
     }
 
     private static BlockPosHolder modernOrigin = new BlockPosHolder();
+    private static net.minecraft.entity.Entity[] modernEntities;
 
     private static final class BlockPosHolder
     {
@@ -523,7 +524,7 @@ public final class SelfTest
             mc().launchIntegratedServer("sythix-moderntest", "Sythix Modern Test", new WorldSettings(4242L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands());
         });
         add("wait for modern world", 1, SelfTest::waitForWorld);
-        add("place modern blocks", 40, () -> {
+        add("place modern blocks", 40, () -> onServer(() -> {
             net.minecraft.world.World world = mc().getIntegratedServer().getWorld(0);
             net.minecraft.util.math.BlockPos base = new net.minecraft.util.math.BlockPos(mc().player).add(2, 0, -6);
             modernOrigin.pos = base;
@@ -537,12 +538,90 @@ public final class SelfTest
                 ++i;
             }
 
-            mc().player.setPositionAndRotation(base.getX() + 11.0D, base.getY() + 7.0D, base.getZ() - 6.0D, 0.0F, 45.0F);
-            mc().player.connection.sendPacket(new net.minecraft.network.play.client.CPacketPlayer.PositionRotation(base.getX() + 11.0D, base.getY() + 7.0D, base.getZ() - 6.0D, 0.0F, 45.0F, false));
-            mc().player.capabilities.isFlying = true;
+            net.minecraft.entity.player.EntityPlayerMP owner = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            owner.connection.setPlayerLocation(base.getX() + 11.0D, base.getY() + 7.0D, base.getZ() - 6.0D, 0.0F, 45.0F);
             pass(i + " modern blocks placed");
-        });
+        }));
+        add("fly", 1, () -> mc().player.capabilities.isFlying = true);
         add("screenshot modern-blocks", 2, () -> shot("modern-blocks"));
+        add("modern items", 1, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.player.EntityPlayerMP sp = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            List<String> problems = new ArrayList<String>();
+
+            // Netherite upgrade keeps enchantments
+            net.minecraft.inventory.InventoryCrafting grid = new net.minecraft.inventory.InventoryCrafting(new net.minecraft.inventory.Container()
+            {
+                public boolean canInteractWith(net.minecraft.entity.player.EntityPlayer playerIn)
+                {
+                    return true;
+                }
+            }, 3, 3);
+            net.minecraft.item.ItemStack sword = new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_SWORD);
+            sword.addEnchantment(net.minecraft.init.Enchantments.SHARPNESS, 3);
+            grid.setInventorySlotContents(0, sword);
+            grid.setInventorySlotContents(1, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("netherite_ingot")));
+            net.minecraft.item.ItemStack out = net.minecraft.item.crafting.CraftingManager.findMatchingResult(grid, world);
+
+            if (out.getItem() != net.sythix.modern.ModernItems.get("netherite_sword") || net.minecraft.enchantment.EnchantmentHelper.getEnchantmentLevel(net.minecraft.init.Enchantments.SHARPNESS, out) != 3)
+            {
+                problems.add("netherite upgrade gave " + out);
+            }
+
+            // Thrown trident and wind charge
+            net.sythix.modern.entity.EntityThrownTrident trident = new net.sythix.modern.entity.EntityThrownTrident(world, sp, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("trident")), true);
+            trident.setHeadingFromThrower(sp, 30.0F, sp.rotationYaw, 0.0F, 1.5F, 0.0F);
+            world.spawnEntity(trident);
+            net.sythix.modern.entity.EntityWindCharge charge = new net.sythix.modern.entity.EntityWindCharge(world, sp);
+            charge.setHeadingFromThrower(sp, 80.0F, sp.rotationYaw, 0.0F, 1.0F, 0.0F);
+            world.spawnEntity(charge);
+            modernEntities = new net.minecraft.entity.Entity[] {trident, charge};
+
+            // A mangrove boat and netherite armour on the player
+            net.minecraft.entity.item.EntityBoat boat = new net.minecraft.entity.item.EntityBoat(world, sp.posX + 2.0D, sp.posY, sp.posZ + 3.0D);
+            boat.setBoatType(net.minecraft.entity.item.EntityBoat.Type.MANGROVE);
+            world.spawnEntity(boat);
+            sp.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.CHEST, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("netherite_chestplate")));
+            sp.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("turtle_helmet")));
+            sp.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.LEGS, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("netherite_leggings")));
+            sp.setHeldItem(net.minecraft.util.EnumHand.MAIN_HAND, new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get("mace")));
+
+            if (problems.isEmpty())
+            {
+                pass("netherite upgrade keeps enchantments; trident, wind charge and mangrove boat spawned");
+            }
+            else
+            {
+                fail("modern items", new IllegalStateException(problems.toString()));
+            }
+        }));
+        add("wait projectiles", 120, () -> {});
+        add("check projectiles", 1, () -> {
+            boolean landed = modernEntities[0].isDead && modernEntities[1].isDead;
+
+            if (landed)
+            {
+                pass("trident landed and the wind charge burst");
+            }
+            else
+            {
+                fail("projectiles", new IllegalStateException("trident dead=" + modernEntities[0].isDead + " wind dead=" + modernEntities[1].isDead));
+            }
+
+            mc().gameSettings.thirdPersonView = 2;
+            net.minecraft.item.ItemStack chest = mc().player.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.CHEST);
+
+            if (chest.getItem() == net.sythix.modern.ModernItems.get("netherite_chestplate"))
+            {
+                pass("client player wears the netherite chestplate");
+            }
+            else
+            {
+                fail("armour on client", new IllegalStateException("chest=" + chest));
+            }
+        });
+        add("screenshot modern-armor", 40, () -> shot("modern-armor"));
+        add("first person again", 2, () -> mc().gameSettings.thirdPersonView = 0);
         add("check placed", 1, () -> {
             net.minecraft.world.World world = mc().world;
             List<String> wrong = new ArrayList<String>();
@@ -554,7 +633,7 @@ public final class SelfTest
                 net.minecraft.block.Block there = world.getBlockState(p).getBlock();
 
                 // Plants on sand-only rules or falling blocks may legitimately change
-                if (there != e.getValue() && !(e.getValue() instanceof net.minecraft.block.BlockFalling))
+                if (there != e.getValue() && !(e.getValue() instanceof net.minecraft.block.BlockFalling) && !(e.getValue() instanceof net.sythix.modern.block.MCopper) && !(e.getValue() instanceof net.sythix.modern.block.MSapling))
                 {
                     wrong.add(e.getKey() + "=" + net.minecraft.block.Block.REGISTRY.getNameForObject(there));
                 }
@@ -588,7 +667,7 @@ public final class SelfTest
             {
                 net.minecraft.util.math.BlockPos p = modernOrigin.pos.add((i % 12) * 2, 0, (i / 12) * 2);
 
-                if (world.getBlockState(p).getBlock() == e.getValue() || e.getValue() instanceof net.minecraft.block.BlockFalling)
+                if (world.getBlockState(p).getBlock() == e.getValue() || e.getValue() instanceof net.minecraft.block.BlockFalling || e.getValue() instanceof net.sythix.modern.block.MCopper || e.getValue() instanceof net.sythix.modern.block.MSapling)
                 {
                     ++ok;
                 }
@@ -768,6 +847,19 @@ public final class SelfTest
         catch (Throwable t)
         {
             fail("video recorder", t);
+        }
+    }
+
+    /** Runs a test action on the integrated server thread and waits for it. */
+    private static void onServer(Runnable action)
+    {
+        try
+        {
+            com.google.common.util.concurrent.Futures.getUnchecked(mc().getIntegratedServer().addScheduledTask(action));
+        }
+        catch (Throwable t)
+        {
+            fail("server task", t);
         }
     }
 

@@ -376,6 +376,14 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         {
             entity = new EntitySnowball(this.clientWorldController, d0, d1, d2);
         }
+        else if (packetIn.getType() == net.sythix.modern.entity.ModernProjectile.TRIDENT)
+        {
+            entity = new net.sythix.modern.entity.EntityThrownTrident(this.clientWorldController, d0, d1, d2);
+        }
+        else if (packetIn.getType() == net.sythix.modern.entity.ModernProjectile.WIND_CHARGE)
+        {
+            entity = new net.sythix.modern.entity.EntityWindCharge(this.clientWorldController, d0, d1, d2);
+        }
         else if (packetIn.getType() == 68)
         {
             entity = new EntityLlamaSpit(this.clientWorldController, d0, d1, d2, (double)packetIn.getSpeedX() / 8000.0D, (double)packetIn.getSpeedY() / 8000.0D, (double)packetIn.getSpeedZ() / 8000.0D);

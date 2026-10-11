@@ -1,0 +1,15 @@
+{
+  "type": "crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:bucket"
+    },
+    {
+      "item": "minecraft:snow"
+    }
+  ],
+  "result": {
+    "item": "minecraft:powder_snow_bucket",
+    "count": 1
+  }
+}

@@ -22,15 +22,21 @@ public class MBamboo extends MBlock
         net.minecraft.block.SythixBlockAccess.tickRandomly(this);
     }
 
-    public boolean canPlaceBlockAt(World worldIn, BlockPos pos)
+    private boolean supported(World worldIn, BlockPos pos)
     {
         IBlockState below = worldIn.getBlockState(pos.down());
-        return super.canPlaceBlockAt(worldIn, pos) && (below.getBlock() == this || below.getBlock() == Blocks.GRASS || below.getBlock() == Blocks.DIRT || below.getBlock() == Blocks.SAND || below.getBlock() == Blocks.GRAVEL);
+        return below.getBlock() == this || below.getBlock() == Blocks.GRASS || below.getBlock() == Blocks.DIRT || below.getBlock() == Blocks.SAND || below.getBlock() == Blocks.GRAVEL;
+    }
+
+    public boolean canPlaceBlockAt(World worldIn, BlockPos pos)
+    {
+        return super.canPlaceBlockAt(worldIn, pos) && this.supported(worldIn, pos);
     }
 
     public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, net.minecraft.block.Block blockIn, BlockPos fromPos)
     {
-        if (!this.canPlaceBlockAt(worldIn, pos) && worldIn.getBlockState(pos.down()).getBlock() != this)
+        // Only the block underneath matters (the spot itself is taken by this bamboo)
+        if (!this.supported(worldIn, pos))
         {
             worldIn.destroyBlock(pos, true);
         }

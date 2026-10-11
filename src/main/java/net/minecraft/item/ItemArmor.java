@@ -262,7 +262,10 @@ public class ItemArmor extends Item
         CHAIN("chainmail", 15, new int[]{1, 4, 5, 2}, 12, SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 0.0F),
         IRON("iron", 15, new int[]{2, 5, 6, 2}, 9, SoundEvents.ITEM_ARMOR_EQUIP_IRON, 0.0F),
         GOLD("gold", 7, new int[]{1, 3, 5, 2}, 25, SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 0.0F),
-        DIAMOND("diamond", 33, new int[]{3, 6, 8, 3}, 10, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, 2.0F);
+        DIAMOND("diamond", 33, new int[]{3, 6, 8, 3}, 10, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, 2.0F),
+        // Sythix: netherite and turtle shell (Minecraft 1.13+)
+        NETHERITE("netherite", 37, new int[]{3, 6, 8, 3}, 15, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, 3.0F),
+        TURTLE("turtle", 25, new int[]{2, 5, 6, 2}, 9, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, 0.0F);
 
         private final String name;
         private final int maxDamageFactor;
@@ -321,7 +324,7 @@ public class ItemArmor extends Item
             }
             else
             {
-                return this == DIAMOND ? Items.DIAMOND : null;
+                return this == DIAMOND ? Items.DIAMOND : (this == NETHERITE ? net.sythix.modern.ModernBlocks.item("netherite_ingot") : null);
             }
         }
 

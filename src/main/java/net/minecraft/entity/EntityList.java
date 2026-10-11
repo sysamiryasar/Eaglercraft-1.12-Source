@@ -434,6 +434,9 @@ public class EntityList
         addSpawnInfo("zombie_horse", 3232308, 9945732);
         addSpawnInfo("zombie_pigman", 15373203, 5009705);
         addSpawnInfo("zombie_villager", 5651507, 7969893);
+        // Sythix: projectiles of the extra 1.21 items
+        register(400, "sythix_trident", net.sythix.modern.entity.EntityThrownTrident.class, "SythixTrident");
+        register(401, "sythix_wind_charge", net.sythix.modern.entity.EntityWindCharge.class, "SythixWindCharge");
         KNOWN_TYPES.add(LIGHTNING_BOLT);
     }
 

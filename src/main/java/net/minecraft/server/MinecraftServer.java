@@ -829,6 +829,24 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
         return true;
     }
 
+    /** Sythix: waits (up to the given time) until the server thread has finished saving and stopped. */
+    public void waitForServerThreadSythix(long millis)
+    {
+        Thread thread = this.serverThread;
+
+        if (thread != null && thread != Thread.currentThread())
+        {
+            try
+            {
+                thread.join(millis);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     public void startServerThread()
     {
         this.serverThread = new Thread(this, "Server thread");

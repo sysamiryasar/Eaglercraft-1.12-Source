@@ -2596,6 +2596,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             if (this.integratedServer != null && this.integratedServer.isAnvilFileSet())
             {
                 this.integratedServer.initiateShutdown();
+                // Sythix: let the server finish saving before the region files are closed below
+                // (vanilla closed them while chunks were still being written, losing changes)
+                this.integratedServer.waitForServerThreadSythix(15000L);
             }
 
             this.integratedServer = null;

@@ -103,7 +103,7 @@ public class EntityTracker
         {
             this.track(entityIn, 64, 10, true);
         }
-        else if (entityIn instanceof EntitySnowball)
+        else if (entityIn instanceof EntitySnowball || entityIn instanceof net.sythix.modern.entity.ModernProjectile)
         {
             this.track(entityIn, 64, 10, true);
         }

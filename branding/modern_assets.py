@@ -764,9 +764,193 @@ def recipes():
     shaped("torchflower_dye", ["#"], {"#": item("torchflower")}, "dye", 1, data=14)
 
 
+# ---- part 2: items ---------------------------------------------------------------------------
+
+NETHERITE = (74, 66, 70)
+TOOLS = ("sword", "pickaxe", "axe", "shovel", "hoe")
+ARMOR = ("helmet", "chestplate", "leggings", "boots")
+DISCS = {"otherside": "Lena Raine - otherside", "5": "Samuel \u00c5berg - 5", "pigstep": "Lena Raine - Pigstep", "relic": "Aaron Cherof - Relic",
+         "creator": "Lena Raine - Creator", "creator_music_box": "Lena Raine - Creator (Music Box)", "precipice": "Aaron Cherof - Precipice"}
+HANDHELD = {"netherite_" + t for t in TOOLS} | {"mace", "spear", "trident", "brush", "warped_fungus_on_a_stick"}
+
+
+def item_textures():
+    for t in TOOLS:
+        save(colorize(load("items/diamond_" + t), NETHERITE, contrast=1.3, bright=1.1), "items/netherite_" + t)
+    for a in ARMOR:
+        save(colorize(load("items/diamond_" + a), NETHERITE, contrast=1.3, bright=1.1), "items/netherite_" + a)
+    for layer in ("1", "2"):
+        save(colorize(load(f"models/armor/diamond_layer_{layer}"), NETHERITE, contrast=1.3, bright=1.1), f"models/armor/netherite_layer_{layer}")
+    save(colorize(load("models/armor/leather_layer_1"), (60, 150, 60), contrast=1.2), "models/armor/turtle_layer_1")
+    save(colorize(load("models/armor/leather_layer_2"), (60, 150, 60), contrast=1.2), "models/armor/turtle_layer_2")
+    save(colorize(load("items/leather_helmet"), (60, 150, 60), contrast=1.2), "items/turtle_helmet")
+    # Mace: a heavy head on a handle
+    mace = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(mace)
+    d.line([(3, 13), (9, 7)], fill=(110, 80, 50, 255), width=2)
+    d.rectangle([8, 2, 14, 8], fill=(150, 150, 160, 255), outline=(70, 70, 80, 255))
+    d.point([(10, 4), (12, 6)], fill=(220, 220, 230, 255))
+    save(mace, "items/mace")
+    spear = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(spear)
+    d.line([(2, 14), (11, 5)], fill=(120, 90, 60, 255), width=1)
+    d.polygon([(10, 3), (14, 1), (13, 6)], fill=(200, 200, 210, 255), outline=(110, 110, 120, 255))
+    save(spear, "items/spear")
+    trident = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(trident)
+    d.line([(2, 14), (10, 6)], fill=(60, 140, 130, 255), width=1)
+    for a, b in (((10, 6), (14, 2)), ((9, 5), (9, 1)), ((11, 7), (15, 7))):
+        d.line([a, b], fill=(90, 190, 170, 255))
+    save(trident, "items/trident")
+    def crossbow(pull, arrow):
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        d.line([(3, 13), (12, 4)], fill=(110, 80, 50, 255), width=2)
+        bend = 3 - pull
+        d.line([(4 + bend, 3), (9, 8), (13 - bend, 12)], fill=(90, 90, 100, 255), width=1)
+        d.line([(5 + bend, 3), (13, 11 - bend)], fill=(220, 220, 220, 255))
+        if arrow:
+            d.line([(4, 12), (13, 3)], fill=(200, 200, 210, 255))
+        return img
+    save(crossbow(0, False), "items/crossbow_standby")
+    for i in range(3):
+        save(crossbow(i + 1, False), f"items/crossbow_pulling_{i}")
+    save(crossbow(3, True), "items/crossbow_arrow")
+    wind = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(wind)
+    d.ellipse([3, 3, 12, 12], fill=(200, 220, 250, 230), outline=(140, 160, 220, 255))
+    d.arc([5, 5, 10, 10], 30, 300, fill=(255, 255, 255, 255))
+    save(wind, "items/wind_charge")
+    brush = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(brush)
+    d.line([(2, 14), (8, 8)], fill=(120, 90, 60, 255), width=2)
+    d.rectangle([8, 6, 10, 8], fill=(200, 120, 80, 255))
+    d.polygon([(9, 5), (14, 1), (15, 4), (11, 8)], fill=(240, 240, 230, 255))
+    save(brush, "items/brush")
+    spy = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(spy)
+    d.line([(3, 13), (12, 4)], fill=(200, 110, 70, 255), width=3)
+    d.ellipse([10, 2, 14, 6], fill=(170, 120, 230, 255))
+    save(spy, "items/spyglass")
+    for i in range(32):
+        save(colorize(load("items/compass_%02d" % i), (40, 160, 170), contrast=1.2), "items/recovery_compass_%02d" % i)
+    save(colorize(load("items/carrot_on_a_stick"), (40, 160, 150), contrast=1.1), "items/warped_fungus_on_a_stick")
+    save(colorize(load("items/iron_horse_armor"), (170, 120, 90)), "items/wolf_armor")
+    for name, rgb in (("sweet_berries", (200, 30, 40)), ("glow_berries", (250, 190, 60))):
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        for x, y in ((4, 7), (8, 4), (10, 9), (6, 11)):
+            d.ellipse([x, y, x + 3, y + 3], fill=rgb + (255,), outline=tuple(int(c * 0.6) for c in rgb) + (255,))
+        d.line([(9, 1), (8, 4)], fill=(60, 120, 40, 255))
+        save(img, "items/" + name)
+    save(colorize(load("items/seeds_wheat"), (40, 80, 30), contrast=1.4), "items/dried_kelp")
+    save(colorize(load("items/mushroom_stew"), (170, 110, 80), contrast=1.0), "items/suspicious_stew")
+    honey = load("items/potion_bottle_empty")
+    hd = ImageDraw.Draw(honey)
+    hd.rectangle([5, 8, 10, 13], fill=(240, 170, 40, 255))
+    save(honey, "items/honey_bottle")
+    omin = load("items/potion_bottle_empty")
+    ImageDraw.Draw(omin).rectangle([5, 8, 10, 13], fill=(30, 110, 110, 255))
+    save(omin, "items/ominous_bottle")
+    save(colorize(load("items/seeds_pumpkin"), (230, 120, 40)), "items/torchflower_seeds")
+    save(colorize(load("items/seeds_melon"), (60, 140, 170)), "items/pitcher_pod")
+    snowb = load("items/bucket_water")
+    px = snowb.load()
+    for y in range(16):
+        for x in range(16):
+            r, g, b, a = px[x, y]
+            if a and b > r + 30:
+                px[x, y] = (245, 248, 255, a)
+    save(snowb, "items/powder_snow_bucket")
+    for wood, rgb in (("mangrove", (120, 52, 48)), ("cherry", (226, 178, 172)), ("pale_oak", (226, 218, 212))):
+        save(colorize(load("items/oak_boat"), rgb, contrast=1.1), f"items/{wood}_boat")
+        save(colorize(load("entity/boat/boat_oak"), rgb, contrast=1.1), f"entity/boat/boat_{wood}")
+    hues = [0.0, 0.1, 0.3, 0.5, 0.6, 0.75, 0.9]
+    for (disc, _), h in zip(DISCS.items(), hues):
+        save(hue(load("items/record_13"), h, 1.2), "items/music_disc_" + disc)
+
+
+def item_models():
+    for t in TOOLS:
+        item_flat("netherite_" + t, "items/netherite_" + t, True)
+    for a in ARMOR:
+        item_flat("netherite_" + a, "items/netherite_" + a)
+    for n in ("turtle_helmet", "mace", "spear", "trident", "wind_charge", "brush", "spyglass", "warped_fungus_on_a_stick", "wolf_armor",
+              "sweet_berries", "glow_berries", "dried_kelp", "suspicious_stew", "honey_bottle", "ominous_bottle", "torchflower_seeds", "pitcher_pod",
+              "powder_snow_bucket", "mangrove_boat", "cherry_boat", "pale_oak_boat"):
+        item_flat(n, "items/" + n, n in HANDHELD)
+    for disc in DISCS:
+        item_flat("music_disc_" + disc, "items/music_disc_" + disc)
+    bow = json.load(open(ROOT + "/models/item/bow.json"))
+    display = bow["display"]
+    write("models/item/crossbow", {"parent": "item/generated", "textures": {"layer0": "items/crossbow_standby"}, "display": display,
+                                   "overrides": [{"predicate": {"pulling": 1}, "model": "item/crossbow_pulling_0"},
+                                                 {"predicate": {"pulling": 1, "pull": 0.58}, "model": "item/crossbow_pulling_1"},
+                                                 {"predicate": {"pulling": 1, "pull": 1.0}, "model": "item/crossbow_pulling_2"},
+                                                 {"predicate": {"charged": 1}, "model": "item/crossbow_arrow"}]})
+    for n in ("crossbow_pulling_0", "crossbow_pulling_1", "crossbow_pulling_2", "crossbow_arrow"):
+        write("models/item/" + n, {"parent": "item/crossbow", "textures": {"layer0": "items/" + n}})
+    compass = json.load(open(ROOT + "/models/item/compass.json"))
+    overrides = []
+    for o in compass["overrides"]:
+        m = o["model"].replace("item/compass_", "item/recovery_compass_").replace("item/compass", "item/recovery_compass")
+        overrides.append({"predicate": o["predicate"], "model": m})
+    write("models/item/recovery_compass", {"parent": "item/generated", "textures": {"layer0": "items/recovery_compass_16"}, "overrides": overrides})
+    for i in range(32):
+        if i != 16:
+            write("models/item/recovery_compass_%02d" % i, {"parent": "item/generated", "textures": {"layer0": "items/recovery_compass_%02d" % i}})
+
+
+def item_lang_and_sounds():
+    names = {"netherite_" + p: "Netherite " + p.capitalize() for p in TOOLS + ARMOR}
+    for n in ("turtle_helmet", "mace", "spear", "trident", "crossbow", "wind_charge", "brush", "spyglass", "recovery_compass", "warped_fungus_on_a_stick",
+              "wolf_armor", "sweet_berries", "glow_berries", "dried_kelp", "suspicious_stew", "honey_bottle", "ominous_bottle", "torchflower_seeds",
+              "pitcher_pod", "powder_snow_bucket", "mangrove_boat", "cherry_boat", "pale_oak_boat"):
+        names[n] = pretty(n)
+    names["turtle_helmet"] = "Turtle Shell"
+    lines = ["", "# Sythix: items from Minecraft 1.13-1.21 part 2"]
+    for k, v in names.items():
+        lines.append(f"item.m.{k}.name={v}")
+    for disc, desc in DISCS.items():
+        lines.append(f"item.m.music_disc_{disc}.name=Music Disc")
+        lines.append(f"item.record.{disc}.desc={desc}")
+    path = ROOT + "/lang/en_us.lang"
+    text = open(path, encoding="utf-8").read()
+    marker = "\n# Sythix: items from Minecraft 1.13-1.21 part 2"
+    if marker in text:
+        text = text[:text.index(marker)].rstrip("\n") + "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text.rstrip("\n") + "\n" + "\n".join(lines) + "\n")
+    sounds = json.load(open(ROOT + "/sounds.json"))
+    for disc in DISCS:
+        sounds["record." + disc] = {"category": "record", "sounds": [{"name": "records/" + disc, "stream": True}]}
+    with open(ROOT + "/sounds.json", "w") as f:
+        json.dump(sounds, f, indent=2)
+
+
+def item_recipes():
+    shaped("crossbow", ["SIS", "T#T", " S "], {"S": item("stick"), "I": item("iron_ingot"), "T": item("string"), "#": item("tripwire_hook")}, "crossbow")
+    shaped("spyglass", ["A", "C", "C"], {"A": item("amethyst_shard"), "C": item("copper_ingot")}, "spyglass")
+    shaped("brush", ["F", "C", "S"], {"F": item("feather"), "C": item("copper_ingot"), "S": item("stick")}, "brush")
+    shaped("recovery_compass", ["EEE", "ECE", "EEE"], {"E": item("echo_shard"), "C": item("compass")}, "recovery_compass")
+    shaped("mace", ["B", "S"], {"B": item("iron_block"), "S": item("stick")}, "mace")
+    shaped("spear", ["  I", " S ", "S  "], {"I": item("iron_ingot"), "S": item("stick")}, "spear")
+    shaped("trident", [" PP", " SP", "S  "], {"P": item("prismarine_shard"), "S": item("stick")}, "trident")
+    shaped("wind_charge", ["SS", "SS"], {"S": item("snowball")}, "wind_charge", 2)
+    for wood in ("mangrove", "cherry", "pale_oak"):
+        shaped(wood + "_boat", ["P P", "PPP"], {"P": item(wood + "_planks")}, wood + "_boat")
+    shapeless("suspicious_stew", [item("bowl"), item("red_mushroom"), item("brown_mushroom"), item("red_flower", 0)], "suspicious_stew")
+    shapeless("powder_snow_bucket", [item("bucket"), item("snow")], "powder_snow_bucket")
+    shaped("turtle_helmet", ["NNN", "N N"], {"N": item("nautilus_shell")}, "turtle_helmet")
+
+
 if __name__ == "__main__":
     textures()
     models()
     lang()
     recipes()
+    item_textures()
+    item_models()
+    item_lang_and_sounds()
+    item_recipes()
     print("modern assets written")

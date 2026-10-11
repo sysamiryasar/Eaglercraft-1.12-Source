@@ -33,6 +33,97 @@ public final class ModernRecipes
         return item == null ? ItemStack.EMPTY : new ItemStack(item);
     }
 
+    public static void addCrafting()
+    {
+        String[] parts = new String[] {"sword", "pickaxe", "axe", "shovel", "hoe", "helmet", "chestplate", "leggings", "boots"};
+
+        for (String part : parts)
+        {
+            Item from = ModernBlocks.item("diamond_" + part);
+            Item to = ModernBlocks.item("netherite_" + part);
+
+            if (from != null && to != null)
+            {
+                net.minecraft.item.crafting.CraftingManager.register("sythix_netherite_" + part, new NetheriteUpgrade(from, to));
+            }
+        }
+    }
+
+    /** Diamond gear + netherite ingot = netherite gear, keeping enchantments, name and damage. */
+    static class NetheriteUpgrade implements net.minecraft.item.crafting.IRecipe
+    {
+        private final Item from;
+        private final Item to;
+
+        NetheriteUpgrade(Item fromItem, Item toItem)
+        {
+            this.from = fromItem;
+            this.to = toItem;
+        }
+
+        private ItemStack find(net.minecraft.inventory.InventoryCrafting inv, boolean gear)
+        {
+            ItemStack found = ItemStack.EMPTY;
+            int count = 0;
+
+            for (int i = 0; i < inv.getSizeInventory(); ++i)
+            {
+                ItemStack s = inv.getStackInSlot(i);
+
+                if (!s.isEmpty())
+                {
+                    ++count;
+
+                    if (gear ? s.getItem() == this.from : s.getItem() == ModernBlocks.item("netherite_ingot"))
+                    {
+                        found = s;
+                    }
+                }
+            }
+
+            return count == 2 ? found : ItemStack.EMPTY;
+        }
+
+        public boolean matches(net.minecraft.inventory.InventoryCrafting inv, net.minecraft.world.World worldIn)
+        {
+            return !this.find(inv, true).isEmpty() && !this.find(inv, false).isEmpty();
+        }
+
+        public ItemStack getCraftingResult(net.minecraft.inventory.InventoryCrafting inv)
+        {
+            ItemStack gear = this.find(inv, true);
+            ItemStack out = new ItemStack(this.to);
+
+            if (gear.hasTagCompound())
+            {
+                out.setTagCompound(gear.getTagCompound().copy());
+            }
+
+            out.setItemDamage(Math.min(gear.getItemDamage(), out.getMaxDamage() - 1));
+            return out;
+        }
+
+        public boolean canFit(int width, int height)
+        {
+            return width * height >= 2;
+        }
+
+        public ItemStack getRecipeOutput()
+        {
+            return new ItemStack(this.to);
+        }
+
+        public net.minecraft.util.NonNullList<ItemStack> getRemainingItems(net.minecraft.inventory.InventoryCrafting inv)
+        {
+            return net.minecraft.util.NonNullList.<ItemStack>withSize(inv.getSizeInventory(), ItemStack.EMPTY);
+        }
+
+        public boolean isHidden()
+        {
+            return true;
+        }
+    }
+
     public static void addSmelting(FurnaceRecipes r)
     {
         smelt(r, "raw_iron", new ItemStack(Items.IRON_INGOT), 0.7F);

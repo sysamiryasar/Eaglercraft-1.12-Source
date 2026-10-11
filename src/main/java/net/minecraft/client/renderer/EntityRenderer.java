@@ -620,7 +620,12 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
             float sythixZoom = useFOVSetting ? net.sythix.client.core.Hooks.zoomFov(f, flag) : -1.0F;
 
-            if (sythixZoom >= 0.0F)
+            if (useFOVSetting && net.sythix.modern.item.MSpyglass.isLooking(this.mc.player))
+            {
+                // Spyglass: 10x zoom
+                f = f * 0.1F;
+            }
+            else if (sythixZoom >= 0.0F)
             {
                 f = sythixZoom;
             }

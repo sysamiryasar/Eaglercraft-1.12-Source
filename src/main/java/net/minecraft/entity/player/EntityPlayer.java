@@ -229,6 +229,7 @@ public abstract class EntityPlayer extends EntityLivingBase
      */
     public void onUpdate()
     {
+        net.sythix.modern.ModernItems.playerTick(this);
         this.noClip = this.isSpectator();
 
         if (this.isSpectator())
@@ -1294,6 +1295,8 @@ public abstract class EntityPlayer extends EntityLivingBase
             if (!targetEntity.hitByEntity(this))
             {
                 float f = (float)this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue();
+                // Sythix: mace fall-damage bonus
+                f += net.sythix.modern.ModernItems.bonusDamage(this, targetEntity);
                 float f1;
 
                 if (targetEntity instanceof EntityLivingBase)
