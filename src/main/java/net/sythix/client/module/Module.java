@@ -22,6 +22,10 @@ public abstract class Module
     private boolean enabled;
     private final List<Setting<?>> settings = new ArrayList<Setting<?>>();
     protected final KeybindSetting toggleKey;
+    private boolean favorite;
+
+    /** Core modules are part of the client itself and cannot be switched off. */
+    private boolean core;
 
     protected Module(String name, String description, Category category, boolean defaultEnabled)
     {
@@ -37,6 +41,13 @@ public abstract class Module
     protected <S extends Setting<?>> S add(S setting)
     {
         this.settings.add(setting);
+        return setting;
+    }
+
+    /** Registers a setting at a specific position in the menu order. */
+    protected <S extends Setting<?>> S add(int index, S setting)
+    {
+        this.settings.add(Math.min(index, this.settings.size()), setting);
         return setting;
     }
 
@@ -57,11 +68,44 @@ public abstract class Module
 
     public boolean isEnabled()
     {
-        return this.enabled;
+        return this.enabled || this.core;
+    }
+
+    /** Marks this module as always on (used by client infrastructure modules). */
+    protected void setCore()
+    {
+        this.core = true;
+        this.enabled = true;
+    }
+
+    public boolean isCore()
+    {
+        return this.core;
+    }
+
+    public boolean isFavorite()
+    {
+        return this.favorite;
+    }
+
+    public void setFavorite(boolean favorite)
+    {
+        this.favorite = favorite;
+    }
+
+    /** A screen this module opens from the mod menu (for example the waypoint manager), or null. */
+    public net.minecraft.client.gui.GuiScreen createScreen(net.minecraft.client.gui.GuiScreen parent)
+    {
+        return null;
     }
 
     public void setEnabled(boolean enabled)
     {
+        if (this.core)
+        {
+            return;
+        }
+
         if (this.enabled != enabled)
         {
             this.enabled = enabled;
@@ -90,11 +134,67 @@ public abstract class Module
     {
     }
 
-    /** All settings, with the toggle key last. */
+    /** Called every client tick (20 times a second) while enabled. */
+    public void onTick()
+    {
+    }
+
+    /** Called when the player attacks an entity, while enabled. */
+    public void onAttack(net.minecraft.entity.Entity target)
+    {
+    }
+
+    /** Called for every key press with no menu open, while enabled. */
+    public void onKey(int keyCode)
+    {
+    }
+
+    /** Called for each mouse button press with no menu open (0 = left, 1 = right), while enabled. */
+    public void onMouseClick(int button)
+    {
+    }
+
+    /** Called when a key is released with no menu open, while enabled. */
+    public void onKeyRelease(int keyCode)
+    {
+    }
+
+    /** Called for each chat message received from the server, while enabled. */
+    public void onChat(net.minecraft.util.text.ITextComponent message)
+    {
+    }
+
+    /** Called when the player joins a world or server, while enabled. */
+    public void onWorldJoin()
+    {
+    }
+
+    /** Called every frame after the world is drawn (3D), while enabled. */
+    public void onRenderWorld(float partialTicks)
+    {
+    }
+
+    /** True if this module draws a live preview in the mod menu (see renderPreview). */
+    public boolean hasPreview()
+    {
+        return false;
+    }
+
+    /** Draws a preview inside the given box in the mod menu. */
+    public void renderPreview(int x, int y, int width, int height)
+    {
+    }
+
+    /** All settings, with the toggle key last (core modules have no toggle key). */
     public List<Setting<?>> getSettings()
     {
         List<Setting<?>> list = new ArrayList<Setting<?>>(this.settings);
-        list.add(this.toggleKey);
+
+        if (!this.core)
+        {
+            list.add(this.toggleKey);
+        }
+
         return Collections.unmodifiableList(list);
     }
 
@@ -117,6 +217,7 @@ public abstract class Module
     {
         JsonObject json = new JsonObject();
         json.addProperty("enabled", this.enabled);
+        json.addProperty("favorite", this.favorite);
         JsonObject values = new JsonObject();
 
         for (Setting<?> setting : this.getSettings())
@@ -133,6 +234,11 @@ public abstract class Module
         if (json.has("enabled") && json.get("enabled").isJsonPrimitive())
         {
             this.setEnabled(json.get("enabled").getAsBoolean());
+        }
+
+        if (json.has("favorite") && json.get("favorite").isJsonPrimitive())
+        {
+            this.favorite = json.get("favorite").getAsBoolean();
         }
 
         if (json.has("settings") && json.get("settings").isJsonObject())

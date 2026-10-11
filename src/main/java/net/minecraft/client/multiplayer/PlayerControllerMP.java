@@ -530,6 +530,7 @@ public class PlayerControllerMP
      */
     public void attackEntity(EntityPlayer playerIn, Entity targetEntity)
     {
+        net.sythix.client.core.Hooks.onAttack(targetEntity);
         this.syncCurrentPlayItem();
         this.connection.sendPacket(new CPacketUseEntity(targetEntity));
 

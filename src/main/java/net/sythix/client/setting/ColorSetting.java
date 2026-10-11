@@ -39,7 +39,7 @@ public class ColorSetting extends Setting<Integer>
 
     public int getArgb()
     {
-        return this.value.intValue();
+        return this.get().intValue();
     }
 
     /** Colour to draw with right now; offset shifts the rainbow phase (for example by x position). */

@@ -375,7 +375,7 @@ public class GuiIngame extends Gui
         }
 
         this.mc.mcProfiler.startSection("sythixHud");
-        SythixClient.get().renderHud(scaledresolution);
+        net.sythix.client.core.Hooks.renderHud(scaledresolution);
         this.mc.mcProfiler.endSection();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
@@ -407,7 +407,7 @@ public class GuiIngame extends Gui
     {
         GameSettings gamesettings = this.mc.gameSettings;
 
-        if (gamesettings.thirdPersonView == 0)
+        if (gamesettings.thirdPersonView == 0 || net.sythix.client.core.Hooks.crosshairInThirdPerson())
         {
             if (this.mc.playerController.isSpectator() && this.mc.pointedEntity == null)
             {
@@ -443,9 +443,18 @@ public class GuiIngame extends Gui
             }
             else
             {
-                GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-                GlStateManager.enableAlpha();
-                this.drawTexturedModalRect(l / 2 - 7, i1 / 2 - 7, 0, 0, 16, 16);
+                if (!net.sythix.client.core.Hooks.renderCrosshair(l, i1))
+                {
+                    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+                    GlStateManager.enableAlpha();
+                    this.drawTexturedModalRect(l / 2 - 7, i1 / 2 - 7, 0, 0, 16, 16);
+                }
+                else
+                {
+                    this.mc.getTextureManager().bindTexture(ICONS);
+                    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+                    GlStateManager.enableAlpha();
+                }
 
                 if (this.mc.gameSettings.attackIndicator == 1)
                 {
@@ -478,6 +487,11 @@ public class GuiIngame extends Gui
 
     protected void renderPotionEffects(ScaledResolution resolution)
     {
+        if (net.sythix.client.core.Hooks.hideVanillaPotionIcons())
+        {
+            return;
+        }
+
         Collection<PotionEffect> collection = this.mc.player.getActivePotionEffects();
 
         if (!collection.isEmpty())

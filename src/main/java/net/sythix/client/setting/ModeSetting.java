@@ -23,14 +23,14 @@ public class ModeSetting extends Setting<String>
 
     public boolean is(String mode)
     {
-        return this.value.equals(mode);
+        return this.get().equals(mode);
     }
 
     public int getIndex()
     {
         for (int i = 0; i < this.modes.length; ++i)
         {
-            if (this.modes[i].equals(this.value))
+            if (this.modes[i].equals(this.get()))
             {
                 return i;
             }
@@ -47,7 +47,7 @@ public class ModeSetting extends Setting<String>
 
     public JsonElement toJson()
     {
-        return new JsonPrimitive(this.value);
+        return new JsonPrimitive(this.get());
     }
 
     public void fromJson(JsonElement json)

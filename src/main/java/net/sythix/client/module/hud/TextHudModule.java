@@ -1,56 +1,63 @@
 package net.sythix.client.module.hud;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import net.minecraft.client.gui.FontRenderer;
-import net.sythix.client.setting.BooleanSetting;
-import net.sythix.client.setting.ColorSetting;
+import net.sythix.client.module.Category;
 import net.sythix.client.setting.ModeSetting;
 import net.sythix.client.setting.NumberSetting;
-import net.sythix.client.ui.SythixTheme;
 
 /**
- * A HUD element that shows a label and a value, such as "FPS 144", with shared styling options.
+ * A HUD element made of one or more "label value" lines, such as "FPS 144".
  */
-public abstract class TextHudModule extends HudModule
+public abstract class TextHudModule extends StyledHudModule
 {
     protected final ModeSetting labelMode;
     protected final ModeSetting brackets;
-    protected final ColorSetting labelColor;
-    protected final ColorSetting valueColor;
-    protected final BooleanSetting textShadow;
-    protected final BooleanSetting background;
-    protected final ColorSetting backgroundColor;
-    protected final BooleanSetting accentLine;
-    protected final NumberSetting padding;
+    protected final ModeSetting textAlign;
     protected final NumberSetting minWidth;
+
+    protected TextHudModule(String name, String description, Category category, boolean defaultEnabled, double defaultX, double defaultY)
+    {
+        super(name, description, category, defaultEnabled, defaultX, defaultY);
+        this.labelMode = this.add(1, new ModeSetting("Label", "Where labels are shown.", "Before", "Before", "After", "Hidden"));
+        this.brackets = this.add(2, new ModeSetting("Brackets", "Surround each line with brackets.", "None", "None", "[ ]", "( )", "< >"));
+        this.textAlign = this.add(3, new ModeSetting("Text Align", "Alignment of the text inside the box.", "Center", "Left", "Center", "Right"));
+        this.minWidth = this.add(new NumberSetting("Min Width", "Keeps the box from changing size as values change. 0 = automatic.", 0.0D, 0.0D, 200.0D, 1.0D, "px"));
+    }
 
     protected TextHudModule(String name, String description, boolean defaultEnabled, double defaultX, double defaultY)
     {
-        super(name, description, defaultEnabled, defaultX, defaultY);
-        this.labelMode = this.add(new ModeSetting("Label", "Where the label (for example \"FPS\") is shown.", "Before", "Before", "After", "Hidden"));
-        this.brackets = this.add(new ModeSetting("Brackets", "Surround the text with brackets.", "None", "None", "[ ]", "( )", "< >"));
-        this.labelColor = this.add(new ColorSetting("Label Color", "Colour of the label and brackets.", SythixTheme.RED | 0xFF000000, false));
-        this.valueColor = this.add(new ColorSetting("Value Color", "Colour of the number.", 0xFFFFFFFF, false));
-        this.textShadow = this.add(new BooleanSetting("Text Shadow", "Draw a shadow behind the text.", true));
-        this.background = this.add(new BooleanSetting("Background", "Draw a box behind the text.", true));
-        this.backgroundColor = this.add(new ColorSetting("Background Color", "Colour and transparency of the box.", 0xA016161B, true)).visibleWhen(this.background::isOn);
-        this.accentLine = this.add(new BooleanSetting("Accent Line", "Red-to-blue line along the bottom of the box.", true)).visibleWhen(this.background::isOn);
-        this.padding = this.add(new NumberSetting("Padding", "Space between the text and the edge of the box.", 4.0D, 0.0D, 10.0D, 1.0D, "px")).visibleWhen(this.background::isOn);
-        this.minWidth = this.add(new NumberSetting("Min Width", "Keeps the box from changing size as the number changes. 0 = automatic.", 0.0D, 0.0D, 150.0D, 1.0D, "px"));
+        this(name, description, Category.INTERFACE, defaultEnabled, defaultX, defaultY);
     }
 
-    /** Short label, for example "FPS". */
-    protected abstract String getLabel();
-
-    /** Current value text. */
-    protected abstract String getValue();
-
-    /** Colour for the value; subclasses can override (for example ping colours). */
-    protected int getValueColor()
+    /** Short label for single-line elements, for example "FPS". */
+    protected String getLabel()
     {
-        return this.valueColor.getColor();
+        return this.getName();
     }
 
-    private String[] getParts()
+    /** Value for single-line elements. */
+    protected String getValue()
+    {
+        return "";
+    }
+
+    /** Colour of the value on the given line. */
+    protected int getValueColor(int line)
+    {
+        return this.valueColor.getColor((float)line * 0.1F);
+    }
+
+    /** Lines as {label, value} pairs. Single-line elements use getLabel and getValue. */
+    protected List<String[]> getLines()
+    {
+        return Collections.singletonList(new String[] {this.getLabel(), this.getValue()});
+    }
+
+    /** Splits a {label, value} pair into {open, label, value, label-after, close}. */
+    private String[] parts(String[] line)
     {
         String open = "";
         String close = "";
@@ -61,10 +68,10 @@ public abstract class TextHudModule extends HudModule
             close = this.brackets.get().substring(2, 3);
         }
 
-        String label = this.getLabel();
-        String value = this.getValue();
+        String label = line[0];
+        String value = line[1];
 
-        if (this.labelMode.is("Hidden"))
+        if (this.labelMode.is("Hidden") || label.isEmpty())
         {
             return new String[] {open, "", value, "", close};
         }
@@ -72,18 +79,16 @@ public abstract class TextHudModule extends HudModule
         {
             return new String[] {open, "", value, " " + label, close};
         }
-        else
-        {
-            return new String[] {open, label + " ", value, "", close};
-        }
+
+        return new String[] {open, label + (value.isEmpty() ? "" : " "), value, "", close};
     }
 
-    private int getTextWidth()
+    private int lineWidth(String[] parts)
     {
         FontRenderer font = this.mc.fontRenderer;
         int width = 0;
 
-        for (String part : this.getParts())
+        for (String part : parts)
         {
             width += font.getStringWidth(part);
         }
@@ -91,49 +96,73 @@ public abstract class TextHudModule extends HudModule
         return width;
     }
 
-    private int getPad()
+    private List<String[]> partLines()
     {
-        return this.background.isOn() ? this.padding.getInt() : 0;
+        List<String[]> result = new ArrayList<String[]>();
+
+        for (String[] line : this.getLines())
+        {
+            result.add(this.parts(line));
+        }
+
+        return result;
     }
 
     public int getWidth()
     {
-        return Math.max(this.minWidth.getInt(), this.getTextWidth() + this.getPad() * 2);
+        int max = 0;
+
+        for (String[] parts : this.partLines())
+        {
+            max = Math.max(max, this.lineWidth(parts));
+        }
+
+        return Math.max(this.minWidth.getInt(), max + this.getPad() * 2);
     }
 
     public int getHeight()
     {
-        return 8 + this.getPad() * 2;
+        int lines = Math.max(1, this.getLines().size());
+        return lines * 10 - 2 + this.getPad() * 2;
     }
 
     protected void renderContent(boolean preview)
     {
         int width = this.getWidth();
-        int height = this.getHeight();
-
-        if (this.background.isOn())
-        {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)width, (float)height, this.backgroundColor.getColor());
-
-            if (this.accentLine.isOn())
-            {
-                SythixTheme.drawAccentLine(0.0F, (float)(height - 1), (float)width, 1.0F);
-            }
-        }
-
+        this.drawBox(width, this.getHeight());
         FontRenderer font = this.mc.fontRenderer;
-        String[] parts = this.getParts();
-        float x = (float)(width - this.getTextWidth()) / 2.0F;
-        float y = (float)this.getPad() + (this.background.isOn() ? 0.5F : 0.0F);
+        List<String[]> lines = this.partLines();
         int labelArgb = this.labelColor.getColor();
-        int[] colors = new int[] {labelArgb, labelArgb, this.getValueColor(), labelArgb, labelArgb};
 
-        for (int i = 0; i < parts.length; ++i)
+        for (int i = 0; i < lines.size(); ++i)
         {
-            if (!parts[i].isEmpty())
+            String[] parts = lines.get(i);
+            int textWidth = this.lineWidth(parts);
+            float x;
+
+            if (this.textAlign.is("Left"))
             {
-                font.drawString(parts[i], x, y, colors[i] | 0xFF000000, this.textShadow.isOn());
-                x += (float)font.getStringWidth(parts[i]);
+                x = (float)this.getPad();
+            }
+            else if (this.textAlign.is("Right"))
+            {
+                x = (float)(width - this.getPad() - textWidth);
+            }
+            else
+            {
+                x = (float)(width - textWidth) / 2.0F;
+            }
+
+            float y = (float)(this.getPad() + i * 10) + (this.background.isOn() ? 0.5F : 0.0F);
+            int[] colors = new int[] {labelArgb, labelArgb, this.getValueColor(i), labelArgb, labelArgb};
+
+            for (int p = 0; p < parts.length; ++p)
+            {
+                if (!parts[p].isEmpty())
+                {
+                    this.drawText(parts[p], x, y, colors[p]);
+                    x += (float)font.getStringWidth(parts[p]);
+                }
             }
         }
     }

@@ -377,6 +377,7 @@ public class ItemRenderer
             boolean flag = p_187457_4_ == EnumHand.MAIN_HAND;
             EnumHandSide enumhandside = flag ? p_187457_1_.getPrimaryHand() : p_187457_1_.getPrimaryHand().opposite();
             GlStateManager.pushMatrix();
+            net.sythix.client.core.Hooks.applyViewmodel(p_187457_4_, enumhandside == EnumHandSide.RIGHT ? 1.0F : -1.0F);
 
             if (p_187457_6_.isEmpty())
             {
@@ -414,10 +415,22 @@ public class ItemRenderer
                         case DRINK:
                             this.transformEatFirstPerson(p_187457_2_, enumhandside, p_187457_6_);
                             this.transformSideFirstPerson(enumhandside, p_187457_7_);
+
+                            if (net.sythix.client.core.Hooks.swingWhileUsing())
+                            {
+                                this.transformFirstPerson(enumhandside, p_187457_5_);
+                            }
+
                             break;
 
                         case BLOCK:
                             this.transformSideFirstPerson(enumhandside, p_187457_7_);
+
+                            if (net.sythix.client.core.Hooks.swingWhileUsing())
+                            {
+                                this.transformFirstPerson(enumhandside, p_187457_5_);
+                            }
+
                             break;
 
                         case BOW:
@@ -447,6 +460,17 @@ public class ItemRenderer
                             GlStateManager.scale(1.0F, 1.0F, 1.0F + f6 * 0.2F);
                             GlStateManager.rotate((float)j * 45.0F, 0.0F, -1.0F, 0.0F);
                     }
+                }
+                else if (flag && net.sythix.client.core.Hooks.classicBlocking(p_187457_6_))
+                {
+                    // Classic (1.7 style) sword-block pose, visual only
+                    int k = flag1 ? 1 : -1;
+                    this.transformSideFirstPerson(enumhandside, p_187457_7_);
+                    this.transformFirstPerson(enumhandside, p_187457_5_);
+                    GlStateManager.translate((float)k * -0.14142136F, 0.08F, 0.14142136F);
+                    GlStateManager.rotate(-102.25F, 1.0F, 0.0F, 0.0F);
+                    GlStateManager.rotate((float)k * 13.365F, 0.0F, 1.0F, 0.0F);
+                    GlStateManager.rotate((float)k * 78.05F, 0.0F, 0.0F, 1.0F);
                 }
                 else
                 {
@@ -639,6 +663,20 @@ public class ItemRenderer
         EntityPlayerSP entityplayersp = this.mc.player;
         ItemStack itemstack = entityplayersp.getHeldItemMainhand();
         ItemStack itemstack1 = entityplayersp.getHeldItemOffhand();
+
+        if (net.sythix.client.core.Hooks.noEquipBounce())
+        {
+            // Same item with new damage/NBT: swap the reference so no re-equip animation plays
+            if (!itemstack.isEmpty() && ItemStack.areItemsEqualIgnoreDurability(this.itemStackMainHand, itemstack))
+            {
+                this.itemStackMainHand = itemstack;
+            }
+
+            if (!itemstack1.isEmpty() && ItemStack.areItemsEqualIgnoreDurability(this.itemStackOffHand, itemstack1))
+            {
+                this.itemStackOffHand = itemstack1;
+            }
+        }
 
         if (entityplayersp.isRowingBoat())
         {

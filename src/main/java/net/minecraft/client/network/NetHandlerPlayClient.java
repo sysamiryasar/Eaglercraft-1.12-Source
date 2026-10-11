@@ -933,6 +933,7 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
     {
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
         this.gameController.ingameGUI.addChatMessage(packetIn.getType(), packetIn.getChatComponent());
+        net.sythix.client.core.Hooks.onServerChat(packetIn.getChatComponent());
     }
 
     /**

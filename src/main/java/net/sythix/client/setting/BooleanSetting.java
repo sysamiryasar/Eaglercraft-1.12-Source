@@ -12,7 +12,7 @@ public class BooleanSetting extends Setting<Boolean>
 
     public boolean isOn()
     {
-        return this.value.booleanValue();
+        return this.get().booleanValue();
     }
 
     public void toggle()
@@ -22,7 +22,7 @@ public class BooleanSetting extends Setting<Boolean>
 
     public JsonElement toJson()
     {
-        return new JsonPrimitive(this.value);
+        return new JsonPrimitive(this.get());
     }
 
     public void fromJson(JsonElement json)

@@ -11,6 +11,12 @@ import net.sythix.client.setting.KeybindSetting;
 import net.sythix.client.setting.ModeSetting;
 import net.sythix.client.setting.NumberSetting;
 import net.sythix.client.setting.Setting;
+import net.sythix.client.setting.TextSetting;
+import net.sythix.client.setting.ButtonSetting;
+import net.sythix.client.setting.InfoSetting;
+import net.sythix.client.setting.GameOptionSetting;
+import net.minecraft.util.ChatAllowedCharacters;
+import net.minecraft.client.gui.GuiScreen;
 import net.sythix.client.ui.ColorUtil;
 import net.sythix.client.ui.SythixTheme;
 
@@ -37,11 +43,13 @@ public class SettingsPanel
     private long lastFrame;
 
     private NumberSetting draggingSlider;
+    private GameOptionSetting draggingOption;
     private ColorSetting expandedColor;
     /** Which part of the colour picker is being dragged: 0 none, 1 saturation/brightness, 2 hue, 3 alpha. */
     private int colorDragPart;
     private float pickerHue;
     private KeybindSetting listeningKeybind;
+    private TextSetting editingText;
     private Setting<?> hoveredSetting;
 
     /** Switch animations, keyed by position in the list. */
@@ -68,7 +76,9 @@ public class SettingsPanel
             this.targetScroll = 0.0F;
             this.expandedColor = null;
             this.listeningKeybind = null;
+            this.editingText = null;
             this.draggingSlider = null;
+            this.draggingOption = null;
             this.colorDragPart = 0;
             this.switchAnimations.clear();
         }
@@ -86,7 +96,7 @@ public class SettingsPanel
 
     public boolean isListeningForKey()
     {
-        return this.listeningKeybind != null;
+        return this.listeningKeybind != null || this.editingText != null;
     }
 
     private List<Setting<?>> visibleSettings()
@@ -106,9 +116,14 @@ public class SettingsPanel
 
     private int rowHeight(Setting<?> setting)
     {
-        if (setting instanceof NumberSetting)
+        if (setting instanceof NumberSetting || (setting instanceof GameOptionSetting && ((GameOptionSetting)setting).isSlider()))
         {
             return SLIDER_ROW;
+        }
+
+        if (setting instanceof TextSetting)
+        {
+            return 30;
         }
 
         if (setting == this.expandedColor)
@@ -160,6 +175,11 @@ public class SettingsPanel
         if (this.draggingSlider != null)
         {
             this.updateSlider(this.draggingSlider, mouseX);
+        }
+
+        if (this.draggingOption != null)
+        {
+            this.draggingOption.setPercent((double)(mouseX - (this.x + 4)) / (double)Math.max(1, this.controlRight() - (this.x + 4)));
         }
 
         if (this.colorDragPart != 0 && this.expandedColor != null)
@@ -244,6 +264,41 @@ public class SettingsPanel
             SythixTheme.drawGradientH(trackLeft, trackY, filled, trackY + 3.0F, SythixTheme.RED, SythixTheme.BLUE);
             SythixTheme.drawRect(filled - 2.0F, trackY - 2.0F, filled + 2.0F, trackY + 5.0F, 0xFFFFFFFF);
         }
+        else if (setting instanceof GameOptionSetting)
+        {
+            GameOptionSetting option = (GameOptionSetting)setting;
+            String value = option.getDisplay();
+
+            if (option.isSlider())
+            {
+                font.drawString(value, (float)(right - font.getStringWidth(value)), (float)(rowY + 4), SythixTheme.TEXT_MUTED, false);
+                float trackY = (float)(rowY + 16);
+                float filled = (float)left + (float)(right - left) * (float)option.getPercent();
+                SythixTheme.drawRect((float)left, trackY, (float)right, trackY + 3.0F, 0xFF2A2A33);
+                SythixTheme.drawGradientH((float)left, trackY, filled, trackY + 3.0F, SythixTheme.RED, SythixTheme.BLUE);
+                SythixTheme.drawRect(filled - 2.0F, trackY - 2.0F, filled + 2.0F, trackY + 5.0F, 0xFFFFFFFF);
+            }
+            else
+            {
+                String text = "< " + value + " >";
+                font.drawString(text, (float)(right - font.getStringWidth(text)), (float)(rowY + 4), SythixTheme.LIGHT_BLUE, false);
+            }
+        }
+        else if (setting instanceof ButtonSetting)
+        {
+            String text = ((ButtonSetting)setting).getButtonText();
+            int bw = font.getStringWidth(text) + 10;
+            boolean hover = mouseX >= right - bw && mouseX < right && mouseY >= rowY + 2 && mouseY < rowY + 14;
+            SythixTheme.drawRect((float)(right - bw), (float)(rowY + 2), (float)right, (float)(rowY + 14), hover ? 0xFF30303A : 0xFF24242C);
+            SythixTheme.drawOutline((float)(right - bw), (float)(rowY + 2), (float)right, (float)(rowY + 14), hover ? SythixTheme.RED : SythixTheme.BORDER);
+            font.drawString(text, (float)(right - bw + 5), (float)(rowY + 4), SythixTheme.TEXT, false);
+        }
+        else if (setting instanceof InfoSetting)
+        {
+            int labelWidth = font.getStringWidth(setting.getName()) + 8;
+            String text = font.trimStringToWidth(((InfoSetting)setting).getText(), Math.max(10, right - left - labelWidth));
+            font.drawString(text, (float)(right - font.getStringWidth(text)), (float)(rowY + 4), SythixTheme.TEXT_MUTED, false);
+        }
         else if (setting instanceof ColorSetting)
         {
             ColorSetting color = (ColorSetting)setting;
@@ -259,6 +314,19 @@ public class SettingsPanel
             {
                 this.drawColorPicker(color, rowY + ROW, font);
             }
+        }
+        else if (setting instanceof TextSetting)
+        {
+            TextSetting text = (TextSetting)setting;
+            boolean editing = text == this.editingText;
+            float bx = (float)left;
+            float by = (float)(rowY + 14);
+            SythixTheme.drawRect(bx, by, (float)right, by + 12.0F, 0xFF0F0F13);
+            SythixTheme.drawOutline(bx, by, (float)right, by + 12.0F, editing ? SythixTheme.RED : SythixTheme.BORDER);
+            String value = text.get();
+            String shown = font.trimStringToWidth(value, right - left - 8, true);
+            String caret = editing && (Minecraft.getSystemTime() / 500L) % 2L == 0L ? "_" : "";
+            font.drawString(shown + caret, bx + 3.0F, by + 2.0F, value.isEmpty() && !editing ? SythixTheme.TEXT_DISABLED : SythixTheme.TEXT, false);
         }
         else if (setting instanceof KeybindSetting)
         {
@@ -409,6 +477,7 @@ public class SettingsPanel
         if (!this.isInside(mouseX, mouseY))
         {
             this.listeningKeybind = null;
+            this.editingText = null;
             return false;
         }
 
@@ -422,6 +491,7 @@ public class SettingsPanel
             if (mouseY >= rowY && mouseY < rowY + h)
             {
                 this.listeningKeybind = null;
+                this.editingText = null;
 
                 // Reset button
                 if (!setting.isDefault() && mouseX >= right + 2 && mouseY < rowY + 14)
@@ -439,6 +509,24 @@ public class SettingsPanel
                 {
                     ((ModeSetting)setting).cycle(button == 1 ? -1 : 1);
                 }
+                else if (setting instanceof GameOptionSetting)
+                {
+                    GameOptionSetting option = (GameOptionSetting)setting;
+
+                    if (option.isSlider())
+                    {
+                        this.draggingOption = option;
+                    }
+                    else
+                    {
+                        option.cycle();
+                    }
+                }
+                else if (setting instanceof ButtonSetting)
+                {
+                    ((ButtonSetting)setting).press();
+                    return true;
+                }
                 else if (setting instanceof NumberSetting)
                 {
                     this.draggingSlider = (NumberSetting)setting;
@@ -447,6 +535,11 @@ public class SettingsPanel
                 else if (setting instanceof KeybindSetting)
                 {
                     this.listeningKeybind = (KeybindSetting)setting;
+                    return true;
+                }
+                else if (setting instanceof TextSetting)
+                {
+                    this.editingText = (TextSetting)setting;
                     return true;
                 }
                 else if (setting instanceof ColorSetting)
@@ -523,12 +616,40 @@ public class SettingsPanel
         }
 
         this.draggingSlider = null;
+        this.draggingOption = null;
         this.colorDragPart = 0;
     }
 
-    /** Returns true if the key was used (while waiting for a new keybind). */
-    public boolean keyTyped(int keyCode)
+    /** Returns true if the key was used (keybind capture or text editing). */
+    public boolean keyTyped(char typedChar, int keyCode)
     {
+        if (this.editingText != null)
+        {
+            TextSetting text = this.editingText;
+
+            if (keyCode == 1 || keyCode == 28 || keyCode == 156)
+            {
+                // Escape or Enter finishes editing
+                this.editingText = null;
+            }
+            else if (keyCode == 14)
+            {
+                String v = text.get();
+                text.set(v.isEmpty() ? v : v.substring(0, v.length() - 1));
+            }
+            else if (GuiScreen.isKeyComboCtrlV(keyCode))
+            {
+                text.set(text.get() + ChatAllowedCharacters.filterAllowedCharacters(GuiScreen.getClipboardString()));
+            }
+            else if (ChatAllowedCharacters.isAllowedCharacter(typedChar))
+            {
+                text.set(text.get() + typedChar);
+            }
+
+            this.onChange.run();
+            return true;
+        }
+
         if (this.listeningKeybind == null)
         {
             return false;

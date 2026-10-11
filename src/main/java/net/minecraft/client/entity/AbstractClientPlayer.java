@@ -163,6 +163,11 @@ public abstract class AbstractClientPlayer extends EntityPlayer
 
     public float getFovModifier()
     {
+        if (net.sythix.client.core.Hooks.staticFov())
+        {
+            return 1.0F;
+        }
+
         float f = 1.0F;
 
         if (this.capabilities.isFlying)

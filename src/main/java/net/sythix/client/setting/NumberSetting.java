@@ -52,18 +52,18 @@ public class NumberSetting extends Setting<Double>
 
     public float getFloat()
     {
-        return this.value.floatValue();
+        return this.get().floatValue();
     }
 
     public int getInt()
     {
-        return (int)Math.round(this.value.doubleValue());
+        return (int)Math.round(this.get().doubleValue());
     }
 
     /** Position of the value along the slider, 0..1. */
     public double getPercent()
     {
-        return this.max == this.min ? 0.0D : (this.value.doubleValue() - this.min) / (this.max - this.min);
+        return this.max == this.min ? 0.0D : (this.get().doubleValue() - this.min) / (this.max - this.min);
     }
 
     public void setPercent(double percent)
@@ -73,14 +73,14 @@ public class NumberSetting extends Setting<Double>
 
     public String getDisplayValue()
     {
-        double v = this.value.doubleValue();
+        double v = this.get().doubleValue();
         String text = this.step >= 1.0D ? String.valueOf((long)Math.round(v)) : (this.step >= 0.1D ? String.format("%.1f", v) : String.format("%.2f", v));
         return text + this.unit;
     }
 
     public JsonElement toJson()
     {
-        return new JsonPrimitive(this.value);
+        return new JsonPrimitive(this.get());
     }
 
     public void fromJson(JsonElement json)

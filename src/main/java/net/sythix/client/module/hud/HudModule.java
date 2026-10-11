@@ -24,7 +24,12 @@ public abstract class HudModule extends Module
 
     protected HudModule(String name, String description, boolean defaultEnabled, double defaultX, double defaultY)
     {
-        super(name, description, Category.HUD, defaultEnabled);
+        this(name, description, Category.INTERFACE, defaultEnabled, defaultX, defaultY);
+    }
+
+    protected HudModule(String name, String description, Category category, boolean defaultEnabled, double defaultX, double defaultY)
+    {
+        super(name, description, category, defaultEnabled);
         this.defaultX = defaultX;
         this.defaultY = defaultY;
         this.posX = defaultX;
@@ -40,6 +45,12 @@ public abstract class HudModule extends Module
 
     /** Draws the element at (0, 0) in its own unscaled coordinates. preview is true in the HUD editor. */
     protected abstract void renderContent(boolean preview);
+
+    /** Whether the element has something to show right now (in game). Hidden elements are skipped. */
+    public boolean shouldRender()
+    {
+        return true;
+    }
 
     public NumberSetting getScaleSetting()
     {

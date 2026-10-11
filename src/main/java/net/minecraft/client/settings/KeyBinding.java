@@ -22,6 +22,9 @@ public class KeyBinding implements Comparable<KeyBinding>
 
     /** Is the key held down? */
     private boolean pressed;
+
+    /** Sythix: when true the key counts as held (used by Toggle Sprint / Toggle Sneak). */
+    public boolean sythixForced;
     private int pressTime;
 
     public static void onTick(int keyCode)
@@ -107,7 +110,7 @@ public class KeyBinding implements Comparable<KeyBinding>
      */
     public boolean isKeyDown()
     {
-        return this.pressed;
+        return this.pressed || this.sythixForced;
     }
 
     public String getKeyCategory()

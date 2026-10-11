@@ -56,7 +56,7 @@ public abstract class Setting<T>
 
     public boolean isDefault()
     {
-        return this.value.equals(this.defaultValue);
+        return this.get().equals(this.defaultValue);
     }
 
     public boolean isVisible()

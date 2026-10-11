@@ -1666,14 +1666,18 @@ public abstract class EntityLivingBase extends Entity
      */
     private int getArmSwingAnimationEnd()
     {
+        int duration;
+
         if (this.isPotionActive(MobEffects.HASTE))
         {
-            return 6 - (1 + this.getActivePotionEffect(MobEffects.HASTE).getAmplifier());
+            duration = 6 - (1 + this.getActivePotionEffect(MobEffects.HASTE).getAmplifier());
         }
         else
         {
-            return this.isPotionActive(MobEffects.MINING_FATIGUE) ? 6 + (1 + this.getActivePotionEffect(MobEffects.MINING_FATIGUE).getAmplifier()) * 2 : 6;
+            duration = this.isPotionActive(MobEffects.MINING_FATIGUE) ? 6 + (1 + this.getActivePotionEffect(MobEffects.MINING_FATIGUE).getAmplifier()) * 2 : 6;
         }
+
+        return this.world.isRemote ? net.sythix.client.core.Hooks.swingDuration(this, duration) : duration;
     }
 
     public void swingArm(EnumHand hand)

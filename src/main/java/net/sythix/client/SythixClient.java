@@ -2,13 +2,10 @@ package net.sythix.client;
 
 import java.io.File;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.sythix.client.config.ConfigManager;
 import net.sythix.client.config.FileConfigStorage;
 import net.sythix.client.input.ClickCounter;
 import net.sythix.client.module.ModuleManager;
-import net.sythix.client.module.hud.HudModule;
-import net.sythix.client.ui.GuiHudEditor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,40 +77,6 @@ public final class SythixClient
         return this.configManager;
     }
 
-    /** A key was pressed while playing with no menu open. */
-    public void onKeyPressed(int keyCode)
-    {
-        if (keyCode == this.mc.gameSettings.keyBindSythixMenu.getKeyCode())
-        {
-            this.mc.displayGuiScreen(new GuiHudEditor(null));
-            return;
-        }
-
-        this.moduleManager.onKeyPressed(keyCode);
-    }
-
-    /** A mouse button was pressed while playing with no menu open. */
-    public void onMouseClick(int button)
-    {
-        this.clickCounter.onClick(button);
-    }
-
-    /** Draws all enabled HUD elements. Called from the in-game overlay. */
-    public void renderHud(ScaledResolution res)
-    {
-        if (this.mc.currentScreen instanceof GuiHudEditor || this.mc.gameSettings.showDebugInfo)
-        {
-            return;
-        }
-
-        for (HudModule module : this.moduleManager.getHudModules())
-        {
-            if (module.isEnabled())
-            {
-                module.render(res, false);
-            }
-        }
-    }
 
     public void save()
     {

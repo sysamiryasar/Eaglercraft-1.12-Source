@@ -1,12 +1,20 @@
 package net.sythix.client.module;
 
+/**
+ * Module groups, matching the Sythix module list (sections A to J).
+ */
 public enum Category
 {
-    HUD("HUD"),
-    PVP("PvP"),
-    VISUAL("Visual"),
     PERFORMANCE("Performance"),
-    COSMETIC("Cosmetics");
+    PVP("PvP & Combat"),
+    MOVEMENT("Movement"),
+    INVENTORY("Inventory"),
+    INTERFACE("HUD & Interface"),
+    VISUALS("Visuals"),
+    MULTIPLAYER("Multiplayer"),
+    RECORDING("Recording & Stats"),
+    CLIENT("Client"),
+    ADVANCED("Advanced");
 
     private final String displayName;
 

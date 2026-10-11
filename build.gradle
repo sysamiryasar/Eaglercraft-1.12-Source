@@ -19,6 +19,11 @@ repositories {
     mavenCentral()
 }
 
+// Source files are UTF-8 (needed for symbols such as the star and gear in the Sythix menus)
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 application {
     mainClass = 'Start'
     applicationDefaultJvmArgs = ['-Djava.library.path=versions/1.12/1.12-natives']

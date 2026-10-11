@@ -473,7 +473,7 @@ public class GuiHudEditor extends GuiScreen
 
     protected void keyTyped(char typedChar, int keyCode) throws IOException
     {
-        if (this.settingsPanel.keyTyped(keyCode))
+        if (this.settingsPanel.keyTyped(typedChar, keyCode))
         {
             return;
         }

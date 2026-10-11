@@ -182,7 +182,7 @@ public class GuiMainMenu extends GuiScreen
         this.buttonList.add(new GuiButton(1, this.width / 2 - 100, p_73969_1_, I18n.format("menu.singleplayer")));
         this.buttonList.add(new GuiButton(2, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 1, I18n.format("menu.multiplayer")));
 
-        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, SythixClient.NAME + " HUD Editor"));
+        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, SythixClient.NAME + " Mods"));
     }
 
     /**
@@ -233,7 +233,7 @@ public class GuiMainMenu extends GuiScreen
 
         if (button.id == 6)
         {
-            this.mc.displayGuiScreen(new GuiHudEditor(this));
+            this.mc.displayGuiScreen(new net.sythix.client.ui.GuiModMenu(this));
         }
 
         if (button.id == 11)

@@ -52,6 +52,11 @@ public abstract class Render<T extends Entity> implements IEntityRenderer
 
     public boolean shouldRender(T livingEntity, ICamera camera, double camX, double camY, double camZ)
     {
+        if (!net.sythix.client.core.Hooks.shouldRenderEntity(livingEntity))
+        {
+            return false;
+        }
+
         AxisAlignedBB axisalignedbb = livingEntity.getRenderBoundingBox().grow(0.5D);
 
         if (axisalignedbb.hasNaN() || axisalignedbb.getAverageEdgeLength() == 0.0D)

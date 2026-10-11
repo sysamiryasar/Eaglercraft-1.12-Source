@@ -18,7 +18,7 @@ public class KeybindSetting extends Setting<Integer>
 
     public int getKey()
     {
-        return this.value.intValue();
+        return this.get().intValue();
     }
 
     public String getKeyName()
@@ -28,7 +28,7 @@ public class KeybindSetting extends Setting<Integer>
 
     public JsonElement toJson()
     {
-        return new JsonPrimitive(this.value);
+        return new JsonPrimitive(this.get());
     }
 
     public void fromJson(JsonElement json)

@@ -18,21 +18,30 @@ import org.lwjgl.opengl.GL11;
  */
 public final class SythixTheme
 {
-    /** Master switch for the themed UI. Becomes a user setting with the mod menu. */
+    /** Master switch for the themed UI (Interface Theme module). */
     public static boolean enabled = true;
 
+    /** Accessibility: turn off decorative animations (fades, bobbing, parallax). */
+    public static boolean reducedMotion = false;
+
+    /** Interface Theme: draw outlines around buttons and panels. */
+    public static boolean borders = true;
+
+    /** Interface Theme: opacity multiplier for panels (0..1). */
+    public static float panelOpacity = 1.0F;
+
     // Colours are ARGB (0xAARRGGBB)
-    public static final int BLACK = 0xFF0B0B0E;
-    public static final int CHARCOAL = 0xFF16161B;
-    public static final int CHARCOAL_LIGHT = 0xFF22222A;
-    public static final int BORDER = 0xFF2E2E37;
-    public static final int RED = 0xFFD81820;
-    public static final int RED_DARK = 0xFF98080C;
-    public static final int BLUE = 0xFF2F6BFF;
-    public static final int LIGHT_BLUE = 0xFF6CC6FF;
-    public static final int TEXT = 0xFFE6E6EC;
-    public static final int TEXT_MUTED = 0xFF9A9AA6;
-    public static final int TEXT_DISABLED = 0xFF5C5C66;
+    public static int BLACK = 0xFF0B0B0E;
+    public static int CHARCOAL = 0xFF16161B;
+    public static int CHARCOAL_LIGHT = 0xFF22222A;
+    public static int BORDER = 0xFF2E2E37;
+    public static int RED = 0xFFD81820;
+    public static int RED_DARK = 0xFF98080C;
+    public static int BLUE = 0xFF2F6BFF;
+    public static int LIGHT_BLUE = 0xFF6CC6FF;
+    public static int TEXT = 0xFFE6E6EC;
+    public static int TEXT_MUTED = 0xFF9A9AA6;
+    public static int TEXT_DISABLED = 0xFF5C5C66;
 
     public static final ResourceLocation LOGO = new ResourceLocation("textures/gui/sythix/logo.png");
     public static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/sythix/background.png");

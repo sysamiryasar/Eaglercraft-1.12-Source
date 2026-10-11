@@ -29,6 +29,7 @@ public class KeystrokesModule extends HudModule
     private final NumberSetting keySize;
     private final NumberSetting gap;
     private final ModeSetting keyNames;
+    private final BooleanSetting showMovement;
     private final BooleanSetting showMouse;
     private final BooleanSetting showCps;
     private final BooleanSetting showSpace;
@@ -48,9 +49,10 @@ public class KeystrokesModule extends HudModule
 
     public KeystrokesModule()
     {
-        super("Keystrokes", "Shows WASD, mouse buttons and space bar presses.", true, 0.005D, 0.34D);
+        super("Keystrokes", "Shows WASD, mouse buttons and space bar presses.", net.sythix.client.module.Category.PVP, true, 0.005D, 0.34D);
         this.keySize = this.add(new NumberSetting("Key Size", "Width and height of each key.", 22.0D, 14.0D, 40.0D, 1.0D, "px"));
         this.gap = this.add(new NumberSetting("Gap", "Space between keys.", 2.0D, 0.0D, 6.0D, 1.0D, "px"));
+        this.showMovement = this.add(new BooleanSetting("Movement Keys", "Show the W A S D keys.", true));
         this.keyNames = this.add(new ModeSetting("Key Names", "Show the keys you actually use, or always W A S D.", "Bound Keys", "Bound Keys", "WASD"));
         this.showMouse = this.add(new BooleanSetting("Mouse Buttons", "Show left and right mouse buttons.", true));
         this.showCps = this.add(new BooleanSetting("Show CPS", "Show clicks per second on the mouse buttons.", true)).visibleWhen(this.showMouse::isOn);
@@ -88,15 +90,15 @@ public class KeystrokesModule extends HudModule
 
     public int getHeight()
     {
-        int rows = 2 + (this.showMouse.isOn() ? 1 : 0);
-        int height = rows * this.size() + (rows - 1) * this.gapPx();
+        int rows = (this.showMovement.isOn() ? 2 : 0) + (this.showMouse.isOn() ? 1 : 0);
+        int height = Math.max(0, rows * this.size() + (rows - 1) * this.gapPx());
 
         if (this.showSpace.isOn())
         {
-            height += this.gapPx() + this.spaceHeight();
+            height += (height > 0 ? this.gapPx() : 0) + this.spaceHeight();
         }
 
-        return height;
+        return Math.max(8, height);
     }
 
     private void updateAnimations()
@@ -134,11 +136,16 @@ public class KeystrokesModule extends HudModule
         int g = this.gapPx();
         int row = s + g;
 
-        this.drawKey(FORWARD, s + g, 0, s, s, this.keyLabel(settings.keyBindForward, "W"), null);
-        this.drawKey(LEFT, 0, row, s, s, this.keyLabel(settings.keyBindLeft, "A"), null);
-        this.drawKey(BACK, row, row, s, s, this.keyLabel(settings.keyBindBack, "S"), null);
-        this.drawKey(RIGHT, row * 2, row, s, s, this.keyLabel(settings.keyBindRight, "D"), null);
-        int y = row * 2;
+        int y = 0;
+
+        if (this.showMovement.isOn())
+        {
+            this.drawKey(FORWARD, s + g, 0, s, s, this.keyLabel(settings.keyBindForward, "W"), null);
+            this.drawKey(LEFT, 0, row, s, s, this.keyLabel(settings.keyBindLeft, "A"), null);
+            this.drawKey(BACK, row, row, s, s, this.keyLabel(settings.keyBindBack, "S"), null);
+            this.drawKey(RIGHT, row * 2, row, s, s, this.keyLabel(settings.keyBindRight, "D"), null);
+            y = row * 2;
+        }
 
         if (this.showMouse.isOn())
         {

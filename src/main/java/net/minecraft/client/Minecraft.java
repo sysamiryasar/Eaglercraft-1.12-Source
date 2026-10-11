@@ -1338,7 +1338,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     public int getLimitFramerate()
     {
-        return this.world == null && this.currentScreen != null ? 30 : this.gameSettings.limitFramerate;
+        return this.world == null && this.currentScreen != null ? 30 : net.sythix.client.core.Hooks.limitFramerate(this.gameSettings.limitFramerate);
     }
 
     public boolean isFramerateLimitBelowMax()
@@ -1831,6 +1831,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      */
     public void runTick() throws IOException
     {
+        net.sythix.client.core.Hooks.onTick();
+
         if (this.rightClickDelayTimer > 0)
         {
             --this.rightClickDelayTimer;
@@ -2073,6 +2075,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             boolean flag = Keyboard.getEventKeyState();
 
+            if (!flag && this.currentScreen == null)
+            {
+                net.sythix.client.core.Hooks.onKeyReleased(i);
+            }
+
             if (flag)
             {
                 if (i == 62 && this.entityRenderer != null)
@@ -2090,7 +2097,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
                     }
                     else if (!Keyboard.isKeyDown(61))
                     {
-                        SythixClient.get().onKeyPressed(i);
+                        net.sythix.client.core.Hooks.onKeyPressed(i);
                     }
 
                     flag1 = Keyboard.isKeyDown(61) && this.processKeyF3(i);
@@ -2410,7 +2417,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             {
                 if (this.currentScreen == null)
                 {
-                    SythixClient.get().onMouseClick(i);
+                    net.sythix.client.core.Hooks.onMouseClick(i);
                 }
 
                 if (this.player.isSpectator() && i == 2)
@@ -3232,7 +3239,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      */
     public boolean isSnooperEnabled()
     {
-        return this.gameSettings.snooperEnabled;
+        // Sythix: usage statistics are never sent to Mojang
+        return false;
     }
 
     /**

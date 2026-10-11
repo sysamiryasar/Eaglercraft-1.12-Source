@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
  */
 public class ClickCounter
 {
-    private static final long WINDOW_MS = 1000L;
+    private static final long MAX_WINDOW_MS = 5000L;
     private final Deque<Long> leftClicks = new ArrayDeque<Long>();
     private final Deque<Long> rightClicks = new ArrayDeque<Long>();
 
@@ -28,23 +28,50 @@ public class ClickCounter
 
     public int getLeftCps()
     {
-        return count(this.leftClicks);
+        return Math.round(this.getLeft(1000L));
     }
 
     public int getRightCps()
     {
-        return count(this.rightClicks);
+        return Math.round(this.getRight(1000L));
     }
 
-    private static int count(Deque<Long> clicks)
+    /** Clicks per second averaged over the last windowMs milliseconds. */
+    public float getLeft(long windowMs)
     {
-        long cutoff = Minecraft.getSystemTime() - WINDOW_MS;
+        return count(this.leftClicks, windowMs) * 1000.0F / (float)windowMs;
+    }
 
-        while (!clicks.isEmpty() && clicks.peekFirst().longValue() < cutoff)
+    public float getRight(long windowMs)
+    {
+        return count(this.rightClicks, windowMs) * 1000.0F / (float)windowMs;
+    }
+
+    /** Total clicks in the last windowMs milliseconds. */
+    public int countLeft(long windowMs)
+    {
+        return count(this.leftClicks, windowMs);
+    }
+
+    private static int count(Deque<Long> clicks, long windowMs)
+    {
+        long now = Minecraft.getSystemTime();
+
+        while (!clicks.isEmpty() && clicks.peekFirst().longValue() < now - MAX_WINDOW_MS)
         {
             clicks.removeFirst();
         }
 
-        return clicks.size();
+        int n = 0;
+
+        for (Long t : clicks)
+        {
+            if (t.longValue() >= now - windowMs)
+            {
+                ++n;
+            }
+        }
+
+        return n;
     }
 }
