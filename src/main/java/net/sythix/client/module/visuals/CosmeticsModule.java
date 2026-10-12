@@ -434,7 +434,7 @@ public class CosmeticsModule extends Module
                 this.mc.world.spawnParticle(EnumParticleTypes.PORTAL, x, y, z, 0.0D, -0.2D, 0.0D);
                 break;
             case "Infernal Wings":
-                this.mc.world.spawnParticle(EnumParticleTypes.LAVA, x, y, z, 0.0D, 0.0D, 0.0D);
+                this.mc.world.spawnParticle(EnumParticleTypes.DRIP_LAVA, x, y, z, 0.0D, 0.0D, 0.0D);
                 break;
             case "Astral Wings":
                 this.mc.world.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x, y, z, 0.0D, 0.0D, 0.0D);
