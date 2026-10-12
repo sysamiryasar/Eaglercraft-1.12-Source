@@ -164,6 +164,14 @@ public final class SelfTest
             return;
         }
 
+        if ("shaders".equals(System.getProperty("sythix.selftest")))
+        {
+            shaderSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("mobs".equals(System.getProperty("sythix.selftest")))
         {
             mobSteps();
@@ -769,6 +777,87 @@ public final class SelfTest
     }
 
     /** New default world: checks that the 1.21 blocks are generated. */
+    /** Turns each shader pack on in a generated world and takes a screenshot with it. */
+    private static void shaderSteps()
+    {
+        add("install shader packs", 1, () -> {
+            net.sythix.client.shader.ShaderPackManager.installBundled();
+            List<String> packs = net.sythix.client.shader.ShaderPackManager.packs();
+
+            if (packs.contains("Sythix Vibrant") && packs.contains("Sythix Shadows"))
+            {
+                pass("bundled shader packs installed: " + packs);
+            }
+            else
+            {
+                fail("shader pack install", new IllegalStateException(packs.toString()));
+            }
+        });
+        add("create shader world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-shaders"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            mc().launchIntegratedServer("sythix-shaders", "Sythix Shader Test", new WorldSettings(20261011L, GameType.CREATIVE, true, false, WorldType.DEFAULT).enableCommands());
+        });
+        add("wait for shader world", 1, SelfTest::waitForWorld);
+        add("set the scene", 120, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            world.setWorldTime(4500L);
+            world.getGameRules().setOrCreateGameRule("doDaylightCycle", "false");
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            p.capabilities.isFlying = true;
+            p.sendPlayerAbilities();
+            p.connection.setPlayerLocation(p.posX, p.posY + 6.0D, p.posZ, 225.0F, 18.0F);
+        }));
+
+        for (String pack : new String[] {"OFF", "(internal)", "Sythix Vibrant", "Sythix Shadows"})
+        {
+            String tag = pack.equals("OFF") ? "off" : pack.equals("(internal)") ? "internal" : pack.toLowerCase().replace(' ', '-');
+            add("shaders " + tag, 100, () -> net.sythix.client.shader.ShaderPackManager.select(pack));
+            add("check shaders " + tag, 1, () -> {
+                String name = shadersmod.client.Shaders.getShaderPackName();
+                boolean ok = pack.equals("OFF") ? name == null : pack.equals(name) || (pack.equals("(internal)") && name != null);
+
+                if (ok)
+                {
+                    pass("shader pack " + pack + " active");
+                }
+                else
+                {
+                    fail("shader pack " + pack, new IllegalStateException("active: " + name));
+                }
+            });
+            add("screenshot shaders " + tag, 2, () -> shot("shaders-" + tag));
+        }
+
+        add("build a roof to cast a shadow", 60, () -> onServer(() -> {
+            net.minecraft.world.WorldServer world = mc().getIntegratedServer().getWorld(0);
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            net.minecraft.util.math.BlockPos ground = world.getTopSolidOrLiquidBlock(new net.minecraft.util.math.BlockPos(p.posX + 8, 0, p.posZ));
+
+            for (int x = -3; x <= 3; ++x)
+            {
+                for (int z = -3; z <= 3; ++z)
+                {
+                    world.setBlockState(ground.add(x, 5, z), net.minecraft.init.Blocks.STONE.getDefaultState());
+                }
+            }
+
+            p.connection.setPlayerLocation(ground.getX() - 8.5D, ground.getY() + 12.0D, ground.getZ() + 0.5D, -90.0F, 45.0F);
+        }));
+        add("screenshot shadow test", 2, () -> shot("shaders-shadow-test"));
+        add("shaders off again", 40, () -> net.sythix.client.shader.ShaderPackManager.select("OFF"));
+        add("leave shader world", 40, () -> {
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+    }
+
     private static final List<net.minecraft.entity.Entity> MOBS = new ArrayList<net.minecraft.entity.Entity>();
 
     private static net.minecraft.entity.Entity spawnMob(net.minecraft.world.WorldServer world, String name, double x, double y, double z, boolean noAi)
