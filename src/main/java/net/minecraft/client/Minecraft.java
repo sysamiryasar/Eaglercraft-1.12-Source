@@ -378,6 +378,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     private MusicTicker mcMusicTicker;
     private ResourceLocation mojangLogo;
     private Framebuffer splashFramebuffer;
+    private boolean splashLayoutReported;
     private final MinecraftSessionService sessionService;
     private SkinManager skinManager;
     private final Queue < FutureTask<? >> scheduledTasks = Queues. < FutureTask<? >> newArrayDeque();
@@ -1109,6 +1110,14 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             SythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
         }
 
+        if (GlStateManager.WEB && !this.splashLayoutReported)
+        {
+            this.splashLayoutReported = true;
+            float w = (float)this.displayWidth / (float)i;
+            float h = (float)this.displayHeight / (float)i;
+            net.sythix.client.web.WebLoading.reportLayout(logoX / w, logoY / h, logoSize / h, (logoY + logoSize + 10.0F) / h, 160.0F / w, 2.0F / h);
+        }
+
         float barLeft = screenWidth / 2.0F - 80.0F;
         float barRight = screenWidth / 2.0F + 80.0F;
         float barY = logoY + logoSize + 10.0F;
@@ -1327,7 +1336,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             if (this.webFrames == 2)
             {
-                // the main menu has been drawn once: the page's loading screen can go
+                // the main menu has been drawn once: the page's loading screen fades out and the
+                // menu's intro (logo gliding into place, buttons rising in) starts from the next frame
+                net.minecraft.client.gui.GuiMainMenu.webWaiting = false;
                 net.sythix.client.web.WebLoading.report(100, "Ready");
             }
 

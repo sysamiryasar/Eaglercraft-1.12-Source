@@ -68,6 +68,23 @@ public class GuiMainMenu extends GuiScreen
     /** Fades the menu in when it is first opened. */
     private long openedTime;
 
+    /**
+     * The intro right after startup, so loading screen and menu feel like one screen: the loading
+     * screen's logo shrinks and glides into its place, the background fades in behind it and the
+     * buttons rise in one after another. Times in milliseconds.
+     */
+    private static boolean introPending = true;
+
+    /** Browser: the page's loading screen still covers the game; the intro waits at its first frame. */
+    public static boolean webWaiting = net.minecraft.client.renderer.GlStateManager.WEB;
+    private static long introStart;
+    /** Longer in the browser, where the page's loading screen fades out over the first moment. */
+    private static final long INTRO_HOLD = net.minecraft.client.renderer.GlStateManager.WEB ? 450L : 150L;
+    private static final long INTRO_MOVE = 900L;
+    private static final long INTRO_BUTTONS = 650L;
+    private static final long INTRO_BUTTON_STEP = 55L;
+    private static final long INTRO_BUTTON_TIME = 380L;
+
     public GuiMainMenu()
     {
         this.splashText = "";
@@ -349,9 +366,56 @@ public class GuiMainMenu extends GuiScreen
     /**
      * Draws the screen and all the components in it.
      */
+    /** True while the startup intro plays (other menu animations wait for it). */
+    public static boolean introRunning()
+    {
+        return introStart != 0L && Minecraft.getSystemTime() - introStart < 2500L;
+    }
+
+    private long introElapsed()
+    {
+        if (introPending)
+        {
+            return SythixTheme.reducedMotion ? Long.MAX_VALUE : 0L;
+        }
+
+        return introStart == 0L ? Long.MAX_VALUE : Minecraft.getSystemTime() - introStart;
+    }
+
+    private long introEnd()
+    {
+        return INTRO_BUTTONS + INTRO_BUTTON_STEP * this.buttonList.size() + INTRO_BUTTON_TIME;
+    }
+
+    private static float clamp01(float f)
+    {
+        return f < 0.0F ? 0.0F : (f > 1.0F ? 1.0F : f);
+    }
+
+    /** Smooth start and stop (cubic ease in-out). */
+    private static float ease(float t)
+    {
+        return t < 0.5F ? 4.0F * t * t * t : 1.0F - (float)Math.pow(-2.0F * t + 2.0F, 3.0D) / 2.0F;
+    }
+
+    private static float lerp(float from, float to, float t)
+    {
+        return from + (to - from) * t;
+    }
+
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
-        float fadeIn = Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 600.0F);
+        if (introPending && (!webWaiting || SythixTheme.reducedMotion))
+        {
+            // the first menu after startup continues straight from the loading screen
+            introPending = false;
+            introStart = SythixTheme.reducedMotion ? 0L : Minecraft.getSystemTime();
+        }
+
+        long introTime = this.introElapsed();
+        boolean intro = introTime < this.introEnd();
+        float move = intro ? ease(clamp01((float)(introTime - INTRO_HOLD) / (float)INTRO_MOVE)) : 1.0F;
+        float fadeIn = intro ? 1.0F : Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 600.0F);
 
         // Blurred, slowly turning panorama (or the artwork) with a soft red glow behind the logo
         MainMenuModule menu = this.menuOptions();
@@ -365,11 +429,49 @@ public class GuiMainMenu extends GuiScreen
         for (int g = 6; g >= 1; --g)
         {
             float r = this.logoSize * (0.18F + g * 0.07F);
-            SythixTheme.drawRounded(glowX - r, glowY - r, glowX + r, glowY + r, r, SythixTheme.withAlpha(SythixTheme.RED, (int)(7 * fadeIn)));
+            SythixTheme.drawRounded(glowX - r, glowY - r, glowX + r, glowY + r, r, SythixTheme.withAlpha(SythixTheme.RED, (int)(7 * fadeIn * move)));
         }
 
         float rise = (1.0F - fadeIn) * 8.0F;
-        SythixTheme.drawTexture(SythixTheme.LOGO, logoX, (float)this.logoY + bob + rise, (float)this.logoSize, (float)this.logoSize, fadeIn);
+        float drawSize = (float)this.logoSize;
+        float drawX = logoX;
+        float drawY = (float)this.logoY + bob + rise;
+
+        if (intro)
+        {
+            // the loading screen (same layout as Minecraft.drawSplashProgress) fades away while the
+            // logo travels from its loading-screen spot to its menu spot
+            float splashSize = Math.min((float)this.height * 0.6F, 220.0F);
+            float splashX = ((float)this.width - splashSize) / 2.0F;
+            float splashY = ((float)this.height - splashSize) / 2.0F - 8.0F;
+            int curtain = (int)(255.0F * (1.0F - move));
+
+            if (curtain > 0)
+            {
+                SythixTheme.drawGradientV(0.0F, 0.0F, (float)this.width, (float)this.height, SythixTheme.withAlpha(SythixTheme.CHARCOAL, curtain), SythixTheme.withAlpha(SythixTheme.BLACK, curtain));
+            }
+
+            int bar = (int)(255.0F * (1.0F - clamp01((float)introTime / 350.0F)));
+
+            if (bar > 0)
+            {
+                float barY = splashY + splashSize + 10.0F;
+                SythixTheme.drawGradientH((float)this.width / 2.0F - 80.0F, barY, (float)this.width / 2.0F + 80.0F, barY + 2.0F, SythixTheme.withAlpha(SythixTheme.RED, bar), SythixTheme.withAlpha(SythixTheme.BLUE, bar));
+            }
+
+            drawSize = lerp(splashSize, (float)this.logoSize, move);
+            drawX = lerp(splashX, logoX, move);
+            drawY = lerp(splashY, (float)this.logoY + bob, move);
+        }
+
+        SythixTheme.drawTexture(SythixTheme.LOGO, drawX, drawY, drawSize, drawSize, fadeIn);
+        float ui = intro ? clamp01((float)(introTime - INTRO_BUTTONS - 200L) / 400.0F) : 1.0F;
+
+        if (ui <= 0.0F)
+        {
+            this.drawIntroButtons(introTime, mouseX, mouseY, partialTicks);
+            return;
+        }
 
         // Account chip (top right): your skin's face and name; click it to open the profile
         net.sythix.client.ui.font.SmoothFont font = net.sythix.client.ui.font.SmoothFont.REGULAR;
@@ -401,12 +503,47 @@ public class GuiMainMenu extends GuiScreen
             this.drawString(this.fontRenderer, this.openGLWarning2, (this.width - this.openGLWarning2Width) / 2, (this.buttonList.get(0)).y - 12, -1);
         }
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        super.drawScreen(mouseX, mouseY, partialTicks);
+        this.drawIntroButtons(introTime, mouseX, mouseY, partialTicks);
 
         if (this.areRealmsNotificationsEnabled())
         {
             this.realmsNotification.drawScreen(mouseX, mouseY, partialTicks);
+        }
+    }
+
+    /** Draws the buttons; during the intro each one rises into place a moment after the one before. */
+    private void drawIntroButtons(long introTime, int mouseX, int mouseY, float partialTicks)
+    {
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+
+        if (introTime >= this.introEnd())
+        {
+            super.drawScreen(mouseX, mouseY, partialTicks);
+            return;
+        }
+
+        int n = this.buttonList.size();
+        int[] y = new int[n];
+        boolean[] visible = new boolean[n];
+
+        for (int k = 0; k < n; ++k)
+        {
+            GuiButton button = this.buttonList.get(k);
+            float t = ease(clamp01((float)(introTime - INTRO_BUTTONS - INTRO_BUTTON_STEP * k) / (float)INTRO_BUTTON_TIME));
+            y[k] = button.y;
+            visible[k] = button.visible;
+            button.visible = visible[k] && t > 0.0F;
+            button.y = y[k] + Math.round((1.0F - t) * 14.0F);
+        }
+
+        // no hover highlight while the buttons are still moving in
+        super.drawScreen(-1000, -1000, partialTicks);
+
+        for (int k = 0; k < n; ++k)
+        {
+            GuiButton button = this.buttonList.get(k);
+            button.y = y[k];
+            button.visible = visible[k];
         }
     }
 
@@ -415,6 +552,11 @@ public class GuiMainMenu extends GuiScreen
      */
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException
     {
+        if (this.introElapsed() < this.introEnd())
+        {
+            return; // the buttons are still moving in
+        }
+
         super.mouseClicked(mouseX, mouseY, mouseButton);
 
         synchronized (this.threadLock)

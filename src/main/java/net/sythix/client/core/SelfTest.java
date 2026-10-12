@@ -1554,7 +1554,7 @@ public final class SelfTest
 
         // the cart pack: switch it on and look at the rail lane
         add("cart pack on", 200, () -> {
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "true");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.CART_CHOICE + "\"");
             net.minecraft.util.math.BlockPos o = labOrigin();
             mc().getIntegratedServer().addScheduledTask(() -> {
                 net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
@@ -1574,7 +1574,7 @@ public final class SelfTest
             }
         });
         add("screenshot cpvp-cart-pack", 2, () -> shot("cpvp-cart-pack"));
-        add("cart pack off", 200, () -> set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "false"));
+        add("cart pack off", 200, () -> set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE + "\""));
         add("check cart pack off", 1, () -> {
             String rail = packOf("textures/blocks/rail_normal.png");
 
@@ -1740,8 +1740,7 @@ public final class SelfTest
     private static void packCheck(String theme, String expectedWidgets, boolean cart)
     {
         add("client pack " + theme, 260, () -> {
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + theme + "\"");
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, cart ? "true" : "false");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + theme + "\"");
         });
         add("check " + theme, 1, () -> {
             String widgets = packOf("textures/gui/widgets.png");
@@ -1750,7 +1749,7 @@ public final class SelfTest
 
             if (expectedWidgets.equals(widgets) && railOk)
             {
-                pass("client pack " + theme + (cart ? " + cart pack" : "") + ": widgets from " + widgets + ", rails from " + rail);
+                pass("texture pack " + theme + ": widgets from " + widgets + ", rails from " + rail);
             }
             else
             {
@@ -1771,7 +1770,7 @@ public final class SelfTest
             {
             }
 
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME + "\"");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE + "\"");
             WorldSettings ws = new WorldSettings(12345L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands();
             ws.setGeneratorOptions("3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;");
             mc().launchIntegratedServer("sythix-weapons", "Sythix Weapons Test", ws);
@@ -1794,11 +1793,24 @@ public final class SelfTest
 
         // ---- client packs: default, blue, red, and the cart pack on top --------------------------
         add("night for the skies", 1, () -> onServer(p -> p.world.setWorldTime(14000L)));
-        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.BLUE_THEME, "Fallen Angel", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", true);
-        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE, "Cowarted Vanilla", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.RED_CHOICE, "Red Revolution", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.BLUE_CHOICE, "Fallen Angel", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.CART_CHOICE, "Cowarted Vanilla", true);
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE, "Cowarted Vanilla", false);
+        add("texture pack list order", 1, () -> {
+            String order = String.join(", ", net.sythix.client.pack.BuiltInPacks.choiceNames());
+            String old = net.sythix.client.pack.BuiltInPacks.migrate(null, new com.google.gson.JsonPrimitive("Red (Red Revolution)"), new com.google.gson.JsonPrimitive(true)) + "/" + net.sythix.client.pack.BuiltInPacks.migrate(null, new com.google.gson.JsonPrimitive("Default (Cowarted Vanilla)"), new com.google.gson.JsonPrimitive(true)) + "/" + net.sythix.client.pack.BuiltInPacks.migrate(null, null, null);
+
+            if ("SMP/Red, SMP/Blue, Cart, Default".equals(order) && "SMP/Red/Cart/Default".equals(old))
+            {
+                pass("texture pack list: " + order + "; old settings carry over (" + old + ")");
+            }
+            else
+            {
+                fail("texture pack list", new IllegalStateException(order + " / " + old));
+            }
+        });
         add("day again", 20, () -> onServer(p -> p.world.setWorldTime(6000L)));
 
         // ---- mace smash damage (server side, exact numbers) ---------------------------------------

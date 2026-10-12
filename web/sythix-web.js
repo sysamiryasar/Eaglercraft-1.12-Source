@@ -90,8 +90,14 @@ function loadingDone(ready) {
 	loadingEl.classList.add('done');
 	setTimeout(() => {
 		loadingEl.style.display = 'none';
+		loadingEl.classList.remove('placed');
+
+		for (const el of loadingEl.querySelectorAll('img, .track, .step')) {
+			el.removeAttribute('style');
+		}
+
 		loadShown = loadTarget = loadCeiling = 0;
-	}, ready ? 400 : 0);
+	}, ready ? 350 : 0);
 }
 
 // ---- Checks before starting (clear messages instead of a stuck loading screen) ----------------
@@ -289,7 +295,49 @@ function onKey(e, down) {
 document.addEventListener('keydown', (e) => onKey(e, true), true);
 document.addEventListener('keyup', (e) => onKey(e, false), true);
 
+/**
+ * The game says where its own loading screen draws the logo and bar (fractions of the window): the
+ * page's logo and bar glide there, so when the page's loading screen fades out the game's looks
+ * exactly the same and its menu intro carries on from it.
+ */
+function placeLoading(x, y, size, barY, barWidth, barHeight) {
+	const img = loadingEl.querySelector('img');
+	const track = loadingEl.querySelector('.track');
+	const parts = [[img, img.getBoundingClientRect()], [track, track.getBoundingClientRect()], [loadingStep, loadingStep.getBoundingClientRect()]];
+
+	if (!loadingEl.classList.contains('placed')) {
+		// start from where they are now, then move
+		for (const [el, r] of parts) {
+			el.style.left = r.left + 'px';
+			el.style.top = r.top + 'px';
+
+			if (el !== loadingStep) {
+				el.style.width = r.width + 'px';
+				el.style.height = r.height + 'px';
+			}
+		}
+
+		loadingStep.style.left = '0';
+		loadingEl.classList.add('placed');
+		void loadingEl.offsetWidth;
+	}
+
+	const W = window.innerWidth;
+	const H = window.innerHeight;
+	img.style.left = x * W + 'px';
+	img.style.top = y * H + 'px';
+	img.style.width = img.style.height = size * H + 'px';
+	track.style.left = (W - barWidth * W) / 2 + 'px';
+	track.style.top = barY * H + 'px';
+	track.style.width = barWidth * W + 'px';
+	track.style.height = Math.max(2, barHeight * H) + 'px';
+	loadingStep.style.top = (barY + barHeight) * H + 12 + 'px';
+}
+
 const natives = {
+	async Java_net_sythix_client_web_WebLoading_layout(lib, x, y, size, barY, barWidth, barHeight) {
+		placeLoading(x / 10000, y / 10000, size / 10000, barY / 10000, barWidth / 10000, barHeight / 10000);
+	},
 	async Java_net_sythix_client_web_WebLoading_step(lib, percent, text) {
 		loading(percent, text);
 	},
