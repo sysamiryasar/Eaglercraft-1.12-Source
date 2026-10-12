@@ -506,6 +506,7 @@ public class Bootstrap
             PotionHelper.init();
             EntityList.init();
             Biome.registerBiomes();
+            net.sythix.modern.mob.ModernMobs.registerSpawns();
             registerDispenserBehaviors();
 
             if (!CraftingManager.init())

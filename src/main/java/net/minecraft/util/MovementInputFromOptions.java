@@ -61,8 +61,9 @@ public class MovementInputFromOptions extends MovementInput
 
         if (this.sneak)
         {
-            this.moveStrafe = (float)((double)this.moveStrafe * 0.3D);
-            this.moveForward = (float)((double)this.moveForward * 0.3D);
+            double sneakSpeed = net.sythix.modern.ModernEffects.sneakSpeed();
+            this.moveStrafe = (float)((double)this.moveStrafe * sneakSpeed);
+            this.moveForward = (float)((double)this.moveForward * sneakSpeed);
         }
     }
 }

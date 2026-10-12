@@ -37,7 +37,7 @@ public abstract class BlockLog extends BlockRotatedPillar
             {
                 IBlockState iblockstate = worldIn.getBlockState(blockpos);
 
-                if (iblockstate.getMaterial() == Material.LEAVES && !((Boolean)iblockstate.getValue(BlockLeaves.CHECK_DECAY)).booleanValue())
+                if (iblockstate.getBlock() instanceof BlockLeaves && !((Boolean)iblockstate.getValue(BlockLeaves.CHECK_DECAY)).booleanValue())
                 {
                     worldIn.setBlockState(blockpos, iblockstate.withProperty(BlockLeaves.CHECK_DECAY, Boolean.valueOf(true)), 4);
                 }

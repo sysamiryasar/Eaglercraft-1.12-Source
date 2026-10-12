@@ -447,8 +447,17 @@ public class GlStateManager
         GL11.glTexEnvf(target, parameterName, parameter);
     }
 
+    /** Sythix: true in the browser build (CheerpJ + gl4es + WebGL). */
+    public static final boolean WEB = "true".equals(System.getProperty("sythix.web"));
+
     public static void glTexParameterf(int target, int parameterName, float parameter)
     {
+        // WebGL has no texture LOD bias / LOD range settings, and gl4es cannot pass them on
+        if (WEB && (parameterName == 34049 || parameterName == 33082 || parameterName == 33083))
+        {
+            return;
+        }
+
         GL11.glTexParameterf(target, parameterName, parameter);
     }
 
@@ -1299,7 +1308,7 @@ public class GlStateManager
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, 1000);
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LOD, 1000);
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MIN_LOD, -1000);
-                GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_LOD_BIAS, 0.0F);
+                glTexParameterf(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_LOD_BIAS, 0.0F);
                 GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
                 GL11.glTexEnv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, RenderHelper.setColorBuffer(0.0F, 0.0F, 0.0F, 0.0F));
                 GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_COMBINE_RGB, GL11.GL_MODULATE);

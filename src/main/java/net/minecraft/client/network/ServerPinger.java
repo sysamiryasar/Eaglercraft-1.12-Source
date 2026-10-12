@@ -52,7 +52,24 @@ public class ServerPinger
     public void ping(final ServerData server) throws UnknownHostException
     {
         ServerAddress serveraddress = ServerAddress.fromString(server.serverIP);
-        final NetworkManager networkmanager = NetworkManager.createNetworkManagerAndConnect(InetAddress.getByName(serveraddress.getIP()), serveraddress.getPort(), false);
+        final NetworkManager networkmanager;
+
+        if (net.minecraft.client.renderer.GlStateManager.WEB)
+        {
+            try
+            {
+                networkmanager = net.sythix.client.web.WebConnection.connect(serveraddress.getIP(), serveraddress.getPort());
+            }
+            catch (java.io.IOException e)
+            {
+                throw new UnknownHostException(e.getMessage());
+            }
+        }
+        else
+        {
+            networkmanager = NetworkManager.createNetworkManagerAndConnect(InetAddress.getByName(serveraddress.getIP()), serveraddress.getPort(), false);
+        }
+
         this.pingDestinations.add(networkmanager);
         server.serverMOTD = I18n.format("multiplayer.status.pinging");
         server.pingToServer = -1L;
@@ -184,6 +201,12 @@ public class ServerPinger
 
     private void tryCompatibilityPing(final ServerData server)
     {
+        if (net.minecraft.client.renderer.GlStateManager.WEB)
+        {
+            // the pre-1.7 ping needs a direct connection
+            return;
+        }
+
         final ServerAddress serveraddress = ServerAddress.fromString(server.serverIP);
         ((Bootstrap)((Bootstrap)((Bootstrap)(new Bootstrap()).group(NetworkManager.CLIENT_NIO_EVENTLOOP.getValue())).handler(new ChannelInitializer<Channel>()
         {

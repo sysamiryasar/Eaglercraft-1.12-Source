@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "soul_torch"
+    },
+    "facing=east": {
+      "model": "soul_torch_wall"
+    },
+    "facing=south": {
+      "model": "soul_torch_wall",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "soul_torch_wall",
+      "y": 180
+    },
+    "facing=north": {
+      "model": "soul_torch_wall",
+      "y": 270
+    }
+  }
+}

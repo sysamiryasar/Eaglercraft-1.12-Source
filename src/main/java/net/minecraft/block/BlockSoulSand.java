@@ -32,7 +32,9 @@ public class BlockSoulSand extends Block
      */
     public void onEntityCollidedWithBlock(World worldIn, BlockPos pos, IBlockState state, Entity entityIn)
     {
-        entityIn.motionX *= 0.4D;
-        entityIn.motionZ *= 0.4D;
+        // Sythix: Soul Speed boots make soul sand fast instead of slow
+        double soul = net.sythix.modern.ModernEffects.soulSpeed(entityIn);
+        entityIn.motionX *= soul;
+        entityIn.motionZ *= soul;
     }
 }

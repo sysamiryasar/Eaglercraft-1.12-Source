@@ -52,6 +52,12 @@ public class ScreenShotHelper
      */
     public static ITextComponent saveScreenshot(File gameDirectory, @Nullable String screenshotName, int width, int height, Framebuffer buffer)
     {
+        if (GlStateManager.WEB)
+        {
+            // Sythix browser build: the browser's OpenGL layer cannot read the screen back
+            return new TextComponentString("Screenshots only work in the desktop client (in the browser, use your system's screenshot key).");
+        }
+
         try
         {
             File file1 = new File(gameDirectory, "screenshots");
@@ -87,7 +93,8 @@ public class ScreenShotHelper
 
             if (screenshotName == null)
             {
-                file2 = getTimestampedPNGFileForDirectory(file1);
+                File sythixFile = net.sythix.client.core.Hooks.screenshotFile(file1);
+                file2 = sythixFile != null ? sythixFile : getTimestampedPNGFileForDirectory(file1);
             }
             else
             {
@@ -110,6 +117,7 @@ public class ScreenShotHelper
             }
 
             ImageIO.write(bufferedimage, "png", file2);
+            net.sythix.client.core.Hooks.onScreenshotSaved(file2);
             ITextComponent itextcomponent = new TextComponentString(file2.getName());
             itextcomponent.getStyle().setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file2.getAbsolutePath()));
             itextcomponent.getStyle().setUnderlined(Boolean.valueOf(true));

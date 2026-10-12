@@ -38,6 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import net.sythix.client.ui.SythixTheme;
 
 public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 {
@@ -178,6 +179,7 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
             }
         }
 
+        net.sythix.client.core.Hooks.modifyTooltip(p_191927_1_, list);
         return list;
     }
 
@@ -449,6 +451,8 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
 
     public void sendChatMessage(String msg, boolean addToChat)
     {
+        msg = net.sythix.client.core.Hooks.outgoingChat(msg);
+
         if (addToChat)
         {
             this.mc.ingameGUI.getChatGUI().addToSentMessages(msg);
@@ -602,10 +606,25 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     public void handleKeyboardInput() throws IOException
     {
         char c0 = Keyboard.getEventCharacter();
+        int key = Keyboard.getEventKey();
 
-        if (Keyboard.getEventKey() == 0 && c0 >= ' ' || Keyboard.getEventKeyState())
+        if (net.minecraft.client.renderer.GlStateManager.WEB)
         {
-            this.keyTyped(c0, Keyboard.getEventKey());
+            if (Boolean.getBoolean("sythix.webdebug"))
+            {
+                LOGGER.info("[web] key event: key {} char {} down {}", Integer.valueOf(key), Integer.valueOf(c0), Boolean.valueOf(Keyboard.getEventKeyState()));
+            }
+
+            // browser build: Enter can arrive as a bare carriage return without a key code
+            if (key == 0 && (c0 == '\r' || c0 == '\n'))
+            {
+                key = Keyboard.KEY_RETURN;
+            }
+        }
+
+        if (key == 0 && c0 >= ' ' || Keyboard.getEventKeyState())
+        {
+            this.keyTyped(c0, key);
         }
 
         this.mc.dispatchKeypresses();
@@ -637,6 +656,13 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     {
         if (this.mc.world != null)
         {
+            // Sythix: menus over the game blur the world behind them (inventories and chat do not)
+            if (SythixTheme.isEnabled() && !(this instanceof net.minecraft.client.gui.inventory.GuiContainer) && !(this instanceof GuiChat) && !(this instanceof GuiGameOver))
+            {
+                SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.3F);
+                return;
+            }
+
             this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
         }
         else
@@ -650,6 +676,12 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
      */
     public void drawBackground(int tint)
     {
+        if (SythixTheme.isEnabled())
+        {
+            SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.55F);
+            return;
+        }
+
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
         Tessellator tessellator = Tessellator.getInstance();

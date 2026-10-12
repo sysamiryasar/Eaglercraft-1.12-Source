@@ -2667,7 +2667,7 @@ public class RenderGlobal implements IWorldEventListener, IResourceManagerReload
         {
             GlStateManager.enableBlend();
             GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-            GlStateManager.glLineWidth(2.0F);
+            GlStateManager.glLineWidth(net.sythix.client.core.Hooks.outlineWidth(2.0F));
             GlStateManager.disableTexture2D();
 
             if (Config.isShaders())
@@ -2684,7 +2684,24 @@ public class RenderGlobal implements IWorldEventListener, IResourceManagerReload
                 double d0 = player.lastTickPosX + (player.posX - player.lastTickPosX) * (double)partialTicks;
                 double d1 = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double)partialTicks;
                 double d2 = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double)partialTicks;
-                drawSelectionBoundingBox(iblockstate.getSelectedBoundingBox(this.world, blockpos).grow(0.0020000000949949026D).offset(-d0, -d1, -d2), 0.0F, 0.0F, 0.0F, 0.4F);
+                AxisAlignedBB sythixBox = iblockstate.getSelectedBoundingBox(this.world, blockpos).grow(0.0020000000949949026D).offset(-d0, -d1, -d2);
+                float[] sythixOutline = net.sythix.client.core.Hooks.outlineColor();
+
+                if (sythixOutline != null)
+                {
+                    float[] sythixFill = net.sythix.client.core.Hooks.outlineFill();
+
+                    if (sythixFill != null)
+                    {
+                        renderFilledBox(sythixBox, sythixFill[0], sythixFill[1], sythixFill[2], sythixFill[3]);
+                    }
+
+                    drawSelectionBoundingBox(sythixBox, sythixOutline[0], sythixOutline[1], sythixOutline[2], sythixOutline[3]);
+                }
+                else
+                {
+                    drawSelectionBoundingBox(sythixBox, 0.0F, 0.0F, 0.0F, 0.4F);
+                }
             }
 
             GlStateManager.depthMask(true);

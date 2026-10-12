@@ -154,6 +154,14 @@ public class BlockFurnace extends BlockContainer
     public static void setState(boolean active, World worldIn, BlockPos pos)
     {
         IBlockState iblockstate = worldIn.getBlockState(pos);
+
+        // Sythix blast furnaces and smokers reuse the furnace logic but keep their own block
+        if (!(iblockstate.getBlock() instanceof BlockFurnace))
+        {
+            net.sythix.modern.block.MFurnace.setActive(active, worldIn, pos);
+            return;
+        }
+
         TileEntity tileentity = worldIn.getTileEntity(pos);
         keepInventory = true;
 

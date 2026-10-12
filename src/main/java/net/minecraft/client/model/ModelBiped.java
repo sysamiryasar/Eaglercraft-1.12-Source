@@ -285,6 +285,8 @@ public class ModelBiped extends ModelBase
         }
 
         copyModelAngles(this.bipedHead, this.bipedHeadwear);
+
+        net.sythix.client.core.Hooks.applyEmote(this, entityIn, ageInTicks);
     }
 
     public void setModelAttributes(ModelBase model)

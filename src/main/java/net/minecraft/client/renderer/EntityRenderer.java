@@ -618,7 +618,18 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 flag = GameSettings.isKeyDown(this.mc.gameSettings.ofKeyBindZoom);
             }
 
-            if (flag)
+            float sythixZoom = useFOVSetting ? net.sythix.client.core.Hooks.zoomFov(f, flag) : -1.0F;
+
+            if (useFOVSetting && net.sythix.modern.item.MSpyglass.isLooking(this.mc.player))
+            {
+                // Spyglass: 10x zoom
+                f = f * 0.1F;
+            }
+            else if (sythixZoom >= 0.0F)
+            {
+                f = sythixZoom;
+            }
+            else if (flag)
             {
                 if (!Config.zoomMode)
                 {
@@ -695,8 +706,8 @@ public class EntityRenderer implements IResourceManagerReloadListener
             EntityPlayer entityplayer = (EntityPlayer)this.mc.getRenderViewEntity();
             float f = entityplayer.distanceWalkedModified - entityplayer.prevDistanceWalkedModified;
             float f1 = -(entityplayer.distanceWalkedModified + f * partialTicks);
-            float f2 = entityplayer.prevCameraYaw + (entityplayer.cameraYaw - entityplayer.prevCameraYaw) * partialTicks;
-            float f3 = entityplayer.prevCameraPitch + (entityplayer.cameraPitch - entityplayer.prevCameraPitch) * partialTicks;
+            float f2 = (entityplayer.prevCameraYaw + (entityplayer.cameraYaw - entityplayer.prevCameraYaw) * partialTicks) * net.sythix.client.core.Hooks.bobbingAmount();
+            float f3 = (entityplayer.prevCameraPitch + (entityplayer.cameraPitch - entityplayer.prevCameraPitch) * partialTicks) * net.sythix.client.core.Hooks.bobbingAmount();
             GlStateManager.translate(MathHelper.sin(f1 * (float)Math.PI) * f2 * 0.5F, -Math.abs(MathHelper.cos(f1 * (float)Math.PI) * f2), 0.0F);
             GlStateManager.rotate(MathHelper.sin(f1 * (float)Math.PI) * f2 * 3.0F, 0.0F, 0.0F, 1.0F);
             GlStateManager.rotate(Math.abs(MathHelper.cos(f1 * (float)Math.PI - 0.2F) * f2) * 5.0F, 1.0F, 0.0F, 0.0F);
@@ -742,7 +753,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
         }
         else if (this.mc.gameSettings.thirdPersonView > 0)
         {
-            double d3 = (double)(this.thirdPersonDistancePrev + (4.0F - this.thirdPersonDistancePrev) * partialTicks);
+            double d3 = (double)(this.thirdPersonDistancePrev + (net.sythix.client.core.Hooks.thirdPersonDistance() - this.thirdPersonDistancePrev) * partialTicks);
 
             if (this.mc.gameSettings.debugCamEnable)
             {
@@ -920,7 +931,9 @@ public class EntityRenderer implements IResourceManagerReloadListener
             GlStateManager.rotate(-((float)this.rendererUpdateCount + partialTicks) * (float)i, 0.0F, 1.0F, 1.0F);
         }
 
+        net.sythix.client.core.Hooks.preCamera(this.mc.getRenderViewEntity());
         this.orientCamera(partialTicks);
+        net.sythix.client.core.Hooks.postCamera(this.mc.getRenderViewEntity());
 
         if (this.debugView)
         {
@@ -1175,7 +1188,7 @@ public class EntityRenderer implements IResourceManagerReloadListener
                         f10 = 1.0F;
                     }
 
-                    float f16 = this.mc.gameSettings.gammaSetting;
+                    float f16 = net.sythix.client.core.Hooks.gamma(this.mc.gameSettings.gammaSetting);
                     float f17 = 1.0F - f8;
                     float f13 = 1.0F - f9;
                     float f14 = 1.0F - f10;
@@ -1288,13 +1301,21 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 this.smoothCamPartialTicks = partialTicks;
                 f2 = this.smoothCamFilterX * f4;
                 f3 = this.smoothCamFilterY * f4;
-                this.mc.player.turn(f2, f3 * (float)i);
+
+                if (!net.sythix.client.core.Hooks.freelookTurn(f2, f3 * (float)i))
+                {
+                    this.mc.player.turn(f2, f3 * (float)i);
+                }
             }
             else
             {
                 this.smoothCamYaw = 0.0F;
                 this.smoothCamPitch = 0.0F;
-                this.mc.player.turn(f2, f3 * (float)i);
+
+                if (!net.sythix.client.core.Hooks.freelookTurn(f2, f3 * (float)i))
+                {
+                    this.mc.player.turn(f2, f3 * (float)i);
+                }
             }
         }
 
@@ -1393,7 +1414,18 @@ public class EntityRenderer implements IResourceManagerReloadListener
                     }
                     else
                     {
-                        this.mc.currentScreen.drawScreen(k1, l1, this.mc.getTickLength());
+                        boolean sythixAnim = net.sythix.client.core.Hooks.beginScreenAnimation(this.mc.currentScreen, i1, j1);
+                        net.sythix.client.ui.font.SmoothFont.drawingScreen = true;
+
+                        try
+                        {
+                            this.mc.currentScreen.drawScreen(k1, l1, this.mc.getTickLength());
+                        }
+                        finally
+                        {
+                            net.sythix.client.ui.font.SmoothFont.drawingScreen = false;
+                        }
+                        net.sythix.client.core.Hooks.endScreenAnimation(sythixAnim, i1, j1);
                     }
                 }
                 catch (Throwable throwable1)
@@ -1438,6 +1470,12 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
     private void createWorldIcon()
     {
+        if (GlStateManager.WEB)
+        {
+            // browser build: the screen cannot be read back, so the world keeps the default icon
+            return;
+        }
+
         if (this.mc.renderGlobal.getRenderedChunks() > 10 && this.mc.renderGlobal.hasNoChunkUpdates() && !this.mc.getIntegratedServer().isWorldIconSet())
         {
             BufferedImage bufferedimage = ScreenShotHelper.createScreenshot(this.mc.displayWidth, this.mc.displayHeight, this.mc.getFramebuffer());
@@ -1890,6 +1928,8 @@ public class EntityRenderer implements IResourceManagerReloadListener
             Reflector.callVoid(Reflector.ForgeHooksClient_dispatchRenderLast, renderglobal, partialTicks);
         }
 
+        this.mc.mcProfiler.endStartSection("sythixWorld");
+        net.sythix.client.core.Hooks.onRenderWorld(partialTicks);
         this.mc.mcProfiler.endStartSection("hand");
 
         if (this.renderHand && !Shaders.isShadowPass)

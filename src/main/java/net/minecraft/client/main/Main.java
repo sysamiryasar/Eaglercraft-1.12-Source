@@ -37,10 +37,9 @@ public class Main
         OptionSpec<String> optionspec7 = optionparser.accepts("proxyUser").withRequiredArg();
         OptionSpec<String> optionspec8 = optionparser.accepts("proxyPass").withRequiredArg();
 
-        Scanner authSystem = new Scanner(System.in);
-        System.out.println("Enter username:");
-
-        OptionSpec<String> optionspec9 = optionparser.accepts("username").withRequiredArg().defaultsTo(authSystem.next());
+        // Sythix: the username comes from --username, or the saved profile (sythix/profile.json).
+        // There is no terminal prompt any more; change your name in the main menu Profile screen.
+        OptionSpec<String> optionspec9 = optionparser.accepts("username").withRequiredArg().defaultsTo("");
 
         OptionSpec<String> optionspec10 = optionparser.accepts("uuid").withRequiredArg();
         OptionSpec<String> optionspec11 = optionparser.accepts("accessToken").withRequiredArg().required();
@@ -107,7 +106,10 @@ public class Main
         String s6 = optionset.has(optionspec17) ? (String)optionspec17.value(optionset) : null;
         String s7 = (String)optionset.valueOf(optionspec);
         Integer integer = (Integer)optionset.valueOf(optionspec1);
-        Session session = new Session(optionspec9.value(optionset), s5, optionspec11.value(optionset), optionspec18.value(optionset));
+        net.sythix.client.cosmetic.ProfileStore.load(file1);
+        String sythixName = optionspec9.value(optionset).isEmpty() ? net.sythix.client.cosmetic.ProfileStore.name : optionspec9.value(optionset);
+        s5 = optionset.has(optionspec10) ? s5 : sythixName;
+        Session session = new Session(sythixName, s5, optionspec11.value(optionset), optionspec18.value(optionset));
         GameConfiguration gameconfiguration = new GameConfiguration(new GameConfiguration.UserInformation(session, propertymap, propertymap1, proxy), new GameConfiguration.DisplayInformation(i, j, flag, flag1), new GameConfiguration.FolderInformation(file1, file3, file2, s6), new GameConfiguration.GameInformation(flag2, s3, s4), new GameConfiguration.ServerInformation(s7, integer.intValue()));
         Runtime.getRuntime().addShutdownHook(new Thread("Client Shutdown Thread")
         {

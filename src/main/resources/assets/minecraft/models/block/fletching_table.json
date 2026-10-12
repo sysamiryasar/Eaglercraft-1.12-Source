@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "blocks/fletching_table_top",
+    "side": "blocks/fletching_table_side"
+  }
+}

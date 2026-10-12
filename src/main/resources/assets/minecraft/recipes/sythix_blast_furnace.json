@@ -1,0 +1,24 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "III",
+    "IFI",
+    "SSS"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    },
+    "S": {
+      "item": "minecraft:stone",
+      "data": 0
+    }
+  },
+  "result": {
+    "item": "minecraft:blast_furnace",
+    "count": 1
+  }
+}

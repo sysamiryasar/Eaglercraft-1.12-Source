@@ -48,3 +48,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+# JDK downloaded by cloudflare/build.sh
+.cache/
+__pycache__/
+.wrangler/

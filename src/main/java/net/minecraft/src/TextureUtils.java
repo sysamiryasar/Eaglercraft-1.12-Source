@@ -388,7 +388,7 @@ public class TextureUtils
             float f = GL11.glGetFloat(34047);
             float f1 = (float)Config.getAnisotropicFilterLevel();
             f1 = Math.min(f1, f);
-            GL11.glTexParameterf(GL11.GL_TEXTURE_2D, 34046, f1);
+            GlStateManager.glTexParameterf(GL11.GL_TEXTURE_2D, 34046, f1);
         }
     }
 

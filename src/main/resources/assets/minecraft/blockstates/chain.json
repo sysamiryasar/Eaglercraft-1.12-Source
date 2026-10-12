@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "chain"
+    },
+    "axis=z": {
+      "model": "chain",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "chain",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

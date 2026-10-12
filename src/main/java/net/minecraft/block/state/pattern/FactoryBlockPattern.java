@@ -5,7 +5,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -91,7 +90,9 @@ public class FactoryBlockPattern
     private Predicate<BlockWorldState>[][][] makePredicateArray()
     {
         this.checkMissingPredicates();
-        Predicate<BlockWorldState>[][][] predicate = (Predicate[][][])((Predicate[][][])Array.newInstance(Predicate.class, this.depth.size(), this.aisleHeight, this.rowWidth));
+        // a plain array, not reflection: the browser build's Java (CheerpJ) cannot create
+        // multi-dimensional arrays through java.lang.reflect.Array
+        Predicate<BlockWorldState>[][][] predicate = new Predicate[this.depth.size()][this.aisleHeight][this.rowWidth];
 
         for (int i = 0; i < this.depth.size(); ++i)
         {

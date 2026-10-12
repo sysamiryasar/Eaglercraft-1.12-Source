@@ -217,11 +217,13 @@ import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.OpenGLException;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.glu.GLU;
+import net.sythix.client.SythixClient;
+import net.sythix.client.ui.SythixTheme;
 
 public class Minecraft implements IThreadListener, ISnooperInfo
 {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final ResourceLocation LOCATION_MOJANG_PNG = new ResourceLocation("textures/gui/title/mojang.png");
+    private static final ResourceLocation LOCATION_SPLASH_LOGO = SythixTheme.LOGO;
     public static final boolean IS_RUNNING_ON_MAC = Util.getOSType() == Util.EnumOS.OSX;
 
     /** A 10MiB preallocation to ensure the heap is reasonably sized. */
@@ -269,7 +271,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     /** Manages all search trees */
     private SearchTreeManager searchTreeManager = new SearchTreeManager();
-    private final Session session;
+    private Session session;
     private boolean isGamePaused;
 
     /**
@@ -458,6 +460,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         }
         catch (Throwable throwable)
         {
+            LOGGER.error("Initializing game failed", throwable);
             CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Initializing game");
             crashreport.makeCategory("Initialization");
             this.displayCrashReport(this.addGraphicsAndWorldToCrashReport(crashreport));
@@ -521,6 +524,15 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     /**
      * Starts the game: initializes the canvas, the title, the settings, etcetera.
      */
+    /** Sythix: progress markers while the browser build starts (where it is slow or stuck). */
+    private static void webStep(String step)
+    {
+        if (GlStateManager.WEB)
+        {
+            LOGGER.info("[web] " + step);
+        }
+    }
+
     private void init() throws LWJGLException, IOException
     {
         this.gameSettings = new GameSettings(this, this.mcDataDir);
@@ -539,17 +551,21 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.setInitialDisplayMode();
         this.createDisplay();
         OpenGlHelper.initializeTextures();
+        webStep("gl helpers ready");
         this.framebufferMc = new Framebuffer(this.displayWidth, this.displayHeight, true);
         this.framebufferMc.setFramebufferColor(0.0F, 0.0F, 0.0F, 0.0F);
+        webStep("framebuffer ready");
         this.registerMetadataSerializers();
         this.mcResourcePackRepository = new ResourcePackRepository(this.fileResourcepacks, new File(this.mcDataDir, "server-resource-packs"), this.mcDefaultResourcePack, this.metadataSerializer_, this.gameSettings);
         this.mcResourceManager = new SimpleReloadableResourceManager(this.metadataSerializer_);
         this.mcLanguageManager = new LanguageManager(this.metadataSerializer_, this.gameSettings.language);
         this.mcResourceManager.registerReloadListener(this.mcLanguageManager);
         this.refreshResources();
+        webStep("resources loaded");
         this.renderEngine = new TextureManager(this.mcResourceManager);
         this.mcResourceManager.registerReloadListener(this.renderEngine);
         this.drawSplashScreen(this.renderEngine);
+        webStep("splash drawn");
         this.skinManager = new SkinManager(this.renderEngine, new File(this.fileAssets, "skins"), this.sessionService);
         this.saveLoader = new AnvilSaveConverter(new File(this.mcDataDir, "saves"), this.dataFixer);
         this.mcSoundHandler = new SoundHandler(this.mcResourceManager, this.gameSettings);
@@ -569,6 +585,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.mcResourceManager.registerReloadListener(new GrassColorReloadListener());
         this.mcResourceManager.registerReloadListener(new FoliageColorReloadListener());
         this.mouseHelper = new MouseHelper();
+        webStep("fonts ready");
         this.checkGLError("Pre startup");
         GlStateManager.enableTexture2D();
         GlStateManager.shadeModel(7425);
@@ -586,6 +603,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.textureMapBlocks.setMipmapLevels(this.gameSettings.mipmapLevels);
         this.renderEngine.loadTickableTexture(TextureMap.LOCATION_BLOCKS_TEXTURE, this.textureMapBlocks);
         this.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        webStep("block textures stitched");
         this.textureMapBlocks.setBlurMipmapDirect(false, this.gameSettings.mipmapLevels > 0);
         this.modelManager = new ModelManager(this.textureMapBlocks);
         this.mcResourceManager.registerReloadListener(this.modelManager);
@@ -600,13 +618,16 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.blockRenderDispatcher = new BlockRendererDispatcher(this.modelManager.getBlockModelShapes(), this.blockColors);
         this.mcResourceManager.registerReloadListener(this.blockRenderDispatcher);
         this.renderGlobal = new RenderGlobal(this);
+        webStep("world renderer ready");
         this.mcResourceManager.registerReloadListener(this.renderGlobal);
         this.populateSearchTreeManager();
         this.mcResourceManager.registerReloadListener(this.searchTreeManager);
         GlStateManager.viewport(0, 0, this.displayWidth, this.displayHeight);
         this.effectRenderer = new ParticleManager(this.world, this.renderEngine);
         this.checkGLError("Post startup");
+        webStep("startup done");
         this.ingameGUI = new GuiIngame(this);
+        SythixClient.init(this);
 
         if (this.serverName != null)
         {
@@ -689,10 +710,29 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.metadataSerializer_.registerMetadataSectionType(new LanguageMetadataSectionSerializer(), LanguageMetadataSection.class);
     }
 
+    /** Sythix browser build: the AWT window the game draws into (CheerpJ shows AWT windows in the page). */
+    private java.awt.Frame webFrame;
+
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
-        Display.setTitle("Eaglercraft 1.12");
+        Display.setTitle(SythixClient.getWindowTitle());
+
+        if (GlStateManager.WEB)
+        {
+            // Like Minecraft did as an applet: an AWT frame filling the page with a canvas, and the
+            // LWJGL display drawn inside that canvas
+            this.webFrame = new java.awt.Frame(SythixClient.getWindowTitle());
+            this.webFrame.setUndecorated(true);
+            java.awt.Canvas canvas = new java.awt.Canvas();
+            canvas.setBackground(java.awt.Color.BLACK);
+            this.webFrame.setLayout(new java.awt.BorderLayout());
+            this.webFrame.add(canvas, java.awt.BorderLayout.CENTER);
+            this.webFrame.setSize(this.displayWidth, this.displayHeight);
+            this.webFrame.setVisible(true);
+            Display.setParent(canvas);
+            webStep("display parented to an AWT canvas " + canvas.getWidth() + "x" + canvas.getHeight());
+        }
 
         try
         {
@@ -746,8 +786,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             try
             {
-                inputstream = this.mcDefaultResourcePack.getInputStreamAssets(new ResourceLocation("icons/icon_16x16.png"));
-                inputstream1 = this.mcDefaultResourcePack.getInputStreamAssets(new ResourceLocation("icons/icon_32x32.png"));
+                inputstream = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/sythix/icon_16.png"));
+                inputstream1 = this.mcDefaultResourcePack.getInputStream(new ResourceLocation("textures/gui/sythix/icon_32.png"));
 
                 if (inputstream != null && inputstream1 != null)
                 {
@@ -869,6 +909,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public void refreshResources()
     {
         List<IResourcePack> list = Lists.newArrayList(this.defaultResourcePacks);
+        net.sythix.client.pack.BuiltInPacks.addTo(list);
 
         if (this.integratedServer != null)
         {
@@ -894,6 +935,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             LOGGER.info("Caught error stitching, removing all assigned resourcepacks", (Throwable)runtimeexception);
             list.clear();
             list.addAll(this.defaultResourcePacks);
+            net.sythix.client.pack.BuiltInPacks.addTo(list);
             this.mcResourcePackRepository.setRepositories(Collections.emptyList());
             this.mcResourceManager.reloadResources(list);
             this.gameSettings.resourcePacks.clear();
@@ -997,31 +1039,33 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
         try
         {
-            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_MOJANG_PNG);
-            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("logo", new DynamicTexture(ImageIO.read(inputstream)));
+            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_SPLASH_LOGO);
+            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("sythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
             textureManagerInstance.bindTexture(this.mojangLogo);
         }
         catch (IOException ioexception)
         {
-            LOGGER.error("Unable to load logo: {}", LOCATION_MOJANG_PNG, ioexception);
+            LOGGER.error("Unable to load logo: {}", LOCATION_SPLASH_LOGO, ioexception);
         }
         finally
         {
             IOUtils.closeQuietly(inputstream);
         }
 
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuffer();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-        bufferbuilder.pos(0.0D, (double)this.displayHeight, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos((double)this.displayWidth, (double)this.displayHeight, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos((double)this.displayWidth, 0.0D, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        bufferbuilder.pos(0.0D, 0.0D, 0.0D).tex(0.0D, 0.0D).color(255, 255, 255, 255).endVertex();
-        tessellator.draw();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        int j = 256;
-        int k = 256;
-        this.draw((scaledresolution.getScaledWidth() - 256) / 2, (scaledresolution.getScaledHeight() - 256) / 2, 0, 0, 256, 256, 255, 255, 255, 255);
+        // Sythix loading screen: dark gradient, centred logo and a red-to-blue accent line
+        float screenWidth = (float)scaledresolution.getScaledWidth();
+        float screenHeight = (float)scaledresolution.getScaledHeight();
+        SythixTheme.drawGradientV(0.0F, 0.0F, screenWidth, screenHeight, SythixTheme.CHARCOAL, SythixTheme.BLACK);
+
+        if (this.mojangLogo != null)
+        {
+            float logoSize = Math.min(screenHeight * 0.6F, 220.0F);
+            float logoX = (screenWidth - logoSize) / 2.0F;
+            float logoY = (screenHeight - logoSize) / 2.0F - 8.0F;
+            SythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
+            SythixTheme.drawAccentLine(screenWidth / 2.0F - 60.0F, logoY + logoSize + 10.0F, screenWidth / 2.0F + 60.0F, 1.0F);
+        }
+
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
         framebuffer.unbindFramebuffer();
@@ -1136,6 +1180,14 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         {
             LOGGER.info("Stopping!");
 
+            net.sythix.client.module.recording.VideoRecorder.stopAndWait();
+            net.sythix.client.replay.ReplayRecorder.stop();
+
+            if (SythixClient.get() != null)
+            {
+                SythixClient.get().save();
+            }
+
             try
             {
                 this.loadWorld((WorldClient)null);
@@ -1163,8 +1215,90 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     /**
      * Called repeatedly from run()
      */
+    private int webFrames;
+    private long webFrameMark;
+    private int webFramesMark;
+    private long webTickNs, webRenderNs, webDisplayNs, webSyncNs, webSwapNs, webEventsNs;
+
+    /** The sections taking at least 5% of the time, descending into the big ones. */
+    private static String webProfile(net.minecraft.profiler.Profiler profiler, String path, int depth)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for (net.minecraft.profiler.Profiler.Result r : profiler.getProfilingData(path))
+        {
+            if (r.totalUsePercentage < 5.0D || r.profilerName.equals("unspecified") || r.profilerName.isEmpty() || r.profilerName.endsWith("."))
+            {
+                continue;
+            }
+
+            sb.append(' ').append(r.profilerName).append('=').append(Math.round(r.totalUsePercentage)).append('%');
+
+            if (depth < 4 && r.totalUsePercentage >= 15.0D)
+            {
+                String inner = webProfile(profiler, path + "." + r.profilerName, depth + 1);
+
+                if (!inner.isEmpty())
+                {
+                    sb.append(" [").append(inner.trim()).append(']');
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
     private void runGameLoop() throws IOException
     {
+        if (GlStateManager.WEB)
+        {
+            // browser build: report the average frame time every 100 frames (for tuning)
+            long now = System.nanoTime();
+
+            net.sythix.client.web.WebConnection.pump();
+            net.sythix.client.web.WebInput.inject();
+
+            if (this.webFrames == 1 && !System.getProperty("sythix.join", "").isEmpty())
+            {
+                // play.html?server=host:port joins that server straight away
+                net.minecraft.client.multiplayer.ServerData join = new net.minecraft.client.multiplayer.ServerData(System.getProperty("sythix.join"), System.getProperty("sythix.join"), false);
+                this.displayGuiScreen(new net.minecraft.client.multiplayer.GuiConnecting(new net.minecraft.client.gui.GuiMainMenu(), this, join));
+            }
+
+            if (++this.webFrames <= 3)
+            {
+                webStep("frame " + this.webFrames);
+            }
+
+            int n = this.webFrames - this.webFramesMark;
+
+            if (n > 0 && (n >= 100 || now - this.webFrameMark > 15000000000L))
+            {
+                webStep("frame " + this.webFrames + " avg " + (now - this.webFrameMark) / (n * 1000000L) + " ms" + (this.world == null ? " (menu)" : " (world)")
+                    + " tick " + this.webTickNs / (n * 1000000L) + " render " + this.webRenderNs / (n * 1000000L) + " display " + this.webDisplayNs / (n * 1000000L) + " wait " + this.webSyncNs / (n * 1000000L) + " (swap " + this.webSwapNs / (n * 1000000L) + " events " + this.webEventsNs / (n * 1000000L) + ")");
+                this.webFrameMark = now;
+                this.webFramesMark = this.webFrames;
+                this.webTickNs = this.webRenderNs = this.webDisplayNs = this.webSyncNs = this.webSwapNs = this.webEventsNs = 0L;
+
+                if (Boolean.getBoolean("sythix.webdebug"))
+                {
+                    // debug builds: name the busiest parts of the client and the integrated server
+                    this.mcProfiler.profilingEnabled = true;
+                    webStep("client " + webProfile(this.mcProfiler, "root", 0));
+
+                    if (this.integratedServer != null)
+                    {
+                        this.integratedServer.profiler.profilingEnabled = true;
+                        webStep("server " + webProfile(this.integratedServer.profiler, "root", 0));
+                    }
+                }
+            }
+            else if (this.webFrames == 1)
+            {
+                this.webFrameMark = now;
+            }
+        }
+
         long i = System.nanoTime();
         this.mcProfiler.startSection("root");
 
@@ -1190,7 +1324,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
         for (int j = 0; j < Math.min(10, this.timer.elapsedTicks); ++j)
         {
+            long webT = System.nanoTime();
             this.runTick();
+            this.webTickNs += System.nanoTime() - webT;
         }
 
         this.mcProfiler.endStartSection("preRenderErrors");
@@ -1210,9 +1346,13 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         if (!this.skipRenderWorld)
         {
             this.mcProfiler.endStartSection("gameRenderer");
+            long webR = System.nanoTime();
             this.entityRenderer.updateCameraAndRender(this.isGamePaused ? this.renderPartialTicksPaused : this.timer.renderPartialTicks, i);
+            this.webRenderNs += System.nanoTime() - webR;
             this.mcProfiler.endStartSection("toasts");
             this.toastGui.drawToast(new ScaledResolution(this));
+            net.sythix.client.core.Hooks.renderNotifications(new ScaledResolution(this));
+            net.sythix.client.core.Hooks.onFrame();
             this.mcProfiler.endSection();
         }
 
@@ -1230,7 +1370,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         }
         else
         {
-            this.mcProfiler.profilingEnabled = false;
+            this.mcProfiler.profilingEnabled = GlStateManager.WEB && Boolean.getBoolean("sythix.webdebug");
             this.prevFrameTime = System.nanoTime();
         }
 
@@ -1243,8 +1383,10 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.entityRenderer.renderStreamIndicator(this.timer.renderPartialTicks);
         GlStateManager.popMatrix();
         this.mcProfiler.startSection("root");
+        long webD = System.nanoTime();
         this.updateDisplay();
         Thread.yield();
+        this.webDisplayNs += System.nanoTime() - webD;
         this.checkGLError("Post render");
         ++this.fpsCounter;
         boolean flag = this.isSingleplayer() && this.currentScreen != null && this.currentScreen.doesGuiPauseGame() && !this.integratedServer.getPublic();
@@ -1285,7 +1427,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         if (this.isFramerateLimitBelowMax())
         {
             this.mcProfiler.startSection("fpslimit_wait");
+            long webS = System.nanoTime();
             Display.sync(this.getLimitFramerate());
+            this.webSyncNs += System.nanoTime() - webS;
             this.mcProfiler.endSection();
         }
 
@@ -1295,7 +1439,22 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public void updateDisplay()
     {
         this.mcProfiler.startSection("display_update");
-        Display.update();
+
+        if (GlStateManager.WEB)
+        {
+            // browser build: time the buffer swap and the window events separately (for tuning)
+            long t = System.nanoTime();
+            Display.update(false);
+            long t2 = System.nanoTime();
+            Display.processMessages();
+            this.webSwapNs += t2 - t;
+            this.webEventsNs += System.nanoTime() - t2;
+        }
+        else
+        {
+            Display.update();
+        }
+
         this.mcProfiler.endSection();
         this.checkWindowResize();
     }
@@ -1328,7 +1487,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     public int getLimitFramerate()
     {
-        return this.world == null && this.currentScreen != null ? 30 : this.gameSettings.limitFramerate;
+        return this.world == null && this.currentScreen != null ? 30 : net.sythix.client.core.Hooks.limitFramerate(this.gameSettings.limitFramerate);
     }
 
     public boolean isFramerateLimitBelowMax()
@@ -1617,6 +1776,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             }
             else if (!this.player.isRowingBoat())
             {
+                // Sythix: a spear jab with Lunge pushes you forward (the server takes the hunger cost)
+                if (net.sythix.modern.ModernItems.tryLunge(this.player) && this.getConnection() != null)
+                {
+                    this.getConnection().sendPacket(new net.minecraft.network.play.client.CPacketCustomPayload("sythix:lunge", new net.minecraft.network.PacketBuffer(io.netty.buffer.Unpooled.buffer())));
+                }
+
                 switch (this.objectMouseOver.typeOfHit)
                 {
                     case ENTITY:
@@ -1821,6 +1986,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      */
     public void runTick() throws IOException
     {
+        net.sythix.client.core.Hooks.onTick();
+
         if (this.rightClickDelayTimer > 0)
         {
             --this.rightClickDelayTimer;
@@ -2063,6 +2230,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             boolean flag = Keyboard.getEventKeyState();
 
+            if (!flag && this.currentScreen == null)
+            {
+                net.sythix.client.core.Hooks.onKeyReleased(i);
+            }
+
             if (flag)
             {
                 if (i == 62 && this.entityRenderer != null)
@@ -2077,6 +2249,10 @@ public class Minecraft implements IThreadListener, ISnooperInfo
                     if (i == 1)
                     {
                         this.displayInGameMenu();
+                    }
+                    else if (!Keyboard.isKeyDown(61))
+                    {
+                        net.sythix.client.core.Hooks.onKeyPressed(i);
                     }
 
                     flag1 = Keyboard.isKeyDown(61) && this.processKeyF3(i);
@@ -2238,7 +2414,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         {
             ++this.gameSettings.thirdPersonView;
 
-            if (this.gameSettings.thirdPersonView > 2)
+            if (this.gameSettings.thirdPersonView > 2 || (this.gameSettings.thirdPersonView == 2 && net.sythix.client.core.Hooks.skipFrontView()))
             {
                 this.gameSettings.thirdPersonView = 0;
             }
@@ -2394,6 +2570,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
             if (Mouse.getEventButtonState())
             {
+                if (this.currentScreen == null)
+                {
+                    net.sythix.client.core.Hooks.onMouseClick(i);
+                }
+
                 if (this.player.isSpectator() && i == 2)
                 {
                     this.ingameGUI.getSpectatorGui().onMiddleClick();
@@ -2409,6 +2590,11 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             if (j <= 200L)
             {
                 int k = Mouse.getEventDWheel();
+
+                if (k != 0 && this.currentScreen == null && net.sythix.client.core.Hooks.consumeScroll(k))
+                {
+                    k = 0;
+                }
 
                 if (k != 0)
                 {
@@ -2529,6 +2715,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.myNetworkManager = networkmanager;
     }
 
+    /** Sythix replay playback: use a local connection as the game's connection. */
+    public void setNetworkManagerSythix(NetworkManager manager)
+    {
+        this.myNetworkManager = manager;
+    }
+
     /**
      * unloads the current world first
      */
@@ -2554,6 +2746,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             if (this.integratedServer != null && this.integratedServer.isAnvilFileSet())
             {
                 this.integratedServer.initiateShutdown();
+                // Sythix: let the server finish saving before the region files are closed below
+                // (vanilla closed them while chunks were still being written, losing changes)
+                this.integratedServer.waitForServerThreadSythix(15000L);
             }
 
             this.integratedServer = null;
@@ -3213,7 +3408,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      */
     public boolean isSnooperEnabled()
     {
-        return this.gameSettings.snooperEnabled;
+        // Sythix: usage statistics are never sent to Mojang
+        return false;
     }
 
     /**
@@ -3288,6 +3484,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public boolean isFullScreen()
     {
         return this.fullscreen;
+    }
+
+    /** Sythix: switch to another offline name (Profile screen; only outside worlds). */
+    public void setSessionSythix(Session newSession)
+    {
+        this.session = newSession;
     }
 
     public Session getSession()

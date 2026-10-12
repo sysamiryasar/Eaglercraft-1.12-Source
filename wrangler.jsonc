@@ -1,0 +1,12 @@
+// Cloudflare (Workers static assets) settings for the browser version of Sythix Client.
+// The site is plain files: cloudflare/build.sh writes them to build/web, Cloudflare serves them.
+// "name" must match the Worker's name in the Cloudflare dashboard.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sythix-client",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./build/web",
+    "not_found_handling": "none"
+  }
+}

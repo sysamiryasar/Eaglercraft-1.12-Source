@@ -48,6 +48,8 @@ public class CraftingManager
             register("mapextending", new RecipesMapExtending());
             register("fireworks", new RecipeFireworks());
             register("repairitem", new RecipeRepairItem());
+            // Sythix: netherite upgrades that keep enchantments
+            net.sythix.modern.ModernRecipes.addCrafting();
             register("tippedarrow", new RecipeTippedArrow());
             register("bannerduplicate", new RecipesBanners.RecipeDuplicatePattern());
             register("banneraddpattern", new RecipesBanners.RecipeAddPattern());

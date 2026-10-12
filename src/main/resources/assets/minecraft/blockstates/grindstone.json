@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "grindstone"
+    },
+    "facing=east": {
+      "model": "grindstone",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "grindstone",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "grindstone",
+      "y": 270
+    }
+  }
+}

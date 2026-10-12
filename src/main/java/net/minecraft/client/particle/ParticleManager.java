@@ -162,7 +162,7 @@ public class ParticleManager
 
     public void addEffect(Particle effect)
     {
-        if (effect != null)
+        if (effect != null && net.sythix.client.core.Hooks.allowParticle(effect))
         {
             if (!(effect instanceof ParticleFirework.Spark) || Config.isFireworkParticles())
             {

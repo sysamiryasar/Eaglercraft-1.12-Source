@@ -4700,5 +4700,68 @@
       "ambient/weather/rain4"
     ],
     "subtitle": "subtitles.weather.rain"
+  },
+  "record.otherside": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/otherside",
+        "stream": true
+      }
+    ]
+  },
+  "record.5": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/5",
+        "stream": true
+      }
+    ]
+  },
+  "record.pigstep": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/pigstep",
+        "stream": true
+      }
+    ]
+  },
+  "record.relic": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/relic",
+        "stream": true
+      }
+    ]
+  },
+  "record.creator": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/creator",
+        "stream": true
+      }
+    ]
+  },
+  "record.creator_music_box": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/creator_music_box",
+        "stream": true
+      }
+    ]
+  },
+  "record.precipice": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "records/precipice",
+        "stream": true
+      }
+    ]
   }
 }

@@ -79,7 +79,7 @@ public class ServerListEntryNormal implements GuiListExtended.IGuiListEntry
         boolean flag = this.server.version > 335;
         boolean flag1 = this.server.version < 335;
         boolean flag2 = flag || flag1;
-        this.mc.fontRenderer.drawString(this.server.serverName, x + 32 + 3, y + 1, 16777215);
+        this.mc.fontRenderer.drawString(net.sythix.client.core.Hooks.serverName(this.server), x + 32 + 3, y + 1, 16777215);
         List<String> list = this.mc.fontRenderer.listFormattedStringToWidth(this.server.serverMOTD, listWidth - 32 - 2);
 
         for (int i = 0; i < Math.min(list.size(), 2); ++i)

@@ -1,0 +1,24 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "C",
+    "S",
+    "D"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:coal",
+      "data": 32767
+    },
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "D": {
+      "item": "minecraft:soul_sand"
+    }
+  },
+  "result": {
+    "item": "minecraft:soul_torch",
+    "count": 4
+  }
+}

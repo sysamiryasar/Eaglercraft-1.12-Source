@@ -97,7 +97,7 @@ public class GuiPlayerTabOverlay extends Gui
             ++j4;
         }
 
-        boolean flag = this.mc.isIntegratedServerRunning() || this.mc.getConnection().getNetworkManager().isEncrypted();
+        boolean flag = net.sythix.client.core.Hooks.tabHeads(this.mc.isIntegratedServerRunning() || this.mc.getConnection().getNetworkManager().isEncrypted());
         int l;
 
         if (scoreObjectiveIn != null)
@@ -122,7 +122,7 @@ public class GuiPlayerTabOverlay extends Gui
         int l1 = i1 * j4 + (j4 - 1) * 5;
         List<String> list1 = null;
 
-        if (this.header != null)
+        if (this.header != null && net.sythix.client.core.Hooks.tabHeader())
         {
             list1 = this.mc.fontRenderer.listFormattedStringToWidth(this.header.getFormattedText(), width - 50);
 
@@ -134,7 +134,7 @@ public class GuiPlayerTabOverlay extends Gui
 
         List<String> list2 = null;
 
-        if (this.footer != null)
+        if (this.footer != null && net.sythix.client.core.Hooks.tabFooter())
         {
             list2 = this.mc.fontRenderer.listFormattedStringToWidth(this.footer.getFormattedText(), width - 50);
 
@@ -146,7 +146,7 @@ public class GuiPlayerTabOverlay extends Gui
 
         if (list1 != null)
         {
-            drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + list1.size() * this.mc.fontRenderer.FONT_HEIGHT, Integer.MIN_VALUE);
+            drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + list1.size() * this.mc.fontRenderer.FONT_HEIGHT, net.sythix.client.core.Hooks.tabBackground(Integer.MIN_VALUE));
 
             for (String s2 : list1)
             {
@@ -158,7 +158,7 @@ public class GuiPlayerTabOverlay extends Gui
             ++k1;
         }
 
-        drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + i4 * 9, Integer.MIN_VALUE);
+        drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + i4 * 9, net.sythix.client.core.Hooks.tabBackground(Integer.MIN_VALUE));
 
         for (int k4 = 0; k4 < l3; ++k4)
         {
@@ -166,7 +166,7 @@ public class GuiPlayerTabOverlay extends Gui
             int i5 = k4 % i4;
             int j2 = j1 + l4 * i1 + l4 * 5;
             int k2 = k1 + i5 * 9;
-            drawRect(j2, k2, j2 + i1, k2 + 8, 553648127);
+            drawRect(j2, k2, j2 + i1, k2 + 8, net.sythix.client.core.Hooks.tabRow(553648127, k4 < list.size() ? list.get(k4).getGameProfile().getName() : null));
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.enableAlpha();
             GlStateManager.enableBlend();
@@ -225,7 +225,7 @@ public class GuiPlayerTabOverlay extends Gui
         if (list2 != null)
         {
             k1 = k1 + i4 * 9 + 1;
-            drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + list2.size() * this.mc.fontRenderer.FONT_HEIGHT, Integer.MIN_VALUE);
+            drawRect(width / 2 - l1 / 2 - 1, k1 - 1, width / 2 + l1 / 2 + 1, k1 + list2.size() * this.mc.fontRenderer.FONT_HEIGHT, net.sythix.client.core.Hooks.tabBackground(Integer.MIN_VALUE));
 
             for (String s3 : list2)
             {
@@ -238,6 +238,11 @@ public class GuiPlayerTabOverlay extends Gui
 
     protected void drawPing(int p_175245_1_, int p_175245_2_, int p_175245_3_, NetworkPlayerInfo networkPlayerInfoIn)
     {
+        if (net.sythix.client.core.Hooks.tabPing(p_175245_1_, p_175245_2_, p_175245_3_, networkPlayerInfoIn))
+        {
+            return;
+        }
+
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         this.mc.getTextureManager().bindTexture(ICONS);
         int i = 0;

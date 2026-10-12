@@ -205,6 +205,14 @@ public class PotionHelper
         addMix(PotionTypes.STRENGTH, Items.GLOWSTONE_DUST, PotionTypes.STRONG_STRENGTH);
         addMix(PotionTypes.WATER, Items.FERMENTED_SPIDER_EYE, PotionTypes.WEAKNESS);
         addMix(PotionTypes.WEAKNESS, Items.REDSTONE, PotionTypes.LONG_WEAKNESS);
+        // Sythix: brewing for the newer potions
+        net.sythix.modern.ModernEffects.registerBrewing();
+    }
+
+    /** Sythix: adds a brewing mix. */
+    public static void addMixSythix(PotionType input, Item reagent, PotionType output)
+    {
+        addMix(input, reagent, output);
     }
 
     private static void addContainerRecipe(ItemPotion p_193355_0_, Item p_193355_1_, ItemPotion p_193355_2_)

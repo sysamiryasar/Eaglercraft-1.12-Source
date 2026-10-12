@@ -571,6 +571,10 @@ public class EntityTrackerEntry
         {
             return new SPacketSpawnObject(this.trackedEntity, 61);
         }
+        else if (this.trackedEntity instanceof net.sythix.modern.entity.ModernProjectile)
+        {
+            return new SPacketSpawnObject(this.trackedEntity, ((net.sythix.modern.entity.ModernProjectile)this.trackedEntity).getSpawnType());
+        }
         else if (this.trackedEntity instanceof EntityLlamaSpit)
         {
             return new SPacketSpawnObject(this.trackedEntity, 68);

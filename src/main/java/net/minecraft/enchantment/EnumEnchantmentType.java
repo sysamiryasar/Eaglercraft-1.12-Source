@@ -94,6 +94,31 @@ public enum EnumEnchantmentType
             boolean flag = itemIn instanceof ItemBlock && ((ItemBlock)itemIn).getBlock() instanceof BlockPumpkin;
             return itemIn instanceof ItemArmor || itemIn instanceof ItemElytra || itemIn instanceof ItemSkull || flag;
         }
+    },
+    // Sythix: the newer weapons
+    MACE {
+        public boolean canEnchantItem(Item itemIn)
+        {
+            return itemIn == net.sythix.modern.ModernItems.get("mace");
+        }
+    },
+    CROSSBOW {
+        public boolean canEnchantItem(Item itemIn)
+        {
+            return itemIn == net.sythix.modern.ModernItems.get("crossbow");
+        }
+    },
+    TRIDENT {
+        public boolean canEnchantItem(Item itemIn)
+        {
+            return itemIn == net.sythix.modern.ModernItems.get("trident");
+        }
+    },
+    SPEAR {
+        public boolean canEnchantItem(Item itemIn)
+        {
+            return itemIn == net.sythix.modern.ModernItems.get("spear");
+        }
     };
 
     private EnumEnchantmentType()

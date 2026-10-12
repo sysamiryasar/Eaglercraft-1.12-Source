@@ -1451,7 +1451,8 @@ public abstract class World implements IBlockAccess
 
     public float getCelestialAngle(float partialTicks)
     {
-        return this.provider.calculateCelestialAngle(this.worldInfo.getWorldTime(), partialTicks);
+        long sythixTime = this.isRemote ? net.sythix.client.core.Hooks.worldTime() : -1L;
+        return this.provider.calculateCelestialAngle(sythixTime >= 0L ? sythixTime : this.worldInfo.getWorldTime(), partialTicks);
     }
 
     public int getMoonPhase()
@@ -3361,7 +3362,8 @@ public abstract class World implements IBlockAccess
 
     public float getThunderStrength(float delta)
     {
-        return (this.prevThunderingStrength + (this.thunderingStrength - this.prevThunderingStrength) * delta) * this.getRainStrength(delta);
+        float sythixThunder = this.isRemote ? net.sythix.client.core.Hooks.thunderStrength() : -1.0F;
+        return sythixThunder >= 0.0F ? sythixThunder : (this.prevThunderingStrength + (this.thunderingStrength - this.prevThunderingStrength) * delta) * this.getRainStrength(delta);
     }
 
     public void setThunderStrength(float strength)
@@ -3372,7 +3374,8 @@ public abstract class World implements IBlockAccess
 
     public float getRainStrength(float delta)
     {
-        return this.prevRainingStrength + (this.rainingStrength - this.prevRainingStrength) * delta;
+        float sythixRain = this.isRemote ? net.sythix.client.core.Hooks.rainStrength() : -1.0F;
+        return sythixRain >= 0.0F ? sythixRain : this.prevRainingStrength + (this.rainingStrength - this.prevRainingStrength) * delta;
     }
 
     public void setRainStrength(float strength)

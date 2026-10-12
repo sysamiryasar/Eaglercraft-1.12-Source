@@ -1,0 +1,24 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "SBS",
+    "P P"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "B": {
+      "item": "minecraft:stone_slab",
+      "data": 0
+    },
+    "P": {
+      "item": "minecraft:planks",
+      "data": 32767
+    }
+  },
+  "result": {
+    "item": "minecraft:grindstone",
+    "count": 1
+  }
+}

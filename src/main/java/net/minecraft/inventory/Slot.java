@@ -161,4 +161,10 @@ public class Slot
     {
         return true;
     }
+
+    /** Sythix: index of this slot inside its inventory (used by inventory sorting). */
+    public int getSlotIndexSythix()
+    {
+        return this.slotIndex;
+    }
 }

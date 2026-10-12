@@ -1,0 +1,21 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "SSS",
+    "SNS",
+    "SSS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stonebrick",
+      "data": 3
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    }
+  },
+  "result": {
+    "item": "minecraft:lodestone",
+    "count": 1
+  }
+}

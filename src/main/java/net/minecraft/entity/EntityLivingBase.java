@@ -1014,6 +1014,10 @@ public abstract class EntityLivingBase extends Entity
         {
             return false;
         }
+        else if (net.sythix.modern.ModernEffects.onHurt(this, source, amount))
+        {
+            return false;
+        }
         else
         {
             this.idleTime = 0;
@@ -1324,6 +1328,7 @@ public abstract class EntityLivingBase extends Entity
     {
         if (!this.dead)
         {
+            net.sythix.modern.ModernEffects.onDeath(this);
             Entity entity = cause.getTrueSource();
             EntityLivingBase entitylivingbase = this.getAttackingEntity();
 
@@ -1453,6 +1458,11 @@ public abstract class EntityLivingBase extends Entity
 
             if (block != Blocks.LADDER && block != Blocks.VINE)
             {
+                if (net.sythix.modern.ModernBlocks.isClimbable(block))
+                {
+                    return true;
+                }
+
                 return block instanceof BlockTrapDoor && this.canGoThroughtTrapDoorOnLadder(blockpos, iblockstate);
             }
             else
@@ -1544,7 +1554,20 @@ public abstract class EntityLivingBase extends Entity
         if (!source.isUnblockable())
         {
             this.damageArmor(damage);
-            damage = CombatRules.getDamageAfterAbsorb(damage, (float)this.getTotalArmorValue(), (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+            int breach = net.sythix.modern.ModernItems.breachLevel;
+
+            if (breach > 0 && source.getTrueSource() instanceof net.minecraft.entity.player.EntityPlayer)
+            {
+                // Sythix: Breach (1.21) - armour is 15% less effective per level
+                float armor = (float)this.getTotalArmorValue();
+                float toughness = (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue();
+                float reduction = MathHelper.clamp(armor - damage / (2.0F + toughness / 4.0F), armor * 0.2F, 20.0F) / 25.0F;
+                damage = damage * (1.0F - reduction * Math.max(0.0F, 1.0F - 0.15F * (float)breach));
+            }
+            else
+            {
+                damage = CombatRules.getDamageAfterAbsorb(damage, (float)this.getTotalArmorValue(), (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+            }
         }
 
         return damage;
@@ -1666,14 +1689,18 @@ public abstract class EntityLivingBase extends Entity
      */
     private int getArmSwingAnimationEnd()
     {
+        int duration;
+
         if (this.isPotionActive(MobEffects.HASTE))
         {
-            return 6 - (1 + this.getActivePotionEffect(MobEffects.HASTE).getAmplifier());
+            duration = 6 - (1 + this.getActivePotionEffect(MobEffects.HASTE).getAmplifier());
         }
         else
         {
-            return this.isPotionActive(MobEffects.MINING_FATIGUE) ? 6 + (1 + this.getActivePotionEffect(MobEffects.MINING_FATIGUE).getAmplifier()) * 2 : 6;
+            duration = this.isPotionActive(MobEffects.MINING_FATIGUE) ? 6 + (1 + this.getActivePotionEffect(MobEffects.MINING_FATIGUE).getAmplifier()) * 2 : 6;
         }
+
+        return this.world.isRemote ? net.sythix.client.core.Hooks.swingDuration(this, duration) : duration;
     }
 
     public void swingArm(EnumHand hand)
@@ -2331,6 +2358,7 @@ public abstract class EntityLivingBase extends Entity
      */
     public void onUpdate()
     {
+        net.sythix.modern.ModernEffects.livingTick(this);
         super.onUpdate();
         this.updateActiveHand();
 

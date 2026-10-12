@@ -62,6 +62,7 @@ import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.border.WorldBorder;
+import net.sythix.client.SythixClient;
 
 public class GuiIngame extends Gui
 {
@@ -370,16 +371,25 @@ public class GuiIngame extends Gui
 
         if (scoreobjective1 != null)
         {
-            this.renderScoreboard(scoreobjective1, scaledresolution);
+            if (!net.sythix.client.core.Hooks.captureScoreboard(scoreobjective1))
+            {
+                this.renderScoreboard(scoreobjective1, scaledresolution);
+            }
         }
 
+        this.mc.mcProfiler.startSection("sythixHud");
+        net.sythix.client.core.Hooks.renderHud(scaledresolution);
+        this.mc.mcProfiler.endSection();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         GlStateManager.disableAlpha();
         GlStateManager.pushMatrix();
         GlStateManager.translate(0.0F, (float)(j - 48), 0.0F);
         this.mc.mcProfiler.startSection("chat");
-        this.persistantChatGUI.drawChat(this.updateCounter);
+        if (!net.sythix.client.core.Hooks.hideChat())
+        {
+            this.persistantChatGUI.drawChat(this.updateCounter);
+        }
         this.mc.mcProfiler.endSection();
         GlStateManager.popMatrix();
         scoreobjective1 = scoreboard.getObjectiveInDisplaySlot(0);
@@ -387,7 +397,7 @@ public class GuiIngame extends Gui
         if (this.mc.gameSettings.keyBindPlayerList.isKeyDown() && (!this.mc.isIntegratedServerRunning() || this.mc.player.connection.getPlayerInfoMap().size() > 1 || scoreobjective1 != null))
         {
             this.overlayPlayerList.updatePlayerList(true);
-            this.overlayPlayerList.renderPlayerlist(i, scoreboard, scoreobjective1);
+            net.sythix.client.core.Hooks.renderTabList(this.overlayPlayerList, i, scoreboard, scoreobjective1);
         }
         else
         {
@@ -403,7 +413,7 @@ public class GuiIngame extends Gui
     {
         GameSettings gamesettings = this.mc.gameSettings;
 
-        if (gamesettings.thirdPersonView == 0)
+        if (gamesettings.thirdPersonView == 0 || net.sythix.client.core.Hooks.crosshairInThirdPerson())
         {
             if (this.mc.playerController.isSpectator() && this.mc.pointedEntity == null)
             {
@@ -439,9 +449,18 @@ public class GuiIngame extends Gui
             }
             else
             {
-                GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-                GlStateManager.enableAlpha();
-                this.drawTexturedModalRect(l / 2 - 7, i1 / 2 - 7, 0, 0, 16, 16);
+                if (!net.sythix.client.core.Hooks.renderCrosshair(l, i1))
+                {
+                    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+                    GlStateManager.enableAlpha();
+                    this.drawTexturedModalRect(l / 2 - 7, i1 / 2 - 7, 0, 0, 16, 16);
+                }
+                else
+                {
+                    this.mc.getTextureManager().bindTexture(ICONS);
+                    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+                    GlStateManager.enableAlpha();
+                }
 
                 if (this.mc.gameSettings.attackIndicator == 1)
                 {
@@ -474,6 +493,11 @@ public class GuiIngame extends Gui
 
     protected void renderPotionEffects(ScaledResolution resolution)
     {
+        if (net.sythix.client.core.Hooks.hideVanillaPotionIcons())
+        {
+            return;
+        }
+
         Collection<PotionEffect> collection = this.mc.player.getActivePotionEffects();
 
         if (!collection.isEmpty())
@@ -591,7 +615,7 @@ public class GuiIngame extends Gui
             int k = 91;
             this.zLevel = -90.0F;
             this.drawTexturedModalRect(i - 91, sr.getScaledHeight() - 22, 0, 0, 182, 22);
-            this.drawTexturedModalRect(i - 91 - 1 + entityplayer.inventory.currentItem * 20, sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
+            this.drawTexturedModalRect(i - 91 - 1 + net.sythix.client.core.Hooks.hotbarSelectorX(entityplayer.inventory.currentItem * 20), sr.getScaledHeight() - 22 - 1, 0, 22, 24, 22);
 
             if (!itemstack.isEmpty())
             {
@@ -1301,7 +1325,7 @@ public class GuiIngame extends Gui
             }
             else
             {
-                this.remainingHighlightTicks = 40;
+                this.remainingHighlightTicks = net.sythix.client.core.Hooks.heldNameTicks(40);
             }
 
             this.highlightingItemStack = itemstack;

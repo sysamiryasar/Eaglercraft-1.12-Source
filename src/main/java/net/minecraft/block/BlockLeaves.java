@@ -54,7 +54,7 @@ public abstract class BlockLeaves extends Block
                         BlockPos blockpos = pos.add(j1, k1, l1);
                         IBlockState iblockstate = worldIn.getBlockState(blockpos);
 
-                        if (iblockstate.getMaterial() == Material.LEAVES && !((Boolean)iblockstate.getValue(CHECK_DECAY)).booleanValue())
+                        if (iblockstate.getBlock() instanceof BlockLeaves && !((Boolean)iblockstate.getValue(CHECK_DECAY)).booleanValue())
                         {
                             worldIn.setBlockState(blockpos, iblockstate.withProperty(CHECK_DECAY, Boolean.valueOf(true)), 4);
                         }

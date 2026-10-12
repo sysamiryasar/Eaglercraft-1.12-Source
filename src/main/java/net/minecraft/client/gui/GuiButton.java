@@ -6,6 +6,7 @@ import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.util.ResourceLocation;
+import net.sythix.client.ui.SythixTheme;
 
 public class GuiButton extends Gui
 {
@@ -33,6 +34,10 @@ public class GuiButton extends Gui
     /** Hides the button completely if false. */
     public boolean visible;
     protected boolean hovered;
+
+    /** Sythix: animated hover amount (0..1) and the time of the previous frame. */
+    private float hoverAnimation;
+    private long lastDrawTime;
 
     public GuiButton(int buttonId, int x, int y, String buttonText)
     {
@@ -78,7 +83,11 @@ public class GuiButton extends Gui
      */
     public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks)
     {
-        if (this.visible)
+        if (this.visible && SythixTheme.isEnabled())
+        {
+            this.drawThemedButton(mc, mouseX, mouseY);
+        }
+        else if (this.visible)
         {
             FontRenderer fontrenderer = mc.fontRenderer;
             mc.getTextureManager().bindTexture(BUTTON_TEXTURES);
@@ -135,6 +144,37 @@ public class GuiButton extends Gui
     public boolean isMouseOver()
     {
         return this.hovered;
+    }
+
+    /**
+     * Sythix themed look: flat charcoal button with a red/blue hover accent.
+     */
+    private void drawThemedButton(Minecraft mc, int mouseX, int mouseY)
+    {
+        this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
+        long now = Minecraft.getSystemTime();
+        float seconds = this.lastDrawTime == 0L ? 0.0F : Math.min(0.1F, (float)(now - this.lastDrawTime) / 1000.0F);
+        this.lastDrawTime = now;
+        this.hoverAnimation = SythixTheme.approach(this.hoverAnimation, this.hovered && this.enabled ? 1.0F : 0.0F, 7.0F, seconds);
+        SythixTheme.drawButton((float)this.x, (float)this.y, (float)this.width, (float)this.height, this.enabled, this.hoverAnimation);
+        this.mouseDragged(mc, mouseX, mouseY);
+        this.drawCenteredString(mc.fontRenderer, this.displayString, this.x + this.width / 2, this.y + (this.height - 8) / 2, SythixTheme.getButtonTextColor(this.enabled, this.hoverAnimation));
+    }
+
+    /**
+     * Draws a slider handle at knobX. Used by the slider subclasses so they follow the active theme.
+     */
+    protected void drawSliderKnob(int knobX)
+    {
+        if (SythixTheme.isEnabled())
+        {
+            SythixTheme.drawSliderKnob((float)knobX, (float)this.y, 8.0F, (float)this.height);
+        }
+        else
+        {
+            this.drawTexturedModalRect(knobX, this.y, 0, 66, 4, 20);
+            this.drawTexturedModalRect(knobX + 4, this.y, 196, 66, 4, 20);
+        }
     }
 
     public void drawButtonForegroundLayer(int mouseX, int mouseY)

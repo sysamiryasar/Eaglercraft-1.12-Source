@@ -1,0 +1,24 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    " S ",
+    "SDS",
+    "LLL"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "D": {
+      "item": "minecraft:soul_sand"
+    },
+    "L": {
+      "item": "minecraft:log",
+      "data": 32767
+    }
+  },
+  "result": {
+    "item": "minecraft:soul_campfire",
+    "count": 1
+  }
+}

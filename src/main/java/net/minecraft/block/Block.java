@@ -1224,6 +1224,8 @@ public class Block
         registerBlock(251, "concrete", (new BlockColored(Material.ROCK)).setHardness(1.8F).setSoundType(SoundType.STONE).setUnlocalizedName("concrete"));
         registerBlock(252, "concrete_powder", (new BlockConcretePowder()).setHardness(0.5F).setSoundType(SoundType.SAND).setUnlocalizedName("concretePowder"));
         registerBlock(255, "structure_block", (new BlockStructure()).setBlockUnbreakable().setResistance(6000000.0F).setUnlocalizedName("structureBlock"));
+        // Sythix: extra blocks from Minecraft 1.13-1.21 (IDs 500+, singleplayer/LAN worlds)
+        net.sythix.modern.ModernBlocks.register();
         REGISTRY.validateKey();
 
         for (Block block15 : REGISTRY)

@@ -206,6 +206,10 @@ public class RenderManager
         this.entityRenderMap.put(EntityTippedArrow.class, new RenderTippedArrow(this));
         this.entityRenderMap.put(EntitySpectralArrow.class, new RenderSpectralArrow(this));
         this.entityRenderMap.put(EntitySnowball.class, new RenderSnowball(this, Items.SNOWBALL, itemRendererIn));
+        // Sythix: thrown tridents and wind charges are drawn as their item
+        this.entityRenderMap.put(net.sythix.modern.entity.EntityThrownTrident.class, new RenderSnowball(this, net.sythix.modern.ModernItems.get("trident"), itemRendererIn));
+        this.entityRenderMap.put(net.sythix.modern.entity.EntityWindCharge.class, new RenderSnowball(this, net.sythix.modern.ModernItems.get("wind_charge"), itemRendererIn));
+        net.sythix.modern.mob.client.MobRenderers.register(this, this.entityRenderMap);
         this.entityRenderMap.put(EntityEnderPearl.class, new RenderSnowball(this, Items.ENDER_PEARL, itemRendererIn));
         this.entityRenderMap.put(EntityEnderEye.class, new RenderSnowball(this, Items.ENDER_EYE, itemRendererIn));
         this.entityRenderMap.put(EntityEgg.class, new RenderSnowball(this, Items.EGG, itemRendererIn));

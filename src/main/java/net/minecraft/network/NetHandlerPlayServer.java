@@ -1521,6 +1521,12 @@ public class NetHandlerPlayServer implements INetHandlerPlayServer, ITickable
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.player.getServerWorld());
         String s = packetIn.getChannelName();
 
+        if ("sythix:lunge".equals(s))
+        {
+            net.sythix.modern.ModernItems.lungeCost(this.player);
+            return;
+        }
+
         if ("MC|BEdit".equals(s))
         {
             PacketBuffer packetbuffer = packetIn.getBufferData();

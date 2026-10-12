@@ -1,0 +1,16 @@
+{
+  "type": "crafting_shaped",
+  "pattern": [
+    "NNN",
+    "N N"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:nautilus_shell"
+    }
+  },
+  "result": {
+    "item": "minecraft:turtle_helmet",
+    "count": 1
+  }
+}

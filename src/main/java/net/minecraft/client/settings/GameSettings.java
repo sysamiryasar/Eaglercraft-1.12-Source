@@ -278,6 +278,9 @@ public class GameSettings
     private static final int[] OF_DYNAMIC_LIGHTS = new int[] {3, 1, 2};
     private static final String[] KEYS_DYNAMIC_LIGHTS = new String[] {"options.off", "options.graphics.fast", "options.graphics.fancy"};
     public KeyBinding ofKeyBindZoom;
+
+    /** Opens the Sythix HUD editor. Right Shift by default; rebindable in Controls. */
+    public KeyBinding keyBindSythixMenu = new KeyBinding("key.sythix.menu", 54, "key.categories.sythix");
     private File optionsFileOF;
     private boolean needsResourceRefresh = false;
 
@@ -306,6 +309,7 @@ public class GameSettings
         this.limitFramerate = (int)GameSettings.Options.FRAMERATE_LIMIT.getValueMax();
         this.ofKeyBindZoom = new KeyBinding("of.key.zoom", 46, "key.categories.misc");
         this.keyBindings = (KeyBinding[])ArrayUtils.add(this.keyBindings, this.ofKeyBindZoom);
+        this.keyBindings = (KeyBinding[])ArrayUtils.add(this.keyBindings, this.keyBindSythixMenu);
         GameSettings.Options.RENDER_DISTANCE.setValueMax(32.0F);
         this.renderDistanceChunks = 8;
         this.loadOptions();
@@ -962,6 +966,42 @@ public class GameSettings
         {
             if (!this.optionsFile.exists())
             {
+                if (net.minecraft.client.renderer.GlStateManager.WEB)
+                {
+                    // Sythix browser build: light settings on the first start (can be raised later)
+                    this.renderDistanceChunks = 4;
+                    this.fancyGraphics = false;
+                    this.ambientOcclusion = 0;
+                    this.clouds = 0;
+                    this.mipmapLevels = 0;
+                    this.particleSetting = 2;
+                    this.entityShadows = false;
+                    // OptiFine: no texture animation (re-uploads textures every tick), no custom
+                    // skies/colours/models, fast maths, fast trees and items, no clouds
+                    this.ofFastMath = true;
+                    this.ofSmoothFps = false;
+                    this.ofAnimatedTerrain = false;
+                    this.ofAnimatedTextures = false;
+                    this.ofAnimatedWater = 2;
+                    this.ofAnimatedLava = 2;
+                    this.ofCustomSky = false;
+                    this.ofCustomColors = false;
+                    this.ofCustomItems = false;
+                    this.ofCustomEntityModels = false;
+                    this.ofConnectedTextures = 3;
+                    this.ofNaturalTextures = false;
+                    this.ofSmoothBiomes = false;
+                    this.ofSwampColors = false;
+                    this.ofBetterGrass = 3;
+                    this.ofTrees = 1;
+                    this.ofDroppedItems = 1;
+                    this.ofClouds = 3;
+                    this.ofVignette = 1;
+                    this.ofDynamicLights = 3;
+                    this.ofDynamicFov = false;
+                    this.ofLazyChunkLoading = true;
+                }
+
                 return;
             }
 
@@ -1431,7 +1471,7 @@ public class GameSettings
             printwriter.println("fov:" + (this.fovSetting - 70.0F) / 40.0F);
             printwriter.println("gamma:" + this.gammaSetting);
             printwriter.println("saturation:" + this.saturation);
-            printwriter.println("renderDistance:" + this.renderDistanceChunks);
+            printwriter.println("renderDistance:" + net.sythix.client.core.Hooks.savedRenderDistance(this.renderDistanceChunks));
             printwriter.println("guiScale:" + this.guiScale);
             printwriter.println("particles:" + this.particleSetting);
             printwriter.println("bobView:" + this.viewBobbing);

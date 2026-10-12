@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "blocks/cartography_table_top",
+    "side": "blocks/cartography_table_side"
+  }
+}

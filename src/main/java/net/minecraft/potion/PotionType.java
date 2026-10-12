@@ -89,7 +89,15 @@ public class PotionType
         registerPotionType("weakness", new PotionType(new PotionEffect[] {new PotionEffect(MobEffects.WEAKNESS, 1800)}));
         registerPotionType("long_weakness", new PotionType("weakness", new PotionEffect[] {new PotionEffect(MobEffects.WEAKNESS, 4800)}));
         registerPotionType("luck", new PotionType("luck", new PotionEffect[] {new PotionEffect(MobEffects.LUCK, 6000)}));
+        // Sythix: potions of the newer effects
+        net.sythix.modern.ModernEffects.registerPotionTypes();
         REGISTRY.validateKey();
+    }
+
+    /** Sythix: registers an extra potion type. */
+    public static void registerSythix(String name, PotionType type)
+    {
+        registerPotionType(name, type);
     }
 
     protected static void registerPotionType(String p_185173_0_, PotionType p_185173_1_)

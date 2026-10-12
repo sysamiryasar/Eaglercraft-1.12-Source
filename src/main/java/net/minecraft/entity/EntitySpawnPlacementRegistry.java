@@ -48,6 +48,12 @@ public class EntitySpawnPlacementRegistry
 {
     private static final Map < Class<?>, EntityLiving.SpawnPlacementType > ENTITY_PLACEMENTS = Maps. < Class<?>, EntityLiving.SpawnPlacementType > newHashMap();
 
+    /** Sythix: where an extra mob may spawn (on the ground or in water). */
+    public static void setSythix(Class<?> entityClass, EntityLiving.SpawnPlacementType type)
+    {
+        ENTITY_PLACEMENTS.put(entityClass, type);
+    }
+
     public static EntityLiving.SpawnPlacementType getPlacementForEntity(Class<?> entityClass)
     {
         return ENTITY_PLACEMENTS.get(entityClass);

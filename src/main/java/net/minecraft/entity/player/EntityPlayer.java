@@ -229,6 +229,7 @@ public abstract class EntityPlayer extends EntityLivingBase
      */
     public void onUpdate()
     {
+        net.sythix.modern.ModernItems.playerTick(this);
         this.noClip = this.isSpectator();
 
         if (this.isSpectator())
@@ -1333,6 +1334,9 @@ public abstract class EntityPlayer extends EntityLivingBase
                     }
 
                     f = f + f1;
+                    // Sythix: mace smash bonus, added after the cooldown and critical hit like 1.21
+                    // (so it can crit, and spam-clicking does not shrink it)
+                    f += net.sythix.modern.ModernItems.bonusDamage(this, targetEntity);
                     boolean flag3 = false;
                     double d0 = (double)(this.distanceWalkedModified - this.prevDistanceWalkedModified);
 
@@ -1364,7 +1368,19 @@ public abstract class EntityPlayer extends EntityLivingBase
                     double d1 = targetEntity.motionX;
                     double d2 = targetEntity.motionY;
                     double d3 = targetEntity.motionZ;
-                    boolean flag5 = targetEntity.attackEntityFrom(DamageSource.causePlayerDamage(this), f);
+                    // Sythix: Breach makes the target's armour less effective for this hit
+                    net.sythix.modern.ModernItems.breachLevel = net.sythix.modern.ModernItems.breachOf(this);
+                    boolean flag5;
+
+                    try
+                    {
+                        flag5 = targetEntity.attackEntityFrom(DamageSource.causePlayerDamage(this), f);
+                    }
+                    finally
+                    {
+                        net.sythix.modern.ModernItems.breachLevel = 0;
+                    }
+
 
                     if (flag5)
                     {

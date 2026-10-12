@@ -44,10 +44,48 @@ public class BlockStateContainer implements IBlockStatePaletteResizer
             else
             {
                 this.palette = REGISTRY_BASED_PALETTE;
-                this.bits = MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size());
+                this.bits = registryBits();
             }
 
             this.palette.idFor(AIR_BLOCK_STATE);
+            this.storage = new BitArray(this.bits, 4096);
+        }
+    }
+
+    private static int registryBits = -1;
+
+    /**
+     * Bits for global block state IDs. Vanilla used the number of states, which is too small once
+     * extra blocks with IDs above 255 exist, so this also covers the highest ID.
+     */
+    private static int registryBits()
+    {
+        if (registryBits < 0)
+        {
+            int max = 0;
+
+            for (IBlockState state : Block.BLOCK_STATE_IDS)
+            {
+                max = Math.max(max, Block.BLOCK_STATE_IDS.get(state));
+            }
+
+            registryBits = Math.max(MathHelper.log2DeBruijn(Block.BLOCK_STATE_IDS.size()), MathHelper.log2DeBruijn(max + 1));
+        }
+
+        return registryBits;
+    }
+
+    /** Uses exactly the bit count sent by the server (its block list may differ from ours). */
+    private void setBitsFromPacket(int bitsIn)
+    {
+        if (bitsIn <= 8)
+        {
+            this.setBits(bitsIn);
+        }
+        else
+        {
+            this.bits = bitsIn;
+            this.palette = REGISTRY_BASED_PALETTE;
             this.storage = new BitArray(this.bits, 4096);
         }
     }
@@ -99,7 +137,7 @@ public class BlockStateContainer implements IBlockStatePaletteResizer
 
         if (this.bits != i)
         {
-            this.setBits(i);
+            this.setBitsFromPacket(i);
         }
 
         this.palette.read(buf);

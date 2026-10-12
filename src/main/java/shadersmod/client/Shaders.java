@@ -4072,6 +4072,16 @@ public class Shaders {
 		mc.mcProfiler.endSection();
 	}
 
+	/** Sythix: the shader packs in the shaderpacks folder (plus OFF and the internal one). */
+	public static java.util.List<String> listOfShadersSythix() {
+		return listOfShaders();
+	}
+
+	/** Sythix: the selected shader pack's name as stored in the options (OFF when none). */
+	public static String currentShaderSythix() {
+		return currentshadername == null ? packNameNone : currentshadername;
+	}
+
 	public static String getShaderPackName() {
 		if (shaderPack == null) {
 			return null;

@@ -1,0 +1,145 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "blocks/soul_lantern",
+    "l": "blocks/soul_lantern"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        0,
+        5
+      ],
+      "to": [
+        11,
+        7,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#l",
+          "uv": [
+            0,
+            9,
+            6,
+            15
+          ]
+        },
+        "up": {
+          "texture": "#l",
+          "uv": [
+            0,
+            9,
+            6,
+            15
+          ]
+        },
+        "north": {
+          "texture": "#l",
+          "uv": [
+            0,
+            0,
+            6,
+            7
+          ]
+        },
+        "south": {
+          "texture": "#l",
+          "uv": [
+            0,
+            0,
+            6,
+            7
+          ]
+        },
+        "west": {
+          "texture": "#l",
+          "uv": [
+            0,
+            0,
+            6,
+            7
+          ]
+        },
+        "east": {
+          "texture": "#l",
+          "uv": [
+            0,
+            0,
+            6,
+            7
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        7,
+        6
+      ],
+      "to": [
+        10,
+        9,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        },
+        "up": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        },
+        "north": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        },
+        "south": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        },
+        "west": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        },
+        "east": {
+          "texture": "#l",
+          "uv": [
+            6,
+            0,
+            10,
+            2
+          ]
+        }
+      }
+    }
+  ]
+}

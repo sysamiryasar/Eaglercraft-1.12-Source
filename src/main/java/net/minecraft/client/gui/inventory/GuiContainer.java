@@ -44,6 +44,22 @@ public abstract class GuiContainer extends GuiScreen
      */
     protected int guiTop;
 
+    /** Sythix: position and size for overlays such as the inventory search bar. */
+    public int getGuiLeftSythix()
+    {
+        return this.guiLeft;
+    }
+
+    public int getGuiTopSythix()
+    {
+        return this.guiTop;
+    }
+
+    public int getXSizeSythix()
+    {
+        return this.xSize;
+    }
+
     /** holds the slot currently hovered */
     private Slot hoveredSlot;
 
@@ -191,6 +207,7 @@ public abstract class GuiContainer extends GuiScreen
         }
 
         GlStateManager.popMatrix();
+        net.sythix.client.core.Hooks.drawContainerOverlay(this, mouseX, mouseY);
         GlStateManager.enableLighting();
         GlStateManager.enableDepth();
         RenderHelper.enableStandardItemLighting();
@@ -367,6 +384,11 @@ public abstract class GuiContainer extends GuiScreen
      */
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException
     {
+        if (net.sythix.client.core.Hooks.containerClick(this, mouseX, mouseY, mouseButton))
+        {
+            return;
+        }
+
         super.mouseClicked(mouseX, mouseY, mouseButton);
         boolean flag = mouseButton == this.mc.gameSettings.keyBindPickBlock.getKeyCode() + 100;
         Slot slot = this.getSlotAtPosition(mouseX, mouseY);
@@ -705,6 +727,11 @@ public abstract class GuiContainer extends GuiScreen
      */
     protected void keyTyped(char typedChar, int keyCode) throws IOException
     {
+        if (net.sythix.client.core.Hooks.containerKey(this, typedChar, keyCode))
+        {
+            return;
+        }
+
         if (keyCode == 1 || keyCode == this.mc.gameSettings.keyBindInventory.getKeyCode())
         {
             this.mc.player.closeScreen();

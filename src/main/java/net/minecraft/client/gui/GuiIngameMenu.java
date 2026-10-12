@@ -35,6 +35,9 @@ public class GuiIngameMenu extends GuiScreen
         guibutton.enabled = this.mc.isSingleplayer() && !this.mc.getIntegratedServer().getPublic();
         this.buttonList.add(new GuiButton(5, this.width / 2 - 100, this.height / 4 + 48 + -16, 98, 20, I18n.format("gui.advancements")));
         this.buttonList.add(new GuiButton(6, this.width / 2 + 2, this.height / 4 + 48 + -16, 98, 20, I18n.format("gui.stats")));
+        // Sythix: mods and shaders from the pause menu
+        this.buttonList.add(new GuiButton(20, this.width / 2 - 100, this.height / 4 + 72 + -16, 98, 20, "Mods"));
+        this.buttonList.add(new GuiButton(21, this.width / 2 + 2, this.height / 4 + 72 + -16, 98, 20, "Shaders"));
     }
 
     /**
@@ -44,6 +47,14 @@ public class GuiIngameMenu extends GuiScreen
     {
         switch (button.id)
         {
+            case 20:
+                this.mc.displayGuiScreen(new net.sythix.client.ui.GuiModMenu(this));
+                break;
+
+            case 21:
+                this.mc.displayGuiScreen(new net.sythix.client.shader.GuiShaderPacks(this));
+                break;
+
             case 0:
                 this.mc.displayGuiScreen(new GuiOptions(this, this.mc.gameSettings));
                 break;

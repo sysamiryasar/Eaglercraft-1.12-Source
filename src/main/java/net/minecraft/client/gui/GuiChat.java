@@ -169,6 +169,11 @@ public class GuiChat extends GuiScreen implements ITabCompleter
      */
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException
     {
+        if (net.sythix.client.core.Hooks.chatScreenClick(this.width, this.height, mouseX, mouseY, mouseButton))
+        {
+            return;
+        }
+
         if (mouseButton == 0)
         {
             ITextComponent itextcomponent = this.mc.ingameGUI.getChatGUI().getChatComponent(Mouse.getX(), Mouse.getY());
@@ -233,6 +238,7 @@ public class GuiChat extends GuiScreen implements ITabCompleter
      */
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
+        net.sythix.client.core.Hooks.drawChatTabs(this.width, this.height, mouseX, mouseY);
         drawRect(2, this.height - 14, this.width - 2, this.height - 2, Integer.MIN_VALUE);
         this.inputField.drawTextBox();
         ITextComponent itextcomponent = this.mc.ingameGUI.getChatGUI().getChatComponent(Mouse.getX(), Mouse.getY());

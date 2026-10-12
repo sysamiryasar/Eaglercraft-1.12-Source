@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "sculk_sensor"
+    },
+    "powered=true": {
+      "model": "sculk_sensor"
+    }
+  }
+}

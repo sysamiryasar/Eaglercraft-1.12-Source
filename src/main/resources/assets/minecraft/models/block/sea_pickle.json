@@ -1,0 +1,41 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "blocks/sea_pickle",
+    "p": "blocks/sea_pickle"
+  },
+  "elements": [
+    {
+      "from": [
+        6,
+        0,
+        6
+      ],
+      "to": [
+        10,
+        6,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#p"
+        },
+        "up": {
+          "texture": "#p"
+        },
+        "north": {
+          "texture": "#p"
+        },
+        "south": {
+          "texture": "#p"
+        },
+        "west": {
+          "texture": "#p"
+        },
+        "east": {
+          "texture": "#p"
+        }
+      }
+    }
+  ]
+}

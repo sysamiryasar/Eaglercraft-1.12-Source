@@ -89,6 +89,12 @@ public class ServerAddress
      */
     private static String[] getServerAddress(String p_78863_0_)
     {
+        if (Boolean.getBoolean("sythix.web"))
+        {
+            // browser build: no DNS here; the proxy looks the SRV record up instead
+            return new String[] {p_78863_0_, Integer.toString(25565)};
+        }
+
         try
         {
             String s = "com.sun.jndi.dns.DnsContextFactory";

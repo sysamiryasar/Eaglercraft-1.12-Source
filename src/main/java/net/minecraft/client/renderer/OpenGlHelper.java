@@ -295,6 +295,17 @@ public class OpenGlHelper
 
         ati = s.contains("ati");
 
+        if (GlStateManager.WEB)
+        {
+            // Sythix browser build: gl4es on WebGL cannot look up these extension functions, so the
+            // game draws straight to the screen, without framebuffers, VBOs or post-processing shaders
+            framebufferSupported = false;
+            shadersSupported = false;
+            vboSupported = false;
+            arbVbo = false;
+            logText = logText + "Browser build: framebuffers, VBOs and shaders are off.\n";
+        }
+
         if (ati)
         {
             if (vboSupported)

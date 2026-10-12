@@ -429,6 +429,8 @@ public class ChunkGeneratorHell implements IChunkGenerator
         }
 
         biome.decorate(this.world, this.rand, new BlockPos(i, 0, j));
+        // Sythix: nether gold ore and ancient debris in new chunks
+        net.sythix.modern.ModernWorldGen.populateNether(this.world, i, j);
         BlockFalling.fallInstantly = false;
     }
 

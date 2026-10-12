@@ -181,6 +181,9 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
     public final Queue < FutureTask<? >> futureTaskQueue = Queues. < FutureTask<? >> newArrayDeque();
     private Thread serverThread;
     private long currentTime = getCurrentTimeMillis();
+
+    /** The Sythix browser build (CheerpJ), where every thread shares one CPU thread. */
+    private static final boolean WEB = Boolean.getBoolean("sythix.web");
     private boolean worldIconSet;
 
     public MinecraftServer(File anvilFileIn, Proxy proxyIn, DataFixer dataFixerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
@@ -341,7 +344,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
         int i = 16;
         int j = 4;
         int k = 192;
-        int l = 625;
+        int l = net.minecraft.client.renderer.GlStateManager.WEB ? 81 : 625;
         int i1 = 0;
         this.setUserMessage("menu.generatingTerrain");
         int j1 = 0;
@@ -350,9 +353,12 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
         BlockPos blockpos = worldserver.getSpawnPoint();
         long k1 = getCurrentTimeMillis();
 
-        for (int l1 = -192; l1 <= 192 && this.isServerRunning(); l1 += 16)
+        // Sythix: the browser build prepares only the nearest chunks (the rest load while playing)
+        int spawnRadius = net.minecraft.client.renderer.GlStateManager.WEB ? 64 : 192;
+
+        for (int l1 = -spawnRadius; l1 <= spawnRadius && this.isServerRunning(); l1 += 16)
         {
-            for (int i2 = -192; i2 <= 192 && this.isServerRunning(); i2 += 16)
+            for (int i2 = -spawnRadius; i2 <= spawnRadius && this.isServerRunning(); i2 += 16)
             {
                 long j2 = getCurrentTimeMillis();
 
@@ -556,6 +562,19 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
                     {
                         this.tick();
                         i = 0L;
+                    }
+                    else if (WEB)
+                    {
+                        // Sythix browser build: the server shares one thread with the game window.
+                        // It never catches up with several ticks in a row, and after a tick it rests
+                        // at least as long as the tick took, so drawing always gets half the time.
+                        if (i > 50L)
+                        {
+                            long t = getCurrentTimeMillis();
+                            this.tick();
+                            i = Math.min(i - 50L, 50L);
+                            Thread.sleep(Math.max(1L, getCurrentTimeMillis() - t));
+                        }
                     }
                     else
                     {
@@ -827,6 +846,24 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
     public boolean getAllowNether()
     {
         return true;
+    }
+
+    /** Sythix: waits (up to the given time) until the server thread has finished saving and stopped. */
+    public void waitForServerThreadSythix(long millis)
+    {
+        Thread thread = this.serverThread;
+
+        if (thread != null && thread != Thread.currentThread())
+        {
+            try
+            {
+                thread.join(millis);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public void startServerThread()
