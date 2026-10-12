@@ -346,44 +346,150 @@ public final class ExtrasRenderer
 
         for (double[] b : BURSTS)
         {
-            float life = (float)(time - (long)b[3]) / (float)BURST_MS;
-            float fade = 1.0F - life;
             GlStateManager.pushMatrix();
             GlStateManager.translate((float)b[0], (float)b[1] + 0.05F, (float)b[2]);
             GlStateManager.scale(1.0F, -1.0F, 1.0F);
-            CosmeticShapes.ring(0.0F, 0.4F + life * 3.2F, 0.18F * fade + 0.02F, CosmeticShapes.alpha(0xFFFFD25A, (int)(220 * fade)));
-            CosmeticShapes.ring(0.0F, 0.2F + life * 2.0F, 0.08F, CosmeticShapes.alpha(0xFFFFFFFF, (int)(160 * fade)));
-
-            for (int i = 0; i < 8; ++i)
-            {
-                float a = (float)i / 8.0F * (float)Math.PI * 2.0F;
-                float r = 0.3F + life * 1.6F;
-                CosmeticShapes.line(MathHelper.cos(a) * r, 0.0F, MathHelper.sin(a) * r, MathHelper.cos(a) * r * 1.1F, -(0.6F + life * 2.5F), MathHelper.sin(a) * r * 1.1F, 0.05F, CosmeticShapes.alpha(0xFFFFE08A, (int)(150 * fade)));
-            }
-
+            burst((float)(time - (long)b[3]) / (float)BURST_MS);
             GlStateManager.popMatrix();
         }
 
         for (double[] p : PORTALS)
         {
-            float life = (float)(time - (long)p[3]) / (float)PORTAL_MS;
-            float fade = Math.min(1.0F, (1.0F - life) * 3.0F);
             GlStateManager.pushMatrix();
             GlStateManager.translate((float)p[0], (float)p[1], (float)p[2]);
             GlStateManager.scale(1.0F, -1.0F, 1.0F);
-
-            for (int ring = 0; ring < 4; ++ring)
-            {
-                float k = ((life * 1.5F) + (float)ring * 0.25F) % 1.0F;
-                float radius = 1.3F * (1.0F - k) + 0.3F;
-                CosmeticShapes.ring(-k * 2.1F, radius, 0.06F, CosmeticShapes.alpha(ring % 2 == 0 ? 0xFFB050FF : 0xFF40E0FF, (int)(220 * fade * (1.0F - k * 0.5F))));
-            }
-
-            CosmeticShapes.ring(0.0F, 1.2F, 0.6F * fade, CosmeticShapes.alpha(0xFF7A20E0, (int)(90 * fade)));
+            portal((float)(time - (long)p[3]) / (float)PORTAL_MS);
             GlStateManager.popMatrix();
         }
 
         CosmeticShapes.end();
+    }
+
+    /** The victory burst at a moment of its life (0-1), on the ground at the origin (up is -Y). */
+    private static void burst(float life)
+    {
+        float fade = 1.0F - life;
+        CosmeticShapes.ring(0.0F, 0.4F + life * 3.2F, 0.18F * fade + 0.02F, CosmeticShapes.alpha(0xFFFFD25A, (int)(220 * fade)));
+        CosmeticShapes.ring(0.0F, 0.2F + life * 2.0F, 0.08F, CosmeticShapes.alpha(0xFFFFFFFF, (int)(160 * fade)));
+
+        for (int i = 0; i < 8; ++i)
+        {
+            float a = (float)i / 8.0F * (float)Math.PI * 2.0F;
+            float r = 0.3F + life * 1.6F;
+            CosmeticShapes.line(MathHelper.cos(a) * r, 0.0F, MathHelper.sin(a) * r, MathHelper.cos(a) * r * 1.1F, -(0.6F + life * 2.5F), MathHelper.sin(a) * r * 1.1F, 0.05F, CosmeticShapes.alpha(0xFFFFE08A, (int)(150 * fade)));
+        }
+    }
+
+    /** The spawn portal at a moment of its life (0-1), on the ground at the origin (up is -Y). */
+    private static void portal(float life)
+    {
+        float fade = Math.min(1.0F, (1.0F - life) * 3.0F);
+
+        for (int ring = 0; ring < 4; ++ring)
+        {
+            float k = ((life * 1.5F) + (float)ring * 0.25F) % 1.0F;
+            float radius = 1.3F * (1.0F - k) + 0.3F;
+            CosmeticShapes.ring(-k * 2.1F, radius, 0.06F, CosmeticShapes.alpha(ring % 2 == 0 ? 0xFFB050FF : 0xFF40E0FF, (int)(220 * fade * (1.0F - k * 0.5F))));
+        }
+
+        CosmeticShapes.ring(0.0F, 1.2F, 0.6F * fade, CosmeticShapes.alpha(0xFF7A20E0, (int)(90 * fade)));
+    }
+
+    /**
+     * A world-only extra shown on a model in a menu (model space: neck at 0, feet at 1.5, up is -Y,
+     * front is -Z), looping so the picture keeps moving.
+     */
+    public static void previewEffect(String name, ModelPlayer model, float age, int trailColor)
+    {
+        float feet = 1.48F;
+
+        switch (name)
+        {
+            case "Weapon Trails":
+            {
+                CosmeticShapes.beginAdditive();
+                float head = (age % 24.0F) / 24.0F;
+
+                // a slash from upper right to lower left in front of the body, fading behind its head
+                for (int i = 0; i < 14; ++i)
+                {
+                    float k0 = head - (float)i * 0.045F;
+                    float k1 = k0 - 0.045F;
+
+                    if (k1 < 0.0F)
+                    {
+                        break;
+                    }
+
+                    float[] a = slash(k0);
+                    float[] b = slash(k1);
+                    float fa = 1.0F - (float)i / 14.0F;
+                    float fb = 1.0F - (float)(i + 1) / 14.0F;
+                    CosmeticShapes.quad(new float[] {a[0], a[1] - 0.08F * fa, a[2]}, new float[] {a[0], a[1] + 0.08F * fa, a[2]}, new float[] {b[0], b[1] + 0.08F * fb, b[2]}, new float[] {b[0], b[1] - 0.08F * fb, b[2]}, CosmeticShapes.alpha(trailColor, (int)(230 * fa)), CosmeticShapes.alpha(0xFFFFFFFF, (int)(170 * fa)), CosmeticShapes.alpha(0xFFFFFFFF, (int)(170 * fb)), CosmeticShapes.alpha(trailColor, (int)(230 * fb)));
+                }
+
+                CosmeticShapes.end();
+                break;
+            }
+            case "Footstep Runes":
+                CosmeticShapes.beginAdditive();
+                GlStateManager.translate(0.0F, feet, 0.0F);
+                GlStateManager.rotate(age * 1.2F, 0.0F, 1.0F, 0.0F);
+                rune((int)(age / 40.0F) % 5, 0.6F + 0.4F * MathHelper.sin(age * 0.1F));
+                CosmeticShapes.end();
+                break;
+            case "Victory Burst":
+                CosmeticShapes.beginAdditive();
+                GlStateManager.translate(0.0F, feet, 0.0F);
+                burst((age % 34.0F) / 34.0F);
+                CosmeticShapes.end();
+                break;
+            case "Spawn Entrance":
+                CosmeticShapes.beginAdditive();
+                GlStateManager.translate(0.0F, feet, 0.0F);
+                portal((age % 38.0F) / 38.0F * 0.66F);
+                CosmeticShapes.end();
+                break;
+            case "Afterimage":
+                GlStateManager.pushMatrix();
+                GlStateManager.disableTexture2D();
+                GlStateManager.disableLighting();
+                GlStateManager.enableBlend();
+                GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+                GlStateManager.depthMask(false);
+
+                for (int i = 1; i <= 2; ++i)
+                {
+                    GlStateManager.pushMatrix();
+                    GlStateManager.translate(0.42F * (float)i, 0.0F, 0.12F * (float)i);
+                    GlStateManager.color(0.62F, 0.3F, 1.0F, 0.32F / (float)i);
+                    float s = 0.0625F;
+                    model.bipedHead.render(s);
+                    model.bipedBody.render(s);
+                    model.bipedRightArm.render(s);
+                    model.bipedLeftArm.render(s);
+                    model.bipedRightLeg.render(s);
+                    model.bipedLeftLeg.render(s);
+                    GlStateManager.popMatrix();
+                }
+
+                GlStateManager.depthMask(true);
+                GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+                GlStateManager.disableBlend();
+                GlStateManager.enableLighting();
+                GlStateManager.enableTexture2D();
+                GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+                GlStateManager.popMatrix();
+                break;
+            default:
+        }
+    }
+
+    /** A point on the preview slash, k from 0 (start, upper right) to 1 (end, lower left). */
+    private static float[] slash(float k)
+    {
+        float bulge = MathHelper.sin(k * (float)Math.PI) * 0.25F;
+        return new float[] {-0.7F + 1.35F * k, -0.35F + 1.0F * k, -0.45F - bulge};
     }
 
     private static void prune(List<double[]> list, long life, int timeIndex)

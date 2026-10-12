@@ -39,6 +39,9 @@ public final class PlayerPreview
         public String emblemStyle = "Spin";
         public String emote;
         public long emoteStart;
+        /** A world effect to show around the model in a preview (trails, runes, burst, portal, afterimage). */
+        public String effect;
+        public int trailColor = 0xFFB050FF;
 
         /** What is equipped right now. */
         public static Look current(CosmeticsModule c)
@@ -85,6 +88,8 @@ public final class PlayerPreview
             l.emblemStyle = this.emblemStyle;
             l.emote = this.emote;
             l.emoteStart = this.emoteStart;
+            l.effect = this.effect;
+            l.trailColor = this.trailColor;
             return l;
         }
     }
@@ -93,8 +98,14 @@ public final class PlayerPreview
     {
     }
 
-    /** Draws the player standing with feet near (x, y + 1.9 * scale), turned by yaw degrees. */
+    /** Draws the player with the neck at (x, y), turned by yaw degrees. */
     public static void draw(int x, int y, float scale, float yaw, Look look)
+    {
+        draw(x, y, scale, yaw, 0.0F, look);
+    }
+
+    /** Same, tilted by pitch degrees (positive looks down on the player, so ground effects show). */
+    public static void draw(int x, int y, float scale, float yaw, float pitch, Look look)
     {
         ModelPlayer m = look.slim ? SLIM : CLASSIC;
         ResourceLocation skinTexture = look.skin == null || look.skin.isEmpty() ? null : CosmeticTextures.skin(look.skin);
@@ -116,6 +127,7 @@ public final class PlayerPreview
         // Model space already has +Y pointing down like the screen. The GUI projection is mirrored,
         // so mirror X once to keep face culling and depth correct
         GlStateManager.scale(-scale, scale, scale);
+        GlStateManager.rotate(pitch, 1.0F, 0.0F, 0.0F);
         GlStateManager.rotate(yaw, 0.0F, 1.0F, 0.0F);
         RenderHelper.enableStandardItemLighting();
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -193,6 +205,11 @@ public final class PlayerPreview
         }
 
         LayerSythixCosmetics.drawAll(m, look, age, false);
+
+        if (look.effect != null)
+        {
+            ExtrasRenderer.previewEffect(look.effect, m, age, look.trailColor);
+        }
 
         if (look.emblem)
         {

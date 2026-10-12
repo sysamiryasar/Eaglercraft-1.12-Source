@@ -28,7 +28,7 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 ## Phase 6 highlights
 
 - **Performance:** a benchmark that measures your average FPS and 1% low FPS (results history in *Benchmark Results*), an adaptive render distance that holds a target FPS, dynamic chunk updates and a memory clean-up.
-- **Cosmetics** (the **Wardrobe**: Profile > Wardrobe, or Cosmetics > Wardrobe in the mod menu): 48 Sythix cosmetics with a live 3D preview (hover a card to try it on, click to wear it, click again to take it off). Only you see them.
+- **Cosmetics** (the **Wardrobe**: Profile > Wardrobe, or Cosmetics > Wardrobe in the mod menu): 48 Sythix cosmetics, each shown as a live 3D picture of you wearing it (hover a picture to try it on the big preview, click to wear it, click again to take it off). Only you see them.
   - **Animated capes (01-10):** Void Rift, Galaxy Drift, Cyber Circuit, Inferno, Frostbite, Celestial, Shadow Pulse, Glitchwave, Royal Eclipse, SYTHIX Genesis. Their glowing parts stay bright in the dark. Your own cape PNGs (sythix/capes) still work.
   - **Headwear (11-25):** Void Headband, Cyber Band, Shadow Ninja, Rift Crown, Phantom Ears, Solar Halo, Frost Horns, Infernal Horns, Holo Visor, Arctic Fox, Astral Hat, Pulse Headphones, Champion Laurel, Rift Shards, Overlord Crown.
   - **Wings (26-33):** Void, Celestial, Cyber, Frost, Infernal, Astral, Phantom and Dragon Wings (flap speed and size can be changed).

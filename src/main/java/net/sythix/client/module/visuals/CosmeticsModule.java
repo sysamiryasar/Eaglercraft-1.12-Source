@@ -151,6 +151,11 @@ public class CosmeticsModule extends Module
         return this.auraFirstPerson.isOn();
     }
 
+    public String trailColor()
+    {
+        return this.trailColor.get();
+    }
+
     public boolean companion()
     {
         return this.companion.isOn();

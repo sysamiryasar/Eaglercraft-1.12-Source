@@ -296,9 +296,10 @@ public class GuiCosmetics extends GuiScreen
 
     // ---- drawing -----------------------------------------------------------------------------------
 
+    /** Picture tiles: about 64 pixels wide, as many per row as fit. */
     private int columns()
     {
-        return Math.max(1, this.gridW / 110);
+        return Math.max(2, (this.gridW + 4) / 68);
     }
 
     private int cardW()
@@ -306,12 +307,16 @@ public class GuiCosmetics extends GuiScreen
         return (this.gridW - (this.columns() - 1) * 4) / this.columns();
     }
 
-    private static final int CARD_H = 20;
+    /** Emote tiles are a little taller (they show the whole body). */
+    private int cardH()
+    {
+        return EMOTES.equals(tab) ? this.cardW() * 5 / 4 : this.cardW();
+    }
 
     private int maxScroll()
     {
         int rows = (this.cards().size() + this.columns() - 1) / this.columns();
-        return Math.max(0, rows * (CARD_H + 4) - 4 - this.gridH);
+        return Math.max(0, rows * (this.cardH() + 4) - 4 - this.gridH);
     }
 
     /** Index of the card under the mouse, or -1. */
@@ -323,11 +328,11 @@ public class GuiCosmetics extends GuiScreen
         }
 
         int col = (mouseX - this.gridX) / (this.cardW() + 4);
-        int row = (mouseY - this.gridY + this.scroll) / (CARD_H + 4);
+        int row = (mouseY - this.gridY + this.scroll) / (this.cardH() + 4);
         int inX = (mouseX - this.gridX) % (this.cardW() + 4);
-        int inY = (mouseY - this.gridY + this.scroll) % (CARD_H + 4);
+        int inY = (mouseY - this.gridY + this.scroll) % (this.cardH() + 4);
         int index = row * this.columns() + col;
-        return col < this.columns() && inX < this.cardW() && inY < CARD_H && index < this.cards().size() ? index : -1;
+        return col < this.columns() && inX < this.cardW() && inY < this.cardH() && index < this.cards().size() ? index : -1;
     }
 
     /** {x, y, width} of tab i: a row under the title, as wide as the text needs. */
@@ -430,21 +435,23 @@ public class GuiCosmetics extends GuiScreen
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
-    /** Draws the cards and returns the hovered one's name. */
+    /** Draws the picture tiles and returns the hovered one's name. */
     private String drawCards(int mouseX, int mouseY)
     {
         List<String> cards = this.cards();
         int hoveredIndex = this.cardAt(mouseX, mouseY);
         int cw = this.cardW();
+        int ch = this.cardH();
         this.scroll = Math.max(0, Math.min(this.scroll, this.maxScroll()));
-        SythixTheme.beginClip(this.gridX, this.gridY, this.gridX + this.gridW, this.gridY + this.gridH);
 
         for (int i = 0; i < cards.size(); ++i)
         {
             int cx = this.gridX + (i % this.columns()) * (cw + 4);
-            int cy = this.gridY + (i / this.columns()) * (CARD_H + 4) - this.scroll;
+            int cy = this.gridY + (i / this.columns()) * (ch + 4) - this.scroll;
+            int top = Math.max(cy, this.gridY);
+            int bottom = Math.min(cy + ch, this.gridY + this.gridH);
 
-            if (cy + CARD_H < this.gridY || cy > this.gridY + this.gridH)
+            if (bottom <= top)
             {
                 continue;
             }
@@ -452,35 +459,135 @@ public class GuiCosmetics extends GuiScreen
             String name = cards.get(i);
             boolean on = this.equipped(name);
             boolean hover = i == hoveredIndex;
-            SythixTheme.drawRounded((float)cx, (float)cy, (float)(cx + cw), (float)(cy + CARD_H), 4.0F, hover ? 0x34FFFFFF : 0x1CFFFFFF);
+            SythixTheme.beginClip(cx, top, cx + cw, bottom);
+            SythixTheme.drawRounded((float)cx, (float)cy, (float)(cx + cw), (float)(cy + ch), 5.0F, hover ? 0x40FFFFFF : 0x22FFFFFF);
 
-            if (on)
+            try
             {
-                SythixTheme.drawRoundedOutline((float)cx, (float)cy, (float)(cx + cw), (float)(cy + CARD_H), 4.0F, 1.0F, SythixTheme.RED);
+                this.drawThumbnail(name, cx, cy, cw, ch, hover);
+            }
+            catch (Throwable t)
+            {
+                net.sythix.client.core.ModuleErrors.report(cosmetics(), "wardrobe picture", t);
             }
 
             CosmeticCatalog.Item item = this.item(name);
-            int textX = cx + 6;
 
             if (item != null)
             {
                 String number = String.format("%02d", item.number);
-                this.fontRenderer.drawString(number, (float)textX, (float)(cy + 6), on ? 0xFFFF7A3D : SythixTheme.TEXT_DISABLED, false);
-                textX += this.fontRenderer.getStringWidth("00") + 5;
+                SythixTheme.drawRounded((float)(cx + 2), (float)(cy + 2), (float)(cx + 6 + this.fontRenderer.getStringWidth(number)), (float)(cy + 12), 3.0F, 0xA0000000);
+                this.fontRenderer.drawString(number, (float)(cx + 4), (float)(cy + 3), on ? 0xFFFF7A3D : 0xFFB8B8C0, false);
             }
-
-            int room = cx + cw - textX - (on ? 10 : 4);
-            this.fontRenderer.drawString(this.fontRenderer.trimStringToWidth(name, room), (float)textX, (float)(cy + 6), hover || on ? 0xFFFFFFFF : SythixTheme.TEXT, false);
 
             if (on)
             {
-                // a small dot: worn (or on the emote wheel)
-                SythixTheme.drawRounded((float)(cx + cw - 9), (float)(cy + 8), (float)(cx + cw - 5), (float)(cy + 12), 2.0F, 0xFFFF7A3D);
+                SythixTheme.drawRoundedOutline((float)cx, (float)cy, (float)(cx + cw), (float)(cy + ch), 5.0F, 1.0F, 0xFFFF7A3D);
+                SythixTheme.drawRounded((float)(cx + cw - 9), (float)(cy + 4), (float)(cx + cw - 4), (float)(cy + 9), 2.5F, 0xFFFF7A3D);
             }
+            else if (hover)
+            {
+                SythixTheme.drawRoundedOutline((float)cx, (float)cy, (float)(cx + cw), (float)(cy + ch), 5.0F, 1.0F, 0x80FFFFFF);
+            }
+
+            SythixTheme.endClip();
         }
 
-        SythixTheme.endClip();
         return hoveredIndex >= 0 ? cards.get(hoveredIndex) : null;
+    }
+
+    /** When the wardrobe opened: emote pictures play from here, all in step. */
+    private final long opened = Minecraft.getSystemTime();
+
+    /**
+     * The picture on a tile: you wearing just that cosmetic (or doing that emote), with the camera
+     * framed for its kind: capes and wings from behind, headwear close on the head, auras and ground
+     * effects from a little above.
+     */
+    private void drawThumbnail(String name, int x, int y, int w, int h, boolean hover)
+    {
+        PlayerPreview.Look current = PlayerPreview.Look.current(cosmetics());
+        PlayerPreview.Look look = new PlayerPreview.Look();
+        look.skin = current.skin;
+        look.slim = current.slim;
+        look.showCape = false;
+        look.emblemText = current.emblemText;
+        look.emblemColor = current.emblemColor;
+        look.emblemStyle = current.emblemStyle;
+        float cx = (float)x + (float)w / 2.0F;
+        float cy = (float)y + (float)h / 2.0F;
+        // turn slowly while hovered
+        float turn = hover ? (float)((Minecraft.getSystemTime() - this.opened) % 7200L) / 20.0F : 0.0F;
+        float yaw = 200.0F + turn;
+        float pitch = 0.0F;
+        float scale;
+        float center;
+
+        switch (tab)
+        {
+            case CosmeticCatalog.CAPES:
+                look.cape = this.item(name).capeId();
+                look.showCape = true;
+                yaw = 20.0F + turn;
+                scale = (float)h / 1.55F;
+                center = 0.55F;
+                break;
+            case CosmeticCatalog.HEADWEAR:
+                look.headwear = name;
+                // the model height at the middle of the tile: a little above the eyes
+                scale = (float)h / 1.1F;
+                center = -0.38F;
+                break;
+            case CosmeticCatalog.WINGS:
+                look.wings = name;
+                yaw = 20.0F + turn;
+                scale = Math.min((float)w / 2.35F, (float)h / 1.9F);
+                center = 0.35F;
+                break;
+            case CosmeticCatalog.AURAS:
+                look.aura = name;
+                pitch = 24.0F;
+                scale = Math.min((float)w / 2.3F, (float)h / 2.6F);
+                center = 0.6F;
+                break;
+            case EMOTES:
+                look.emote = name;
+                look.emoteStart = this.opened;
+                scale = (float)h / 2.6F;
+                center = 0.48F;
+                break;
+            default:
+                // extras
+                scale = Math.min((float)w / 2.3F, (float)h / 2.6F);
+                center = 0.55F;
+
+                if ("Rift Companion".equals(name))
+                {
+                    look.companion = true;
+                    scale = (float)h / 1.5F;
+                    center = 0.05F;
+                    yaw = 220.0F + turn;
+                }
+                else if ("Signature Emblem".equals(name))
+                {
+                    look.emblem = true;
+                    scale = (float)h / 2.3F;
+                    center = -0.35F;
+                }
+                else
+                {
+                    look.effect = name;
+                    look.trailColor = ExtrasRenderer.trailColor(cosmetics() == null ? "Purple" : cosmetics().trailColor());
+                    pitch = "Weapon Trails".equals(name) || "Afterimage".equals(name) ? 0.0F : 22.0F;
+
+                    if ("Afterimage".equals(name))
+                    {
+                        yaw = 160.0F + turn;
+                    }
+                }
+        }
+
+        PlayerPreview.draw((int)cx, (int)(cy - center * scale), scale, yaw, pitch, look);
     }
 
     /** The emote wheel's eight slots under the emote cards. */
