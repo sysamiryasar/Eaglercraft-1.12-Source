@@ -65,8 +65,16 @@ What is still not possible, and why:
 - **New biomes, structures and the deep (y < 0) world:** 1.12 worlds have a fixed height of 0-255 and a fixed biome list; the new blocks are added to the existing biomes instead. Waterlogging (blocks inside water) also does not exist in 1.12.
 - **Music disc sounds and 1.21 mob sounds** are not included (they are Mojang's audio). Discs play once a converted 1.21 pack provides the sounds; mobs use similar 1.12 sounds.
 - **Sound in videos:** the game's audio output cannot be captured from inside the game; record with OBS if you need sound.
-- **Browser:** this source builds the desktop client only. A web build is part of Phase 7.
 - **Update Manager** and **Plugin Framework** are off by default and only do something if you set them up.
+
+## Browser version
+
+`./CompileWebRuntime.sh` builds a browser version into `build/web` (about 55 MB). It runs the same client with [CheerpJ](https://cheerpj.com), a Java virtual machine in WebAssembly, plus LWJGL and gl4es compiled to WebAssembly (from Leaning Technologies' Browsercraft). Upload the folder to any web host (GitHub Pages, Netlify, your own server) or test it locally with `./CompileWebRuntime.sh serve` and open http://localhost:8080.
+
+- Worlds and settings are saved in the browser (CheerpJ's `/files` storage).
+- The browser version has no sound, no shaders, no blur effects (WebGL through gl4es has no framebuffers here) and runs slower than the desktop version; the first start downloads about 30 MB.
+- Joining normal Minecraft servers from a browser needs a WebSocket proxy (browsers cannot open game connections); singleplayer worlds are created and run inside the browser.
+- CheerpJ is free for personal and open-source projects; other companies need a license from Leaning Technologies.
 
 ## Files
 
