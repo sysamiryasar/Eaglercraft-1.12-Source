@@ -143,7 +143,9 @@ public class NetworkSystem
                     NetworkSystem.this.networkManagers.add(networkmanager);
                     p_initChannel_1_.pipeline().addLast("packet_handler", networkmanager);
                 }
-            }).group(SERVER_NIO_EVENTLOOP.getValue()).localAddress(LocalAddress.ANY)).bind().syncUninterruptibly();
+            }).group(net.minecraft.client.renderer.GlStateManager.WEB ? SERVER_LOCAL_EVENTLOOP.getValue() : SERVER_NIO_EVENTLOOP.getValue()).localAddress(LocalAddress.ANY)).bind().syncUninterruptibly();
+            // Sythix: the browser build (CheerpJ) has no NIO selectors; the in-memory connection to the
+            // singleplayer server works with netty's local event loops
             this.endpoints.add(channelfuture);
         }
 

@@ -341,7 +341,7 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
         int i = 16;
         int j = 4;
         int k = 192;
-        int l = 625;
+        int l = net.minecraft.client.renderer.GlStateManager.WEB ? 81 : 625;
         int i1 = 0;
         this.setUserMessage("menu.generatingTerrain");
         int j1 = 0;
@@ -350,9 +350,12 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
         BlockPos blockpos = worldserver.getSpawnPoint();
         long k1 = getCurrentTimeMillis();
 
-        for (int l1 = -192; l1 <= 192 && this.isServerRunning(); l1 += 16)
+        // Sythix: the browser build prepares only the nearest chunks (the rest load while playing)
+        int spawnRadius = net.minecraft.client.renderer.GlStateManager.WEB ? 64 : 192;
+
+        for (int l1 = -spawnRadius; l1 <= spawnRadius && this.isServerRunning(); l1 += 16)
         {
-            for (int i2 = -192; i2 <= 192 && this.isServerRunning(); i2 += 16)
+            for (int i2 = -spawnRadius; i2 <= spawnRadius && this.isServerRunning(); i2 += 16)
             {
                 long j2 = getCurrentTimeMillis();
 
