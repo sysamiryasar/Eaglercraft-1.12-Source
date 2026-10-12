@@ -164,6 +164,53 @@ public final class SelfTest
             return;
         }
 
+        if ("mp".equals(System.getProperty("sythix.selftest")))
+        {
+            // Joins a normal vanilla 1.12 server on localhost:25565 (started separately)
+            add("join server", 1, () -> mc().displayGuiScreen(new net.minecraft.client.multiplayer.GuiConnecting(new net.minecraft.client.gui.GuiMainMenu(), mc(), new net.minecraft.client.multiplayer.ServerData("Test", "localhost:25565", false))));
+            add("wait for server world", 1, SelfTest::waitForWorld);
+            add("play a little", 200, () -> {
+                mc().displayGuiScreen(null);
+                mc().player.sendChatMessage("Hello from Sythix Client");
+            });
+            add("check connection", 1, () -> {
+                boolean ok = mc().world != null && mc().player != null && !mc().isSingleplayer() && mc().getConnection() != null && mc().getConnection().getNetworkManager().isChannelOpen();
+
+                if (ok)
+                {
+                    pass("joined a vanilla 1.12 server and stayed connected (" + mc().getConnection().getPlayerInfoMap().size() + " player(s), " + mc().world.loadedEntityList.size() + " entities loaded)");
+                }
+                else
+                {
+                    fail("multiplayer", new IllegalStateException("not connected"));
+                }
+            });
+            add("screenshot multiplayer", 1, () -> shot("mp-world"));
+            add("walk forward", 40, () -> net.minecraft.client.settings.KeyBinding.setKeyBindState(mc().gameSettings.keyBindForward.getKeyCode(), true));
+            add("stop walking", 20, () -> net.minecraft.client.settings.KeyBinding.setKeyBindState(mc().gameSettings.keyBindForward.getKeyCode(), false));
+            show("mp-tab-list", () -> new net.minecraft.client.gui.GuiChat("/"));
+            show("mp-mod-menu", () -> new GuiModMenu(null));
+            show("mp-pause", () -> new net.minecraft.client.gui.GuiIngameMenu());
+            add("still connected", 1, () -> {
+                if (mc().world != null && mc().getConnection() != null && mc().getConnection().getNetworkManager().isChannelOpen())
+                {
+                    pass("still connected after walking, chat and menus (no kick)");
+                }
+                else
+                {
+                    fail("multiplayer", new IllegalStateException("disconnected: " + mc().currentScreen));
+                }
+            });
+            add("disconnect", 40, () -> {
+                mc().world.sendQuittingDisconnectingPacket();
+                mc().loadWorld(null);
+                mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+            });
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("ui".equals(System.getProperty("sythix.selftest")))
         {
             add("let the menu settle", 40, () -> mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu()));

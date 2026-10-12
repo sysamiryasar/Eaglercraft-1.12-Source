@@ -338,6 +338,9 @@ public final class SmoothFont
     /** Off, Menus (any screen open) or Everywhere (also the in-game HUD). Set by Interface Theme. */
     public static String mode = "Menus";
 
+    /** True while the open menu draws itself (set by EntityRenderer). */
+    public static volatile boolean drawingScreen;
+
     /** Whether Minecraft's main font should draw with the smooth font right now. */
     public static boolean replacesMinecraftFont()
     {
@@ -351,7 +354,8 @@ public final class SmoothFont
             return true;
         }
 
+        // Menus: only while a menu draws itself (not the HUD under it), and everywhere outside a world
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
-        return mc.currentScreen != null || mc.world == null;
+        return drawingScreen || mc.world == null;
     }
 }
