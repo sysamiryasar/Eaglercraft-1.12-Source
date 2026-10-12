@@ -710,10 +710,29 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.metadataSerializer_.registerMetadataSectionType(new LanguageMetadataSectionSerializer(), LanguageMetadataSection.class);
     }
 
+    /** Sythix browser build: the AWT window the game draws into (CheerpJ shows AWT windows in the page). */
+    private java.awt.Frame webFrame;
+
     private void createDisplay() throws LWJGLException
     {
         Display.setResizable(true);
         Display.setTitle(SythixClient.getWindowTitle());
+
+        if (GlStateManager.WEB)
+        {
+            // Like Minecraft did as an applet: an AWT frame filling the page with a canvas, and the
+            // LWJGL display drawn inside that canvas
+            this.webFrame = new java.awt.Frame(SythixClient.getWindowTitle());
+            this.webFrame.setUndecorated(true);
+            java.awt.Canvas canvas = new java.awt.Canvas();
+            canvas.setBackground(java.awt.Color.BLACK);
+            this.webFrame.setLayout(new java.awt.BorderLayout());
+            this.webFrame.add(canvas, java.awt.BorderLayout.CENTER);
+            this.webFrame.setSize(this.displayWidth, this.displayHeight);
+            this.webFrame.setVisible(true);
+            Display.setParent(canvas);
+            webStep("display parented to an AWT canvas " + canvas.getWidth() + "x" + canvas.getHeight());
+        }
 
         try
         {
@@ -1194,8 +1213,15 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     /**
      * Called repeatedly from run()
      */
+    private int webFrames;
+
     private void runGameLoop() throws IOException
     {
+        if (GlStateManager.WEB && this.webFrames < 400 && (++this.webFrames <= 3 || this.webFrames % 100 == 0))
+        {
+            webStep("frame " + this.webFrames);
+        }
+
         long i = System.nanoTime();
         this.mcProfiler.startSection("root");
 
