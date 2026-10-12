@@ -179,14 +179,8 @@ public class GuiModMenu extends GuiScreen
 
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
-        if (this.mc.world == null)
-        {
-            SythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, 0.45F);
-        }
-        else
-        {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, 0x900B0B0E);
-        }
+        // blurred panorama in the menus, the blurred game world when playing
+        SythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, this.mc.world == null ? 0.45F : 0.35F);
 
         float appear = SythixTheme.reducedMotion ? 1.0F : Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 180.0F);
         GlStateManager.pushMatrix();
@@ -196,13 +190,8 @@ public class GuiModMenu extends GuiScreen
         GlStateManager.translate((float)(-this.width) / 2.0F, (float)(-this.height) / 2.0F, 0.0F);
 
         // Window
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.CHARCOAL, (int)(0xF0 * SythixTheme.panelOpacity)));
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + SIDEBAR), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.BLACK, (int)(0xC0 * SythixTheme.panelOpacity)));
-
-        if (SythixTheme.borders)
-        {
-            SythixTheme.drawOutline((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.BORDER);
-        }
+        SythixTheme.drawGlass((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), 8.0F, 1.0F);
+        SythixTheme.drawRounded((float)this.px + 3, (float)this.py + 3, (float)(this.px + SIDEBAR - 2), (float)(this.py + this.ph - 3), 6.0F, SythixTheme.withAlpha(0xFF000000, (int)(0x50 * SythixTheme.panelOpacity)));
 
         this.drawSidebar(mouseX, mouseY);
 
@@ -219,13 +208,28 @@ public class GuiModMenu extends GuiScreen
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
+    /** A pill-shaped on/off switch, 18 x 9. */
+    static void drawSwitch(float x, float y, boolean on)
+    {
+        if (on)
+        {
+            SythixTheme.drawRounded(x, y, x + 18.0F, y + 9.0F, 4.5F, SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.3F));
+        }
+        else
+        {
+            SythixTheme.drawRounded(x, y, x + 18.0F, y + 9.0F, 4.5F, 0xFF34303A);
+        }
+
+        float k = on ? x + 10.5F : x + 1.5F;
+        SythixTheme.drawRounded(k, y + 1.5F, k + 6.0F, y + 7.5F, 3.0F, 0xFFF7F5FA);
+    }
+
     private void drawSidebar(int mouseX, int mouseY)
     {
         SythixTheme.drawTexture(SythixTheme.LOGO, (float)(this.px + 4), (float)(this.py + 2), 22.0F, 22.0F, 1.0F);
-        this.fontRenderer.drawString(SythixClient.NAME, (float)(this.px + 26), (float)(this.py + 6), SythixTheme.RED, true);
-        this.fontRenderer.drawString("Mods", (float)(this.px + 28 + this.fontRenderer.getStringWidth(SythixClient.NAME)), (float)(this.py + 6), SythixTheme.TEXT, true);
-        this.fontRenderer.drawString(SythixClient.get().getModuleManager().getModules().size() + " modules", (float)(this.px + 26), (float)(this.py + 15), SythixTheme.TEXT_MUTED, false);
-        SythixTheme.drawAccentLine((float)this.px, (float)(this.py + TOP - 1), (float)(this.px + SIDEBAR), 1.0F);
+        net.sythix.client.ui.font.SmoothFont.BOLD.draw(SythixClient.NAME, (float)(this.px + 27), (float)(this.py + 5), 1.0F, 0xFFFFFFFF);
+        net.sythix.client.ui.font.SmoothFont.REGULAR.draw(SythixClient.get().getModuleManager().getModules().size() + " mods", (float)(this.px + 27), (float)(this.py + 15), 0.75F, SythixTheme.TEXT_MUTED);
+        SythixTheme.drawAccentGradient((float)this.px + 8, (float)(this.py + TOP - 1), (float)(this.px + SIDEBAR - 8), (float)(this.py + TOP - 0.5F), 0.9F);
         int y = this.py + TOP + 3;
         int rowH = Math.max(11, Math.min(15, (this.ph - TOP - 46) / this.tabs().size()));
 
@@ -236,16 +240,16 @@ public class GuiModMenu extends GuiScreen
 
             if (selected)
             {
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + SIDEBAR), (float)(y + rowH), 0x30D81820);
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + 2), (float)(y + rowH), SythixTheme.RED);
+                SythixTheme.drawRounded((float)this.px + 5, (float)y + 1, (float)(this.px + SIDEBAR - 4), (float)(y + rowH - 1), 4.0F, SythixTheme.withAlpha(SythixTheme.RED, 0x48));
+                SythixTheme.drawRounded((float)this.px + 6, (float)y + 3, (float)this.px + 7.5F, (float)(y + rowH - 3), 0.75F, SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.4F));
             }
             else if (hovered)
             {
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + SIDEBAR), (float)(y + rowH), 0x18FFFFFF);
+                SythixTheme.drawRounded((float)this.px + 5, (float)y + 1, (float)(this.px + SIDEBAR - 4), (float)(y + rowH - 1), 4.0F, 0x14FFFFFF);
             }
 
             String label = this.fontRenderer.trimStringToWidth(tab, SIDEBAR - 12);
-            this.fontRenderer.drawString(label, (float)(this.px + 7), (float)(y + (rowH - 8) / 2), selected ? SythixTheme.TEXT : SythixTheme.TEXT_MUTED, false);
+            this.fontRenderer.drawString(label, (float)(this.px + 11), (float)(y + (rowH - 8) / 2), selected ? 0xFFFFFFFF : SythixTheme.TEXT_MUTED, false);
             y += rowH;
         }
 
@@ -267,8 +271,8 @@ public class GuiModMenu extends GuiScreen
         // Search bar
         int sx = this.px + SIDEBAR + 6;
         int sw = this.pw - SIDEBAR - 12;
-        SythixTheme.drawRect((float)sx, (float)(this.py + 5), (float)(sx + sw), (float)(this.py + 21), 0xFF0F0F13);
-        SythixTheme.drawOutline((float)sx, (float)(this.py + 5), (float)(sx + sw), (float)(this.py + 21), this.search.isFocused() ? SythixTheme.RED : SythixTheme.BORDER);
+        SythixTheme.drawRounded((float)sx, (float)(this.py + 5), (float)(sx + sw), (float)(this.py + 21), 8.0F, 0x90000000);
+        SythixTheme.drawRoundedOutline((float)sx, (float)(this.py + 5), (float)(sx + sw), (float)(this.py + 21), 8.0F, 0.6F, this.search.isFocused() ? SythixTheme.withAlpha(SythixTheme.RED, 0xD0) : 0x1CFFFFFF);
         this.fontRenderer.drawString("?", (float)(sx + 5), (float)(this.py + 9), SythixTheme.TEXT_MUTED, false);
 
         if (this.search.getText().isEmpty())
@@ -316,22 +320,18 @@ public class GuiModMenu extends GuiScreen
     {
         boolean inGrid = mouseY >= this.gridTop() && mouseY < this.gridBottom();
         boolean hovered = inGrid && mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + CARD_HEIGHT;
-        SythixTheme.drawRect((float)x, (float)y, (float)(x + w), (float)(y + CARD_HEIGHT), hovered ? 0xFF24242C : 0xFF1C1C22);
+        SythixTheme.drawRounded((float)x, (float)y, (float)(x + w), (float)(y + CARD_HEIGHT), 6.0F, hovered ? 0x1FFFFFFF : 0x0CFFFFFF);
+        SythixTheme.drawRounded((float)x, (float)y, (float)(x + w), (float)(y + CARD_HEIGHT), 6.0F, hovered ? 0x60141218 : 0x700C0B10);
 
         if (SythixTheme.borders)
         {
-            SythixTheme.drawOutline((float)x, (float)y, (float)(x + w), (float)(y + CARD_HEIGHT), module.isEnabled() ? SythixTheme.withAlpha(SythixTheme.RED, 0xB0) : SythixTheme.BORDER);
-        }
-
-        if (module.isEnabled())
-        {
-            SythixTheme.drawGradientH((float)x, (float)(y + CARD_HEIGHT - 2), (float)(x + w), (float)(y + CARD_HEIGHT - 1), SythixTheme.RED, SythixTheme.BLUE);
+            SythixTheme.drawRoundedOutline((float)x, (float)y, (float)(x + w), (float)(y + CARD_HEIGHT), 6.0F, 0.6F, module.isEnabled() ? SythixTheme.withAlpha(SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.25F), 0x90) : 0x18FFFFFF);
         }
 
         String name = this.fontRenderer.trimStringToWidth(module.getName(), w - 34);
         this.fontRenderer.drawString(name, (float)(x + 5), (float)(y + 5), module.isEnabled() ? 0xFFFFFFFF : SythixTheme.TEXT, false);
         this.fontRenderer.drawString(this.fontRenderer.trimStringToWidth(module.getDescription(), w - 10), (float)(x + 5), (float)(y + 16), SythixTheme.TEXT_MUTED, false);
-        this.fontRenderer.drawString(module.getCategory().getDisplayName(), (float)(x + 5), (float)(y + 28), SythixTheme.withAlpha(SythixTheme.LIGHT_BLUE, 0xC0), false);
+        this.fontRenderer.drawString(module.getCategory().getDisplayName(), (float)(x + 5), (float)(y + 28), SythixTheme.withAlpha(SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.6F), 0xD0), false);
 
         // Toggle switch (top right), or "Core" label
         int tx = x + w - 23;
@@ -342,9 +342,7 @@ public class GuiModMenu extends GuiScreen
         }
         else
         {
-            SythixTheme.drawRect((float)tx, (float)(y + 4), (float)(tx + 18), (float)(y + 13), module.isEnabled() ? SythixTheme.RED : 0xFF3A3A44);
-            float knob = (float)tx + (module.isEnabled() ? 10.0F : 1.0F);
-            SythixTheme.drawRect(knob, (float)(y + 5), knob + 7.0F, (float)(y + 12), 0xFFF0F0F4);
+            drawSwitch((float)tx, (float)(y + 4), module.isEnabled());
         }
 
         // Favourite star and settings gear (bottom right)
@@ -367,9 +365,7 @@ public class GuiModMenu extends GuiScreen
         // Enable switch
         if (!module.isCore())
         {
-            SythixTheme.drawRect((float)(rx - 18), (float)(this.py + 9), (float)rx, (float)(this.py + 18), module.isEnabled() ? SythixTheme.RED : 0xFF3A3A44);
-            float knob = (float)(rx - 18) + (module.isEnabled() ? 10.0F : 1.0F);
-            SythixTheme.drawRect(knob, (float)(this.py + 10), knob + 7.0F, (float)(this.py + 17), 0xFFF0F0F4);
+            drawSwitch((float)(rx - 18), (float)(this.py + 9), module.isEnabled());
         }
 
         // Header buttons: Reset, Open (when the module has its own screen), Favourite

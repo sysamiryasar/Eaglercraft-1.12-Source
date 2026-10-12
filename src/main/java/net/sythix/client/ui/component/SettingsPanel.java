@@ -209,7 +209,7 @@ public class SettingsPanel
                 if (hovered)
                 {
                     this.hoveredSetting = setting;
-                    SythixTheme.drawRect((float)this.x, (float)rowY, (float)(this.x + this.width), (float)(rowY + h), 0x18FFFFFF);
+                    SythixTheme.drawRounded((float)this.x, (float)rowY, (float)(this.x + this.width), (float)(rowY + h), 4.0F, 0x12FFFFFF);
                 }
 
                 this.drawRow(setting, rowY, mouseX, mouseY, seconds, font);
@@ -260,9 +260,7 @@ public class SettingsPanel
             float trackRight = (float)right;
             float trackY = (float)(rowY + 16);
             float filled = trackLeft + (trackRight - trackLeft) * (float)number.getPercent();
-            SythixTheme.drawRect(trackLeft, trackY, trackRight, trackY + 3.0F, 0xFF2A2A33);
-            SythixTheme.drawGradientH(trackLeft, trackY, filled, trackY + 3.0F, SythixTheme.RED, SythixTheme.BLUE);
-            SythixTheme.drawRect(filled - 2.0F, trackY - 2.0F, filled + 2.0F, trackY + 5.0F, 0xFFFFFFFF);
+            slider(trackLeft, trackRight, trackY, filled);
         }
         else if (setting instanceof GameOptionSetting)
         {
@@ -274,9 +272,7 @@ public class SettingsPanel
                 font.drawString(value, (float)(right - font.getStringWidth(value)), (float)(rowY + 4), SythixTheme.TEXT_MUTED, false);
                 float trackY = (float)(rowY + 16);
                 float filled = (float)left + (float)(right - left) * (float)option.getPercent();
-                SythixTheme.drawRect((float)left, trackY, (float)right, trackY + 3.0F, 0xFF2A2A33);
-                SythixTheme.drawGradientH((float)left, trackY, filled, trackY + 3.0F, SythixTheme.RED, SythixTheme.BLUE);
-                SythixTheme.drawRect(filled - 2.0F, trackY - 2.0F, filled + 2.0F, trackY + 5.0F, 0xFFFFFFFF);
+                slider((float)left, (float)right, trackY, filled);
             }
             else
             {
@@ -289,8 +285,7 @@ public class SettingsPanel
             String text = ((ButtonSetting)setting).getButtonText();
             int bw = font.getStringWidth(text) + 10;
             boolean hover = mouseX >= right - bw && mouseX < right && mouseY >= rowY + 2 && mouseY < rowY + 14;
-            SythixTheme.drawRect((float)(right - bw), (float)(rowY + 2), (float)right, (float)(rowY + 14), hover ? 0xFF30303A : 0xFF24242C);
-            SythixTheme.drawOutline((float)(right - bw), (float)(rowY + 2), (float)right, (float)(rowY + 14), hover ? SythixTheme.RED : SythixTheme.BORDER);
+            SythixTheme.drawButton((float)(right - bw), (float)(rowY + 2), (float)bw, 12.0F, true, hover ? 1.0F : 0.0F);
             font.drawString(text, (float)(right - bw + 5), (float)(rowY + 4), SythixTheme.TEXT, false);
         }
         else if (setting instanceof InfoSetting)
@@ -321,8 +316,8 @@ public class SettingsPanel
             boolean editing = text == this.editingText;
             float bx = (float)left;
             float by = (float)(rowY + 14);
-            SythixTheme.drawRect(bx, by, (float)right, by + 12.0F, 0xFF0F0F13);
-            SythixTheme.drawOutline(bx, by, (float)right, by + 12.0F, editing ? SythixTheme.RED : SythixTheme.BORDER);
+            SythixTheme.drawRounded(bx, by, (float)right, by + 12.0F, 4.0F, 0x90000000);
+            SythixTheme.drawRoundedOutline(bx, by, (float)right, by + 12.0F, 4.0F, 0.6F, editing ? SythixTheme.withAlpha(SythixTheme.RED, 0xD0) : 0x1CFFFFFF);
             String value = text.get();
             String shown = font.trimStringToWidth(value, right - left - 8, true);
             String caret = editing && (Minecraft.getSystemTime() / 500L) % 2L == 0L ? "_" : "";
@@ -350,9 +345,22 @@ public class SettingsPanel
         float anim = this.switchAnimations.get(index).floatValue();
         anim = anim < 0.0F ? target : SythixTheme.approach(anim, target, 8.0F, seconds);
         this.switchAnimations.set(index, Float.valueOf(anim));
-        SythixTheme.drawRect((float)sx, (float)sy, (float)(sx + 18), (float)(sy + 9), SythixTheme.lerpColor(0xFF3A3A44, SythixTheme.RED, anim));
-        float knobX = (float)sx + 1.0F + anim * 9.0F;
-        SythixTheme.drawRect(knobX, (float)(sy + 1), knobX + 7.0F, (float)(sy + 8), 0xFFF0F0F4);
+        SythixTheme.drawRounded((float)sx, (float)sy, (float)(sx + 18), (float)(sy + 9), 4.5F, SythixTheme.lerpColor(0xFF34303A, SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.3F), anim));
+        float knobX = (float)sx + 1.5F + anim * 9.0F;
+        SythixTheme.drawRounded(knobX, (float)sy + 1.5F, knobX + 6.0F, (float)sy + 7.5F, 3.0F, 0xFFF7F5FA);
+    }
+
+    /** A rounded slider track filled with the accent gradient, with a round knob. */
+    private static void slider(float left, float right, float y, float filled)
+    {
+        SythixTheme.drawRounded(left, y, right, y + 3.0F, 1.5F, 0xFF2A2730);
+
+        if (filled > left + 1.0F)
+        {
+            SythixTheme.drawRounded(left, y, filled, y + 3.0F, 1.5F, SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.35F));
+        }
+
+        SythixTheme.drawRounded(filled - 3.0F, y - 1.5F, filled + 3.0F, y + 4.5F, 3.0F, 0xFFFFFFFF);
     }
 
     // Colour picker layout, relative to the top of the picker area

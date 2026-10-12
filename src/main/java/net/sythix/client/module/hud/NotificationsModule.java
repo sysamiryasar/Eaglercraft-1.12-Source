@@ -95,24 +95,47 @@ public class NotificationsModule extends Module
         int y = bottom ? res.getScaledHeight() - 6 : 6;
         long now = Minecraft.getSystemTime();
 
+        net.sythix.client.ui.font.SmoothFont title = net.sythix.client.ui.font.SmoothFont.BOLD;
+        net.sythix.client.ui.font.SmoothFont body = net.sythix.client.ui.font.SmoothFont.REGULAR;
+
         for (int i = toasts.size() - 1; i >= 0; --i)
         {
             Notifications.Toast toast = toasts.get(i);
-            int w = Math.max(font.getStringWidth(toast.title), font.getStringWidth(toast.message)) + 14;
-            w = Math.min(w, res.getScaledWidth() / 2);
-            int h = 24;
+            float tw = Math.max(title.width(toast.title, 0.95F), body.width(toast.message, 0.85F));
+            int w = (int)Math.min(tw + 36.0F, res.getScaledWidth() / 2.0F);
+            int h = 28;
             long age = now - toast.created;
-            float slide = SythixTheme.reducedMotion ? 1.0F : Math.min(1.0F, Math.min((float)age / 200.0F, (float)(life - age) / 200.0F));
+            float slide = SythixTheme.reducedMotion ? 1.0F : Math.min(1.0F, Math.min((float)age / 220.0F, (float)(life - age) / 220.0F));
+            slide = 1.0F - (1.0F - slide) * (1.0F - slide);
             int offset = (int)((1.0F - slide) * (float)(w + 8));
             int x = right ? res.getScaledWidth() - 6 - w + offset : 6 - offset;
             int top = bottom ? y - h : y;
-            SythixTheme.drawRect((float)x, (float)top, (float)(x + w), (float)(top + h), 0xE016161B);
-            SythixTheme.drawRect((float)x, (float)top, (float)(x + 2), (float)(top + h), color(toast.kind));
-            float progress = 1.0F - (float)age / (float)life;
-            SythixTheme.drawRect((float)(x + 2), (float)(top + h - 1), (float)(x + 2) + (float)(w - 2) * Math.max(0.0F, progress), (float)(top + h), SythixTheme.withAlpha(color(toast.kind), 0xA0));
-            font.drawString(font.trimStringToWidth(toast.title, w - 10), (float)(x + 7), (float)(top + 4), 0xFFFFFFFF, true);
-            font.drawString(font.trimStringToWidth(toast.message, w - 10), (float)(x + 7), (float)(top + 14), SythixTheme.TEXT_MUTED, false);
-            y = bottom ? top - 4 : top + h + 4;
+            int c = color(toast.kind);
+
+            // glass card with an outline in the toast's colour and an icon badge
+            SythixTheme.drawRounded(x, top, x + w, top + h, 5.0F, SythixTheme.withAlpha(0xFF0D0C11, (int)(0xE6 * slide)));
+            SythixTheme.drawRoundedOutline(x, top, x + w, top + h, 5.0F, 0.75F, SythixTheme.withAlpha(c, (int)(0xC8 * slide)));
+            SythixTheme.drawRounded(x + 6, top + 7, x + 20, top + 21, 7.0F, SythixTheme.withAlpha(c, (int)(0x40 * slide)));
+            String icon = toast.kind == Notifications.Kind.SUCCESS ? "\u2713" : toast.kind == Notifications.Kind.WARNING ? "!" : toast.kind == Notifications.Kind.ERROR ? "\u2715" : "i";
+            title.drawCentered(icon, x + 13.0F, top + 10.5F, 0.85F, SythixTheme.withAlpha(c | 0xFF000000, (int)(255 * slide)));
+            String t = toast.title;
+            String m = toast.message;
+
+            while (t.length() > 1 && title.width(t, 0.95F) > w - 32)
+            {
+                t = t.substring(0, t.length() - 1);
+            }
+
+            while (m.length() > 1 && body.width(m, 0.85F) > w - 32)
+            {
+                m = m.substring(0, m.length() - 1);
+            }
+
+            title.draw(t, x + 26.0F, top + 5.0F, 0.95F, SythixTheme.withAlpha(0xFFFFFFFF, (int)(255 * slide)));
+            body.draw(m, x + 26.0F, top + 15.5F, 0.85F, SythixTheme.withAlpha(SythixTheme.TEXT_MUTED, (int)(255 * slide)));
+            float progress = Math.max(0.0F, 1.0F - (float)age / (float)life);
+            SythixTheme.drawRect(x + 5.0F, top + h - 1.5F, x + 5.0F + (w - 10.0F) * progress, top + h - 0.75F, SythixTheme.withAlpha(c, (int)(0x90 * slide)));
+            y = bottom ? top - 5 : top + h + 5;
         }
     }
 }

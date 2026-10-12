@@ -1,4 +1,4 @@
-version=5
+version=6
 Sythix Vibrant/shaders/gbuffers_basic.vsh
 Sythix Vibrant/shaders/gbuffers_basic.fsh
 Sythix Vibrant/shaders/gbuffers_textured.vsh

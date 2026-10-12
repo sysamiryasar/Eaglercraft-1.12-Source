@@ -12,7 +12,7 @@ Run from the repository root:  python3 branding/shaderpacks.py
 import os
 
 OUT = "src/main/resources/sythix/shaderpacks"
-VERSION = "5"
+VERSION = "6"
 
 # Legacy 1.12 block ids that sway in the wind (OptiFine passes them in mc_Entity.x).
 PLANTS = [6, 31, 32, 37, 38, 59, 83, 106, 141, 142, 175, 207]
@@ -62,7 +62,7 @@ def lit_vsh(shadows, waving, water=False):
     if waving:
         s += WAVE
     if water:
-        s += "uniform float frameTimeCounter;\nvarying float isWater;\nattribute vec4 mc_Entity;\n"
+        s += "uniform float frameTimeCounter;\nvarying float isWater;\nvarying vec3 waterPos;\nattribute vec4 mc_Entity;\n"
     s += """
 void main() {
     texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -75,9 +75,14 @@ void main() {
         s += "    pos.xyz += wave(pos.xyz + cameraPosition, texcoord);\n"
     if water:
         s += """    isWater = (abs(mc_Entity.x - 8.0) < 0.5 || abs(mc_Entity.x - 9.0) < 0.5) ? 1.0 : 0.0;
+    waterPos = pos.xyz + cameraPosition;
     if (isWater > 0.5) {
-        vec3 w = pos.xyz + cameraPosition;
-        pos.y += (sin(frameTimeCounter * 1.5 + w.x * 0.6) + cos(frameTimeCounter * 1.1 + w.z * 0.5)) * 0.03 - 0.06;
+        // rolling waves: two crossing swells plus a small fast chop
+        vec3 w = waterPos;
+        float t = frameTimeCounter;
+        pos.y += sin(t * 1.4 + w.x * 0.55 + w.z * 0.2) * 0.045
+               + cos(t * 1.1 + w.z * 0.5 - w.x * 0.15) * 0.035
+               + sin(t * 3.2 + (w.x + w.z) * 1.7) * 0.012 - 0.09;
     }
 """
     s += """    gl_Position = gl_ProjectionMatrix * gbufferModelView * pos;
@@ -102,7 +107,7 @@ def lit_fsh(shadows, entity=False, water=False):
     if entity:
         s += "uniform vec4 entityColor;\n"
     if water:
-        s += "varying float isWater;\n"
+        s += "varying float isWater;\nvarying vec3 waterPos;\nuniform float frameTimeCounter;\n"
     if shadows:
         s += "uniform sampler2D shadowtex0;\nvarying vec3 shadowPos;\n" + SHADOW_COMMON.split("vec3 distort")[0]
         s += """
@@ -126,7 +131,16 @@ void main() {
         s += "    color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);\n"
     if water:
         s += """    if (isWater > 0.5) {
+        // moving ripples drifting across the surface, with bright crests that catch the light
+        vec2 w = waterPos.xz;
+        float t = frameTimeCounter;
+        float r = sin(w.x * 1.9 + t * 2.1) * cos(w.y * 1.6 - t * 1.7)
+                + sin((w.x - w.y) * 1.1 + t * 1.3) * 0.7
+                + sin((w.x + w.y) * 3.3 - t * 3.0) * 0.3;
+        float crest = smoothstep(1.1, 1.8, r);
         color.rgb = mix(color.rgb, vec3(0.10, 0.35, 0.55), 0.35);
+        color.rgb *= 0.88 + 0.12 * r;
+        color.rgb += vec3(0.55, 0.65, 0.7) * crest * 0.35;
         color.a = max(color.a, 0.72);
     }
 """

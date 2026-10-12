@@ -34,6 +34,20 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 - **Video recording:** Recording Tools saves `.avi` videos to `recordings/` by itself (video only; use OBS if you also need sound).
 - **Replays:** Replay System records your sessions to `replays/` and plays them back with a free camera, pause, 0.25x-8x speed, seeking and bookmark markers.
 
+## Shaders
+
+Press **Shaders** on the main menu, in the pause menu or in Sythix Settings. Pick a pack and it loads right away; *Options* changes the pack's own settings.
+
+- **Sythix Vibrant** (made for Sythix, fast): richer colours, a soft glow, a vignette, plants and leaves that sway in the wind, and moving water with rolling waves and drifting ripples.
+- **Sythix Shadows**: everything in Vibrant plus real sun and moon shadows. Needs a stronger graphics card.
+- **Your own packs:** *Add Pack* copies a shader pack (.zip or folder) in, or put it in the `shaderpacks` folder (*Open Folder*). Packs made for OptiFine (Minecraft 1.8-1.12) work best.
+
+Shaders are off by default. Options that do not work with shaders (anti-aliasing, anisotropic filtering, Fast Render, 3D anaglyph) are switched off automatically when you pick a pack.
+
+## Design
+
+Sythix's menus use a smooth font (Poppins), a blurred, slowly turning panorama behind the main menu, frosted glass panels, rounded buttons with a red-to-ember accent, and the game world blurred behind the pause menu. Change it in **Interface Theme** (colours, *Smooth Font*: Menus / Everywhere / Off) and **Main Menu** (*Background*: Panorama / Artwork / Plain, *Blur*).
+
 ## 1.21 content (singleplayer and LAN)
 
 Content from Minecraft 1.13-1.21 has been added to the client itself, using ids that 1.12 never uses, so joining normal 1.12 servers is not affected. Settings are in the **1.21 Content** module (Advanced).

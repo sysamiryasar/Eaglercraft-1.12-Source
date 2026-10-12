@@ -36,6 +36,10 @@ public class GuiSythixSettings extends GuiScreen
     public GuiSythixSettings(GuiScreen parent)
     {
         this.parent = parent;
+        List<Setting<?>> shaders = new ArrayList<Setting<?>>();
+        shaders.add(new net.sythix.client.setting.InfoSetting("Shader Pack", "The shader pack in use.", () -> net.sythix.client.shader.ShaderPackManager.enabled() ? net.sythix.client.shader.ShaderPackManager.displayName(net.sythix.client.shader.ShaderPackManager.current()) : "Off"));
+        shaders.add(new ButtonSetting("Shaders", "Pick, add or configure shader packs.", "Open", () -> this.mc.displayGuiScreen(new net.sythix.client.shader.GuiShaderPacks(this))));
+        shaders.add(new ButtonSetting("Shader Folder", "Open the shaderpacks folder to copy packs in.", "Open", () -> net.minecraft.client.renderer.OpenGlHelper.openFile(net.sythix.client.shader.ShaderPackManager.folder())));
         this.tabs.put("Video", options(new Object[][] {
             {GameSettings.Options.RENDER_DISTANCE, "How many chunks are drawn around you."},
             {GameSettings.Options.FRAMERATE_LIMIT, "Highest frame rate."},
@@ -122,6 +126,7 @@ public class GuiSythixSettings extends GuiScreen
             {GameSettings.Options.CLEAR_WATER, "Clear water."}
         });
         this.tabs.put("Other", other);
+        this.tabs.put("Shaders", shaders);
         List<Setting<?>> sythix = new ArrayList<Setting<?>>();
         BooleanSetting theme = new BooleanSetting("Sythix Theme", "Use the Sythix look for menus and buttons (off = vanilla look).", true)
         {
@@ -151,6 +156,7 @@ public class GuiSythixSettings extends GuiScreen
         sythix.add(motion);
         sythix.add(new ButtonSetting("Mod Menu", "Open the Sythix mod menu.", "Open", () -> this.mc.displayGuiScreen(new GuiModMenu(this))));
         sythix.add(new ButtonSetting("HUD Editor", "Move and resize HUD elements.", "Open", () -> this.mc.displayGuiScreen(new GuiHudEditor(this))));
+        sythix.add(new ButtonSetting("Shaders", "Pick a shader pack (Sythix Vibrant, Sythix Shadows or your own).", "Open", () -> this.mc.displayGuiScreen(new net.sythix.client.shader.GuiShaderPacks(this))));
         this.tabs.put(SythixClient.NAME, sythix);
     }
 
@@ -185,15 +191,13 @@ public class GuiSythixSettings extends GuiScreen
         }
         else
         {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, 0x900B0B0E);
+            SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.35F);
         }
 
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.CHARCOAL, 0xF0));
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + SIDEBAR), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.BLACK, 0xC0));
-        SythixTheme.drawOutline((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.BORDER);
-        this.fontRenderer.drawString(SythixClient.NAME, (float)(this.px + 6), (float)(this.py + 8), SythixTheme.RED, true);
-        this.fontRenderer.drawString("Settings", (float)(this.px + 8 + this.fontRenderer.getStringWidth(SythixClient.NAME)), (float)(this.py + 8), SythixTheme.TEXT, true);
-        SythixTheme.drawAccentLine((float)this.px, (float)(this.py + 22), (float)(this.px + SIDEBAR), 1.0F);
+        SythixTheme.drawGlass((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), 8.0F, 1.0F);
+        SythixTheme.drawRounded((float)this.px + 3, (float)this.py + 3, (float)(this.px + SIDEBAR - 2), (float)(this.py + this.ph - 3), 6.0F, 0x50000000);
+        net.sythix.client.ui.font.SmoothFont.BOLD.draw("Settings", (float)(this.px + 9), (float)(this.py + 7), 1.05F, 0xFFFFFFFF);
+        SythixTheme.drawAccentGradient((float)this.px + 8, (float)(this.py + 22), (float)(this.px + SIDEBAR - 8), (float)this.py + 22.5F, 0.9F);
         int y = this.py + 26;
 
         for (String tab : this.tabs.keySet())
@@ -203,15 +207,15 @@ public class GuiSythixSettings extends GuiScreen
 
             if (selected)
             {
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + SIDEBAR), (float)(y + 16), 0x30D81820);
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + 2), (float)(y + 16), SythixTheme.RED);
+                SythixTheme.drawRounded((float)this.px + 5, (float)y + 1, (float)(this.px + SIDEBAR - 4), (float)(y + 15), 4.0F, SythixTheme.withAlpha(SythixTheme.RED, 0x48));
+                SythixTheme.drawRounded((float)this.px + 6, (float)y + 4, (float)this.px + 7.5F, (float)(y + 12), 0.75F, SythixTheme.lerpColor(SythixTheme.RED, SythixTheme.BLUE, 0.4F));
             }
             else if (hovered)
             {
-                SythixTheme.drawRect((float)this.px, (float)y, (float)(this.px + SIDEBAR), (float)(y + 16), 0x18FFFFFF);
+                SythixTheme.drawRounded((float)this.px + 5, (float)y + 1, (float)(this.px + SIDEBAR - 4), (float)(y + 15), 4.0F, 0x14FFFFFF);
             }
 
-            this.fontRenderer.drawString(tab, (float)(this.px + 8), (float)(y + 4), selected ? SythixTheme.TEXT : SythixTheme.TEXT_MUTED, false);
+            this.fontRenderer.drawString(tab, (float)(this.px + 11), (float)(y + 4), selected ? 0xFFFFFFFF : SythixTheme.TEXT_MUTED, false);
             y += 16;
         }
 
@@ -219,7 +223,7 @@ public class GuiSythixSettings extends GuiScreen
         SythixTheme.drawButton((float)(this.px + 4), (float)(this.py + this.ph - 20), (float)(SIDEBAR - 8), 15.0F, true, doneHover ? 1.0F : 0.0F);
         this.fontRenderer.drawString("Done", (float)(this.px + SIDEBAR / 2 - this.fontRenderer.getStringWidth("Done") / 2), (float)(this.py + this.ph - 16), SythixTheme.TEXT, false);
         this.fontRenderer.drawString(selectedTab, (float)(this.px + SIDEBAR + 6), (float)(this.py + 9), 0xFFFFFFFF, true);
-        SythixTheme.drawAccentLine((float)(this.px + SIDEBAR + 6), (float)(this.py + 22), (float)(this.px + this.pw - 6), 0.8F);
+        SythixTheme.drawRect((float)(this.px + SIDEBAR + 6), (float)(this.py + 22), (float)(this.px + this.pw - 6), (float)this.py + 22.5F, 0x18FFFFFF);
         this.panel.render(mouseX, mouseY);
         Setting<?> hovered = this.panel.getHoveredSetting();
         String hint = hovered != null ? hovered.getDescription() : "Changes apply immediately and are saved with your game options.";

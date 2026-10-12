@@ -14,6 +14,7 @@ public class MainMenuModule extends Module
 {
     private final ModeSetting background;
     private final BooleanSetting parallax;
+    private final NumberSetting blur;
     private final NumberSetting logoSize;
     private final BooleanSetting logoAnimation;
     private final ModeSetting buttonLayout;
@@ -25,7 +26,8 @@ public class MainMenuModule extends Module
     {
         super("Main Menu", "Background, logo, button layout and quick-join server shortcuts.", Category.INTERFACE, true);
         this.setCore();
-        this.background = this.add(new ModeSetting("Background", "Main menu background.", "Sythix", "Sythix", "Dark", "Gradient"));
+        this.background = this.add(new ModeSetting("Background", "Menu background: the turning Minecraft panorama, the Sythix artwork or a plain dark colour (all blurred).", "Panorama", "Panorama", "Artwork", "Plain"));
+        this.blur = this.add(new NumberSetting("Blur", "How blurry the menu background is.", 85.0D, 0.0D, 100.0D, 5.0D, "%"));
         this.parallax = this.add(new BooleanSetting("Parallax", "Background moves slightly with the mouse.", true));
         this.logoSize = this.add(new NumberSetting("Logo Size", "Size of the logo.", 100.0D, 50.0D, 130.0D, 5.0D, "%"));
         this.logoAnimation = this.add(new BooleanSetting("Logo Animation", "Gently float the logo.", true));
@@ -42,6 +44,13 @@ public class MainMenuModule extends Module
     public String getBackground()
     {
         return this.background.get();
+    }
+
+    /** Passes the background choice to the menu background renderer. */
+    public void applyBackground()
+    {
+        net.sythix.client.ui.MenuBackground.source = this.background.get();
+        net.sythix.client.ui.MenuBackground.blur = this.blur.getFloat() / 100.0F;
     }
 
     public boolean parallax()

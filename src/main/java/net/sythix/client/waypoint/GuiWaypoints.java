@@ -126,11 +126,10 @@ public class GuiWaypoints extends GuiScreen
         }
         else
         {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, 0x900B0B0E);
+            SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.35F);
         }
 
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.CHARCOAL, 0xF0));
-        SythixTheme.drawOutline((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.BORDER);
+        SythixTheme.drawGlass((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), 8.0F, 1.0F);
         this.fontRenderer.drawString("Waypoints", (float)(this.px + 8), (float)(this.py + 8), 0xFFFFFFFF, true);
         String where = WaypointStore.currentKey().replace("world:", "World: ").replace("server:", "Server: ");
         this.fontRenderer.drawString(this.fontRenderer.trimStringToWidth(where, this.pw / 2), (float)(this.px + this.pw - 8 - Math.min(this.pw / 2, this.fontRenderer.getStringWidth(where))), (float)(this.py + 8), SythixTheme.TEXT_MUTED, false);

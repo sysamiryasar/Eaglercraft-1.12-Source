@@ -641,6 +641,13 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     {
         if (this.mc.world != null)
         {
+            // Sythix: menus over the game blur the world behind them (inventories and chat do not)
+            if (SythixTheme.isEnabled() && !(this instanceof net.minecraft.client.gui.inventory.GuiContainer) && !(this instanceof GuiChat) && !(this instanceof GuiGameOver))
+            {
+                SythixTheme.drawBackground(this.width, this.height, -1, -1, 0.3F);
+                return;
+            }
+
             this.drawGradientRect(0, 0, this.width, this.height, -1072689136, -804253680);
         }
         else

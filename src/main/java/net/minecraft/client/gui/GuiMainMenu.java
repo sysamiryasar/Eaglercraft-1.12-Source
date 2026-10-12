@@ -131,53 +131,57 @@ public class GuiMainMenu extends GuiScreen
         this.widthCopyright = this.fontRenderer.getStringWidth(COPYRIGHT_TEXT);
         this.widthCopyrightRest = this.width - this.widthCopyright - 2;
 
-        // Layout: logo, then three full-width buttons, then the Options/Quit row
-        int buttonBlockHeight = 24 * 3 + 12 + 20;
+        // Layout: logo, then Singleplayer / Multiplayer / Mods+Shaders / Profile+Settings
         MainMenuModule menu = this.menuOptions();
         java.util.List<String[]> shortcuts = menu == null ? java.util.Collections.<String[]>emptyList() : menu.shortcuts();
-
-        if (!shortcuts.isEmpty())
-        {
-            buttonBlockHeight += 22;
-        }
-
-        this.logoSize = Math.max(48, Math.min(130, this.height - buttonBlockHeight - 40));
+        int rowH = 25;
+        int buttonBlockHeight = rowH * 4 - 5 + (shortcuts.isEmpty() ? 0 : rowH);
+        this.logoSize = Math.max(44, Math.min(108, this.height - buttonBlockHeight - 46));
 
         if (menu != null)
         {
             this.logoSize = Math.round((float)this.logoSize * menu.logoScale());
         }
 
-        int contentHeight = this.logoSize + 8 + buttonBlockHeight;
-        this.logoY = Math.max(6, (this.height - contentHeight) / 2 - 6);
-        int j = this.logoY + this.logoSize + 8;
+        int contentHeight = this.logoSize + 10 + buttonBlockHeight;
+        this.logoY = Math.max(16, (this.height - contentHeight) / 2 - 4);
+        int j = this.logoY + this.logoSize + 10;
+        int cx = this.width / 2;
 
         if (this.mc.isDemo())
         {
-            this.addDemoButtons(j, 24);
+            this.addDemoButtons(j, rowH);
         }
         else
         {
-            this.addSingleplayerMultiplayerButtons(j, 24);
+            this.addSingleplayerMultiplayerButtons(j, rowH);
         }
 
-        this.buttonList.add(new GuiButton(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.format("menu.options")));
-        this.buttonList.add(new GuiButton(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.format("menu.quit")));
-        this.buttonList.add(new GuiButtonLanguage(5, this.width / 2 - 124, j + 72 + 12));
+        this.buttonList.add(new GuiButton(7, cx - 100, j + rowH * 3, 98, 20, "Profile"));
+        this.buttonList.add(new GuiButton(0, cx + 2, j + rowH * 3, 98, 20, "Settings"));
+
+        // small pills in the top-left corner
+        String quit = I18n.format("menu.quit");
+        int quitW = this.fontRenderer.getStringWidth(quit) + 14;
+        this.buttonList.add(new GuiButton(4, 6, 6, quitW, 14, quit));
+        this.buttonList.add(new GuiButton(5, 10 + quitW, 6, this.fontRenderer.getStringWidth("Language") + 14, 14, "Language"));
 
         // Quick-join server shortcuts from the Main Menu module
         for (int s = 0; s < shortcuts.size(); ++s)
         {
             int w = (200 - (shortcuts.size() - 1) * 4) / shortcuts.size();
-            this.buttonList.add(new GuiButton(100 + s, this.width / 2 - 100 + s * (w + 4), j + 72 + 12 + 24, w, 20, "\u25b6 " + shortcuts.get(s)[0]));
+            this.buttonList.add(new GuiButton(100 + s, cx - 100 + s * (w + 4), j + rowH * 4, w, 20, "\u25b6 " + shortcuts.get(s)[0]));
         }
 
         if (menu != null && menu.leftButtons())
         {
-            // Left layout: move every button to the left side of the screen
+            // Left layout: move the main buttons to the left side of the screen
             for (GuiButton button : this.buttonList)
             {
-                button.x = button.x - (this.width / 2 - 100) + 20;
+                if (button.id != 4 && button.id != 5)
+                {
+                    button.x = button.x - (cx - 100) + 24;
+                }
             }
         }
 
@@ -216,8 +220,8 @@ public class GuiMainMenu extends GuiScreen
         this.buttonList.add(new GuiButton(1, this.width / 2 - 100, p_73969_1_, I18n.format("menu.singleplayer")));
         this.buttonList.add(new GuiButton(2, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 1, I18n.format("menu.multiplayer")));
 
-        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, 98, 20, SythixClient.NAME + " Mods"));
-        this.buttonList.add(new GuiButton(7, this.width / 2 + 2, p_73969_1_ + p_73969_2_ * 2, 98, 20, "Profile"));
+        this.buttonList.add(new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, 98, 20, "Mods"));
+        this.buttonList.add(new GuiButton(8, this.width / 2 + 2, p_73969_1_ + p_73969_2_ * 2, 98, 20, "Shaders"));
     }
 
     /**
@@ -274,6 +278,11 @@ public class GuiMainMenu extends GuiScreen
         if (button.id == 7)
         {
             this.mc.displayGuiScreen(new net.sythix.client.cosmetic.GuiProfile(this));
+        }
+
+        if (button.id == 8)
+        {
+            this.mc.displayGuiScreen(new net.sythix.client.shader.GuiShaderPacks(this));
         }
 
         if (button.id >= 100 && button.id < 103)
@@ -344,48 +353,45 @@ public class GuiMainMenu extends GuiScreen
     {
         float fadeIn = Math.min(1.0F, (float)(Minecraft.getSystemTime() - this.openedTime) / 600.0F);
 
-        // Background with gentle mouse parallax, darkened at the top and bottom
+        // Blurred, slowly turning panorama (or the artwork) with a soft red glow behind the logo
         MainMenuModule menu = this.menuOptions();
-        String background = menu == null ? "Sythix" : menu.getBackground();
-        boolean parallax = (menu == null || menu.parallax()) && !SythixTheme.reducedMotion;
-
-        if (background.equals("Dark"))
-        {
-            SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, SythixTheme.BLACK);
-        }
-        else if (background.equals("Gradient"))
-        {
-            SythixTheme.drawQuad(0.0F, 0.0F, (float)this.width, (float)this.height, SythixTheme.lerpColor(SythixTheme.BLACK, SythixTheme.BLUE, 0.35F), SythixTheme.BLACK, SythixTheme.lerpColor(SythixTheme.BLACK, SythixTheme.RED, 0.45F), SythixTheme.BLACK);
-        }
-        else
-        {
-            SythixTheme.drawBackground(this.width, this.height, parallax ? mouseX : -1, parallax ? mouseY : -1, 0.0F);
-        }
-
-        SythixTheme.drawGradientV(0.0F, 0.0F, (float)this.width, (float)this.height * 0.35F, 0x900B0B0E, 0x000B0B0E);
-        SythixTheme.drawGradientV(0.0F, (float)this.height * 0.7F, (float)this.width, (float)this.height, 0x000B0B0E, 0xC00B0B0E);
-
-        // Logo, gently bobbing; the texture is square with the artwork centred
+        SythixTheme.drawBackground(this.width, this.height, mouseX, mouseY, 0.5F);
         boolean animate = (menu == null || menu.logoAnimation()) && !SythixTheme.reducedMotion;
-        float bob = animate ? (float)Math.sin((double)(Minecraft.getSystemTime() % 4000L) / 4000.0D * Math.PI * 2.0D) * 1.5F : 0.0F;
-        float logoX = menu != null && menu.leftButtons() ? 20.0F + (200.0F - (float)this.logoSize) / 2.0F : (float)(this.width - this.logoSize) / 2.0F;
-        SythixTheme.drawTexture(SythixTheme.LOGO, logoX, (float)this.logoY + bob, (float)this.logoSize, (float)this.logoSize, fadeIn);
+        float bob = animate ? (float)Math.sin((double)(Minecraft.getSystemTime() % 5000L) / 5000.0D * Math.PI * 2.0D) * 1.5F : 0.0F;
+        float logoX = menu != null && menu.leftButtons() ? 24.0F + (200.0F - (float)this.logoSize) / 2.0F : (float)(this.width - this.logoSize) / 2.0F;
+        float glowX = logoX + this.logoSize / 2.0F;
+        float glowY = this.logoY + this.logoSize / 2.0F;
 
-        // Footer bar
+        for (int g = 6; g >= 1; --g)
+        {
+            float r = this.logoSize * (0.18F + g * 0.07F);
+            SythixTheme.drawRounded(glowX - r, glowY - r, glowX + r, glowY + r, r, SythixTheme.withAlpha(SythixTheme.RED, (int)(7 * fadeIn)));
+        }
+
+        float rise = (1.0F - fadeIn) * 8.0F;
+        SythixTheme.drawTexture(SythixTheme.LOGO, logoX, (float)this.logoY + bob + rise, (float)this.logoSize, (float)this.logoSize, fadeIn);
+
+        // Account chip (top right): your skin's face and name; click it to open the profile
+        net.sythix.client.ui.font.SmoothFont font = net.sythix.client.ui.font.SmoothFont.REGULAR;
+        String name = this.mc.getSession().getUsername();
+        float chipW = font.width(name, 0.95F) + 30.0F;
+        float chipX = this.width - 6 - chipW;
+        boolean chipHover = mouseX >= chipX && mouseX <= this.width - 6 && mouseY >= 6 && mouseY <= 24;
+        SythixTheme.drawGlass(chipX, 6.0F, this.width - 6.0F, 24.0F, 5.0F, chipHover ? 1.3F : 1.0F);
+        this.drawHead(chipX + 5.0F, 9.0F, 12.0F, name);
+        font.draw(name, chipX + 22.0F, 10.5F, 0.95F, chipHover ? 0xFFFFFFFF : SythixTheme.TEXT);
+        this.chipLeft = (int)chipX;
+
+        // Footer: quiet text in the corners
         if (menu == null || menu.footer())
         {
-        SythixTheme.drawRect(0.0F, (float)(this.height - 12), (float)this.width, (float)this.height, 0xB00B0B0E);
-        SythixTheme.drawAccentLine(0.0F, (float)(this.height - 12), (float)this.width, 0.9F);
-        String branding = SythixClient.getBrandingLine();
-
-        if (this.mc.isDemo())
-        {
-            branding = branding + " Demo";
-        }
-
-        this.drawString(this.fontRenderer, branding, 2, this.height - 10, SythixTheme.TEXT_MUTED);
-        boolean copyrightHovered = mouseX > this.widthCopyrightRest && mouseX < this.widthCopyrightRest + this.widthCopyright && mouseY > this.height - 10 && mouseY < this.height && Mouse.isInsideWindow();
-        this.drawString(this.fontRenderer, COPYRIGHT_TEXT, this.widthCopyrightRest, this.height - 10, copyrightHovered ? SythixTheme.LIGHT_BLUE : SythixTheme.TEXT_MUTED);
+            String branding = SythixClient.getBrandingLine() + (this.mc.isDemo() ? " Demo" : "");
+            font.draw(branding, 6.0F, this.height - 11.0F, 0.75F, SythixTheme.withAlpha(SythixTheme.TEXT_MUTED, 0xB0));
+            boolean copyrightHovered = mouseX > this.widthCopyrightRest && mouseY > this.height - 12 && Mouse.isInsideWindow();
+            float cw = font.width(COPYRIGHT_TEXT, 0.75F);
+            this.widthCopyrightRest = (int)(this.width - 6 - cw);
+            this.widthCopyright = (int)cw;
+            font.draw(COPYRIGHT_TEXT, this.width - 6 - cw, this.height - 11.0F, 0.75F, copyrightHovered ? SythixTheme.TEXT : SythixTheme.withAlpha(SythixTheme.TEXT_MUTED, 0xB0));
         }
 
         if (this.openGLWarning1 != null && !this.openGLWarning1.isEmpty())
@@ -426,7 +432,12 @@ public class GuiMainMenu extends GuiScreen
             this.realmsNotification.mouseClicked(mouseX, mouseY, mouseButton);
         }
 
-        if (mouseX > this.widthCopyrightRest && mouseX < this.widthCopyrightRest + this.widthCopyright && mouseY > this.height - 10 && mouseY < this.height)
+        if (mouseButton == 0 && mouseX >= this.chipLeft && mouseX <= this.width - 6 && mouseY >= 6 && mouseY <= 24)
+        {
+            this.mc.displayGuiScreen(new net.sythix.client.cosmetic.GuiProfile(this));
+        }
+
+        if (mouseX > this.widthCopyrightRest && mouseX < this.widthCopyrightRest + this.widthCopyright && mouseY > this.height - 12 && mouseY < this.height)
         {
             this.mc.displayGuiScreen(new GuiWinGame(false, Runnables.doNothing()));
         }
@@ -441,6 +452,33 @@ public class GuiMainMenu extends GuiScreen
         {
             this.realmsNotification.onGuiClosed();
         }
+    }
+
+    private int chipLeft = Integer.MAX_VALUE;
+
+    /** The face (and hat layer) of the skin the player uses. */
+    private void drawHead(float x, float y, float size, String name)
+    {
+        net.minecraft.util.ResourceLocation skin = null;
+
+        try
+        {
+            skin = net.sythix.client.cosmetic.CosmeticTextures.skin(net.sythix.client.cosmetic.ProfileStore.skin);
+        }
+        catch (Throwable ignored)
+        {
+        }
+
+        if (skin == null)
+        {
+            skin = net.minecraft.client.resources.DefaultPlayerSkin.getDefaultSkin(net.minecraft.entity.player.EntityPlayer.getOfflineUUID(name));
+        }
+
+        GlStateManager.enableBlend();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        this.mc.getTextureManager().bindTexture(skin);
+        Gui.drawScaledCustomSizeModalRect((int)x, (int)y, 8.0F, 8.0F, 8, 8, (int)size, (int)size, 64.0F, 64.0F);
+        Gui.drawScaledCustomSizeModalRect((int)x, (int)y, 40.0F, 8.0F, 8, 8, (int)size, (int)size, 64.0F, 64.0F);
     }
 
     private MainMenuModule menuOptions()

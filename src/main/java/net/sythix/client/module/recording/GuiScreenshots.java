@@ -116,8 +116,7 @@ public class GuiScreenshots extends GuiScreen
     public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
         SythixTheme.drawRect(0.0F, 0.0F, (float)this.width, (float)this.height, this.mc.world == null ? SythixTheme.BLACK : 0x900B0B0E);
-        SythixTheme.drawRect((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.withAlpha(SythixTheme.CHARCOAL, 0xF0));
-        SythixTheme.drawOutline((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), SythixTheme.BORDER);
+        SythixTheme.drawGlass((float)this.px, (float)this.py, (float)(this.px + this.pw), (float)(this.py + this.ph), 8.0F, 1.0F);
         this.fontRenderer.drawString("Screenshots (" + this.files.size() + ")", (float)(this.px + 8), (float)(this.py + 8), 0xFFFFFFFF, true);
         SythixTheme.drawAccentLine((float)this.px, (float)(this.py + 21), (float)(this.px + this.pw), 1.0F);
         int top = this.py + 26;

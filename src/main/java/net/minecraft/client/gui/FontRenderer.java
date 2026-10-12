@@ -403,7 +403,9 @@ public class FontRenderer implements IResourceManagerReloadListener
 
         if (dropShadow)
         {
-            i = this.renderString(text, x + 1.0F, y + 1.0F, color, true);
+            // Sythix: the smooth font uses a softer, closer shadow
+            float o = this.smoothSythix() ? 0.6F : 1.0F;
+            i = this.renderString(text, x + o, y + o, color, true);
             i = Math.max(i, this.renderString(text, x, y, color, false));
         }
         else
@@ -659,6 +661,11 @@ public class FontRenderer implements IResourceManagerReloadListener
                 color = (color & 16579836) >> 2 | color & -16777216;
             }
 
+            if (this.smoothSythix())
+            {
+                return (int)(x + net.sythix.client.ui.font.SmoothFont.REGULAR.draw(text, x, y, 1.0F, color, dropShadow, this.colorCode));
+            }
+
             this.red = (float)(color >> 16 & 255) / 255.0F;
             this.blue = (float)(color >> 8 & 255) / 255.0F;
             this.green = (float)(color & 255) / 255.0F;
@@ -732,11 +739,23 @@ public class FontRenderer implements IResourceManagerReloadListener
         return Math.round(this.getCharWidthFloat(character));
     }
 
+    /** Sythix: whether this (the main) font draws with the smooth Sythix font right now. */
+    private boolean smoothSythix()
+    {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+        return mc != null && this == mc.fontRenderer && net.sythix.client.ui.font.SmoothFont.replacesMinecraftFont();
+    }
+
     private float getCharWidthFloat(char p_getCharWidthFloat_1_)
     {
         if (p_getCharWidthFloat_1_ == 167)
         {
             return -1.0F;
+        }
+
+        if (this.smoothSythix())
+        {
+            return net.sythix.client.ui.font.SmoothFont.REGULAR.charWidth(p_getCharWidthFloat_1_);
         }
         else if (p_getCharWidthFloat_1_ != ' ' && p_getCharWidthFloat_1_ != 160)
         {

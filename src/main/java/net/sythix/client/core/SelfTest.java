@@ -164,6 +164,39 @@ public final class SelfTest
             return;
         }
 
+        if ("ui".equals(System.getProperty("sythix.selftest")))
+        {
+            add("let the menu settle", 40, () -> mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu()));
+            add("screenshot ui main menu", 2, () -> shot("ui-main-menu"));
+            show("ui-mod-menu", () -> new GuiModMenu(null));
+            show("ui-settings", () -> new net.sythix.client.ui.GuiSythixSettings(null));
+            show("ui-shaders", () -> new net.sythix.client.shader.GuiShaderPacks(null));
+            show("ui-options", () -> new net.minecraft.client.gui.GuiOptions(null, mc().gameSettings));
+            add("create ui world", 1, () -> {
+                try
+                {
+                    FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-ui"));
+                }
+                catch (Exception ignored)
+                {
+                }
+
+                mc().launchIntegratedServer("sythix-ui", "Sythix UI Test", new WorldSettings(20261011L, GameType.CREATIVE, true, false, WorldType.DEFAULT).enableCommands());
+            });
+            add("wait for ui world", 1, SelfTest::waitForWorld);
+            add("settle", 100, () -> mc().displayGuiScreen(null));
+            show("ui-pause", () -> new net.minecraft.client.gui.GuiIngameMenu());
+            show("ui-mod-menu-ingame", () -> new GuiModMenu(null));
+            add("leave ui world", 40, () -> {
+                mc().displayGuiScreen(null);
+                mc().loadWorld(null);
+                mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+            });
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("shaders".equals(System.getProperty("sythix.selftest")))
         {
             shaderSteps();

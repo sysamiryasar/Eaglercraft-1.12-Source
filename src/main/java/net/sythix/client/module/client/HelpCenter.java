@@ -56,6 +56,13 @@ public class HelpCenter extends Module
             + "Textures whose layout changed since 1.12 are left out, so nothing shows up broken. The textures for Sythix's own 1.21 blocks and items are converted too; 1.21 Content > Real 1.21 Textures can also read them straight from a Minecraft version you have installed.\n\n"
             + "# Compatibility\n"
             + "Unconverted packs made for newer versions show missing (purple/black) textures. Convert them first, or use packs made for pack_format 3 (1.11-1.12)."},
+        {"Shaders", "Shader packs and moving water",
+            "# Turning shaders on\n"
+            + "Press Shaders on the main menu, in the pause menu or in Sythix Settings and click a pack. Sythix Vibrant is fast and adds colour, glow, swaying plants and moving water. Sythix Shadows adds real shadows and needs a stronger graphics card. Off turns shaders off again.\n\n"
+            + "# Your own packs\n"
+            + "Press Add Pack and type the path of a shader pack (.zip or folder), or press Open Folder and copy packs into the shaderpacks folder. Packs made for OptiFine 1.8-1.12 work best. Options opens the pack's own settings.\n\n"
+            + "# If something looks wrong\n"
+            + "Shaders need a graphics card with OpenGL 2.0 or newer. Sythix switches off anti-aliasing, anisotropic filtering, Fast Render and 3D anaglyph for you, because they do not work with shaders. If the game gets slow, try Sythix Vibrant or lower Render Distance."},
         {"1.21 blocks, items and mobs", "New content in singleplayer and LAN",
             "# What it is\n"
             + "Sythix adds blocks, items, effects, enchantments, world generation and 35 mobs from Minecraft 1.13-1.21. They work in singleplayer and LAN worlds; normal 1.12 servers do not have them, and joining them is not affected.\n\n"

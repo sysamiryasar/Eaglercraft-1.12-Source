@@ -37,7 +37,7 @@ public final class SythixTheme
     public static int BORDER = 0xFF2E2E37;
     public static int RED = 0xFFD81820;
     public static int RED_DARK = 0xFF98080C;
-    public static int BLUE = 0xFF2F6BFF;
+    public static int BLUE = 0xFFFF7A3D;
     public static int LIGHT_BLUE = 0xFF6CC6FF;
     public static int TEXT = 0xFFE6E6EC;
     public static int TEXT_MUTED = 0xFF9A9AA6;
@@ -164,7 +164,15 @@ public final class SythixTheme
      */
     public static void drawBackground(int screenWidth, int screenHeight, int mouseX, int mouseY, float dim)
     {
-        drawBackgroundRegion(screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, mouseX, mouseY, dim);
+        net.sythix.client.SythixClient client = net.sythix.client.SythixClient.get();
+        net.sythix.client.module.hud.MainMenuModule menu = client == null ? null : client.getModuleManager().get(net.sythix.client.module.hud.MainMenuModule.class);
+
+        if (menu != null)
+        {
+            menu.applyBackground();
+        }
+
+        MenuBackground.draw(screenWidth, screenHeight, dim);
     }
 
     /**
@@ -173,63 +181,129 @@ public final class SythixTheme
      */
     public static void drawBackgroundRegion(int screenWidth, int screenHeight, int left, int top, int right, int bottom, int mouseX, int mouseY, float dim)
     {
-        if (right <= left || bottom <= top)
+        MenuBackground.drawRegion(screenWidth, screenHeight, left, top, right, bottom, dim);
+    }
+
+    // ---- rounded shapes --------------------------------------------------------------------------
+
+    private static final int ARC = 6;
+
+    /** Adds the outline points of a rounded rectangle, clockwise from the top-left corner. */
+    private static void roundedPath(java.util.List<float[]> out, float x0, float y0, float x1, float y1, float r)
+    {
+        r = Math.max(0.0F, Math.min(r, Math.min(x1 - x0, y1 - y0) / 2.0F));
+        float[][] corners = {{x0 + r, y0 + r, 180.0F}, {x1 - r, y0 + r, 270.0F}, {x1 - r, y1 - r, 0.0F}, {x0 + r, y1 - r, 90.0F}};
+
+        for (float[] c : corners)
+        {
+            for (int i = 0; i <= ARC; ++i)
+            {
+                double a = Math.toRadians(c[2] + 90.0D * i / ARC);
+                out.add(new float[] {c[0] + (float)Math.cos(a) * r, c[1] + (float)Math.sin(a) * r});
+            }
+        }
+    }
+
+    /** A filled rectangle with rounded corners of radius r. */
+    public static void drawRounded(float x0, float y0, float x1, float y1, float r, int color)
+    {
+        if ((color >>> 24) == 0 || x1 <= x0 || y1 <= y0)
         {
             return;
         }
 
-        float imageAspect = 2.0F;
-        float sw = (float)Math.max(1, screenWidth);
-        float sh = (float)Math.max(1, screenHeight);
-        float screenAspect = sw / sh;
-        float uSpan = 1.0F;
-        float vSpan = 1.0F;
+        java.util.List<float[]> pts = new java.util.ArrayList<float[]>();
+        roundedPath(pts, x0, y0, x1, y1, r);
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        Tessellator tess = Tessellator.getInstance();
+        BufferBuilder buf = tess.getBuffer();
+        buf.begin(GL11.GL_TRIANGLE_FAN, DefaultVertexFormats.POSITION_COLOR);
+        int a = color >>> 24, rr = color >> 16 & 255, g = color >> 8 & 255, bl = color & 255;
+        buf.pos((x0 + x1) / 2.0F, (y0 + y1) / 2.0F, 0.0D).color(rr, g, bl, a).endVertex();
 
-        if (screenAspect < imageAspect)
+        for (int i = pts.size() - 1; i >= 0; --i)
         {
-            uSpan = screenAspect / imageAspect;
-        }
-        else
-        {
-            vSpan = imageAspect / screenAspect;
+            buf.pos(pts.get(i)[0], pts.get(i)[1], 0.0D).color(rr, g, bl, a).endVertex();
         }
 
-        // Leave 3% of slack for the parallax movement
-        uSpan *= 0.97F;
-        vSpan *= 0.97F;
-        float px = mouseX < 0 ? 0.5F : (float)mouseX / sw;
-        float py = mouseY < 0 ? 0.5F : (float)mouseY / sh;
-        float u0 = (1.0F - uSpan) * (1.0F - px);
-        float v0 = (1.0F - vSpan) * (1.0F - py);
-        GlStateManager.disableAlpha();
-        drawTexture(BACKGROUND, (float)left, (float)top, (float)(right - left), (float)(bottom - top), u0 + uSpan * left / sw, v0 + vSpan * top / sh, u0 + uSpan * right / sw, v0 + vSpan * bottom / sh, 1.0F);
-        GlStateManager.enableAlpha();
+        buf.pos(pts.get(pts.size() - 1)[0], pts.get(pts.size() - 1)[1], 0.0D).color(rr, g, bl, a).endVertex();
+        tess.draw();
+        GlStateManager.enableTexture2D();
+    }
 
-        if (dim > 0.0F)
+    /** The outline of a rounded rectangle, thickness units wide, drawn inside the edge. */
+    public static void drawRoundedOutline(float x0, float y0, float x1, float y1, float r, float thickness, int color)
+    {
+        if ((color >>> 24) == 0 || x1 <= x0 || y1 <= y0)
         {
-            drawRect((float)left, (float)top, (float)right, (float)bottom, withAlpha(BLACK, (int)(255 * dim)));
+            return;
         }
+
+        java.util.List<float[]> outer = new java.util.ArrayList<float[]>();
+        java.util.List<float[]> inner = new java.util.ArrayList<float[]>();
+        roundedPath(outer, x0, y0, x1, y1, r);
+        roundedPath(inner, x0 + thickness, y0 + thickness, x1 - thickness, y1 - thickness, Math.max(0.0F, r - thickness));
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        Tessellator tess = Tessellator.getInstance();
+        BufferBuilder buf = tess.getBuffer();
+        buf.begin(GL11.GL_TRIANGLE_STRIP, DefaultVertexFormats.POSITION_COLOR);
+        int a = color >>> 24, rr = color >> 16 & 255, g = color >> 8 & 255, bl = color & 255;
+
+        for (int i = 0; i <= outer.size(); ++i)
+        {
+            float[] o = outer.get(i % outer.size());
+            float[] n = inner.get(i % inner.size());
+            buf.pos(o[0], o[1], 0.0D).color(rr, g, bl, a).endVertex();
+            buf.pos(n[0], n[1], 0.0D).color(rr, g, bl, a).endVertex();
+        }
+
+        tess.draw();
+        GlStateManager.enableTexture2D();
+    }
+
+    /** A frosted-glass panel: translucent dark fill with a faint light edge. */
+    public static void drawGlass(float x0, float y0, float x1, float y1, float r, float alpha)
+    {
+        drawRounded(x0, y0, x1, y1, r, withAlpha(0xFF0E0D12, (int)(0xB4 * alpha * panelOpacity)));
+        drawRoundedOutline(x0, y0, x1, y1, r, 0.5F, withAlpha(0xFFFFFFFF, (int)(0x1E * alpha)));
+    }
+
+    /** The Sythix accent: a short gradient from the primary colour (red) to the secondary (ember). */
+    public static void drawAccentGradient(float x0, float y0, float x1, float y1, float alpha)
+    {
+        drawGradientH(x0, y0, x1, y1, withAlpha(RED, (int)(255 * alpha)), withAlpha(BLUE, (int)(255 * alpha)));
     }
 
     /** Background, border and hover accent of a themed button. hover is an animated 0..1 value. */
     public static void drawButton(float x, float y, float width, float height, boolean enabled, float hover)
     {
+        float r = Math.min(height / 2.0F, 4.0F);
+
         if (!enabled)
         {
-            drawRect(x, y, x + width, y + height, 0x9010101A);
-            drawOutline(x, y, x + width, y + height, 0xFF1E1E25);
+            drawRounded(x, y, x + width, y + height, r, 0x700C0B10);
+            drawRoundedOutline(x, y, x + width, y + height, r, 0.5F, 0x10FFFFFF);
             return;
         }
 
-        drawRect(x, y, x + width, y + height, lerpColor(withAlpha(CHARCOAL, 0xD8), withAlpha(CHARCOAL_LIGHT, 0xF0), hover));
-        drawOutline(x, y, x + width, y + height, lerpColor(BORDER, RED_DARK, hover));
+        drawRounded(x, y, x + width, y + height, r, lerpColor(withAlpha(0xFF110F15, (int)(0xA8 * panelOpacity)), withAlpha(0xFF221D27, (int)(0xD8 * panelOpacity)), hover));
+
+        if (borders)
+        {
+            drawRoundedOutline(x, y, x + width, y + height, r, 0.5F, lerpColor(0x1FFFFFFF, withAlpha(lerpColor(RED, BLUE, 0.35F), 0xB0), hover));
+        }
 
         if (hover > 0.01F)
         {
-            float half = (width - 2) * 0.5F * hover;
+            // a glowing accent line grows from the middle of the bottom edge
+            float half = (width - 2.0F * r) * 0.5F * hover;
             float mid = x + width * 0.5F;
-            drawGradientH(mid - half, y + height - 2, mid, y + height - 1, withAlpha(RED, (int)(255 * hover)), withAlpha(RED, (int)(255 * hover)));
-            drawGradientH(mid, y + height - 2, mid + half, y + height - 1, withAlpha(RED, (int)(255 * hover)), withAlpha(BLUE, (int)(255 * hover)));
+            drawGradientH(mid - half, y + height - 1.25F, mid, y + height - 0.5F, withAlpha(RED, (int)(220 * hover)), withAlpha(lerpColor(RED, BLUE, 0.5F), (int)(255 * hover)));
+            drawGradientH(mid, y + height - 1.25F, mid + half, y + height - 0.5F, withAlpha(lerpColor(RED, BLUE, 0.5F), (int)(255 * hover)), withAlpha(BLUE, (int)(220 * hover)));
         }
     }
 
@@ -241,9 +315,8 @@ public final class SythixTheme
     /** Slider handle, drawn over a themed button background. */
     public static void drawSliderKnob(float x, float y, float width, float height)
     {
-        drawGradientV(x, y, x + width, y + height, RED, RED_DARK);
-        drawRect(x, y, x + width, y + 1, 0xFFFF5A60);
-        drawOutline(x, y, x + width, y + height, 0xFF5A0408);
+        drawRounded(x + 1.0F, y + 2.0F, x + width - 1.0F, y + height - 2.0F, 2.0F, lerpColor(RED, BLUE, 0.3F));
+        drawRounded(x + 1.0F, y + 2.0F, x + width - 1.0F, y + 4.0F, 1.0F, 0x40FFFFFF);
     }
 
     /** Dark bar used above and below scrolling lists. */
