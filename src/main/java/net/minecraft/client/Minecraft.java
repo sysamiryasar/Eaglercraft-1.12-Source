@@ -1255,6 +1255,16 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             // browser build: report the average frame time every 100 frames (for tuning)
             long now = System.nanoTime();
 
+            net.sythix.client.web.WebConnection.pump();
+            net.sythix.client.web.WebInput.inject();
+
+            if (this.webFrames == 1 && !System.getProperty("sythix.join", "").isEmpty())
+            {
+                // play.html?server=host:port joins that server straight away
+                net.minecraft.client.multiplayer.ServerData join = new net.minecraft.client.multiplayer.ServerData(System.getProperty("sythix.join"), System.getProperty("sythix.join"), false);
+                this.displayGuiScreen(new net.minecraft.client.multiplayer.GuiConnecting(new net.minecraft.client.gui.GuiMainMenu(), this, join));
+            }
+
             if (++this.webFrames <= 3)
             {
                 webStep("frame " + this.webFrames);

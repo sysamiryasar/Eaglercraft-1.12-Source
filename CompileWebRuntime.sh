@@ -20,7 +20,7 @@ os.makedirs(out, exist_ok=True)
 for name in os.listdir(out):
     path = os.path.join(out, name)
     shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
-shutil.copytree("web", out, dirs_exist_ok=True)
+shutil.copytree("web", out, dirs_exist_ok=True, ignore=shutil.ignore_patterns("proxy", "__pycache__"))
 os.makedirs(out + "/lib", exist_ok=True)
 
 # The game jar without music/sounds (the browser version has no sound) and only English text,
@@ -47,7 +47,10 @@ for root, _, files in os.walk("lib/libraries"):
             classpath.append("lib/" + f)
 
 with open(out + "/files.json", "w") as fh:
-    json.dump({"classpath": classpath}, fh, indent=1)
+    # version: changes with every build, so returning players' saved files are refreshed (sw.js)
+    import hashlib, time
+    version = hashlib.sha1(("".join(classpath) + str(time.time())).encode()).hexdigest()[:12]
+    json.dump({"classpath": classpath, "version": version}, fh, indent=1)
 
 size = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(out) for f in fs)
 print(f"browser build written to {out} ({size / 1e6:.0f} MB, {len(classpath)} jars)")

@@ -606,10 +606,25 @@ public abstract class GuiScreen extends Gui implements GuiYesNoCallback
     public void handleKeyboardInput() throws IOException
     {
         char c0 = Keyboard.getEventCharacter();
+        int key = Keyboard.getEventKey();
 
-        if (Keyboard.getEventKey() == 0 && c0 >= ' ' || Keyboard.getEventKeyState())
+        if (net.minecraft.client.renderer.GlStateManager.WEB)
         {
-            this.keyTyped(c0, Keyboard.getEventKey());
+            if (Boolean.getBoolean("sythix.webdebug"))
+            {
+                LOGGER.info("[web] key event: key {} char {} down {}", Integer.valueOf(key), Integer.valueOf(c0), Boolean.valueOf(Keyboard.getEventKeyState()));
+            }
+
+            // browser build: Enter can arrive as a bare carriage return without a key code
+            if (key == 0 && (c0 == '\r' || c0 == '\n'))
+            {
+                key = Keyboard.KEY_RETURN;
+            }
+        }
+
+        if (key == 0 && c0 >= ' ' || Keyboard.getEventKeyState())
+        {
+            this.keyTyped(c0, key);
         }
 
         this.mc.dispatchKeypresses();

@@ -61,8 +61,17 @@ public class GuiConnecting extends GuiScreen
                         return;
                     }
 
-                    inetaddress = InetAddress.getByName(ip);
-                    GuiConnecting.this.networkManager = NetworkManager.createNetworkManagerAndConnect(inetaddress, port, GuiConnecting.this.mc.gameSettings.isUsingNativeTransport());
+                    if (net.minecraft.client.renderer.GlStateManager.WEB)
+                    {
+                        // browser build: through the WebSocket proxy (it resolves the host)
+                        GuiConnecting.this.networkManager = net.sythix.client.web.WebConnection.connect(ip, port);
+                    }
+                    else
+                    {
+                        inetaddress = InetAddress.getByName(ip);
+                        GuiConnecting.this.networkManager = NetworkManager.createNetworkManagerAndConnect(inetaddress, port, GuiConnecting.this.mc.gameSettings.isUsingNativeTransport());
+                    }
+
                     GuiConnecting.this.networkManager.setNetHandler(new NetHandlerLoginClient(GuiConnecting.this.networkManager, GuiConnecting.this.mc, GuiConnecting.this.previousGuiScreen));
                     GuiConnecting.this.networkManager.sendPacket(new C00Handshake(335, ip, port, EnumConnectionState.LOGIN));
                     GuiConnecting.this.networkManager.sendPacket(new CPacketLoginStart(GuiConnecting.this.mc.getSession().getProfile()));

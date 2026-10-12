@@ -138,7 +138,16 @@ public class NetworkManager extends SimpleChannelInboundHandler < Packet<? >>
             textcomponenttranslation = new TextComponentTranslation("disconnect.genericReason", new Object[] {"Internal Exception: " + p_exceptionCaught_2_});
         }
 
-        LOGGER.debug(textcomponenttranslation.getUnformattedText(), p_exceptionCaught_2_);
+        if (net.sythix.client.web.WebConnection.WEB)
+        {
+            // browser build: show connection errors in the log (they are rare and hard to debug)
+            LOGGER.warn(textcomponenttranslation.getUnformattedText(), p_exceptionCaught_2_);
+        }
+        else
+        {
+            LOGGER.debug(textcomponenttranslation.getUnformattedText(), p_exceptionCaught_2_);
+        }
+
         this.closeChannel(textcomponenttranslation);
     }
 
