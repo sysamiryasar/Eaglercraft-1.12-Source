@@ -10,7 +10,7 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 - **Profile:** **Profile** on the main menu. Change your offline name, skin (put PNGs in `sythix/skins`), model (classic/slim) and cape (built-in or your own PNG in `sythix/capes`). Skins and capes are shown on your screen only.
 - **Help Center** (mod menu > Client) has guides and troubleshooting.
 
-## The 65 modules
+## The 66 modules
 
 | Section | Modules |
 |---|---|
@@ -23,7 +23,7 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 | G. Multiplayer | Server Manager, Connection Monitor, Friends Manager, Party Tools, Server Profiles, Chat Utilities |
 | H. Recording & stats | Screenshot Manager, Recording Tools, Replay System, Statistics Tracker, Practice Tools |
 | I. Client | Keybind Manager, Profile Manager, Settings Manager, Search and Discovery, Accessibility, Help Center |
-| J. Advanced | Diagnostics, Error Handler, Safe Mode, Update Manager, Plugin Framework, Developer Tools, Privacy Controls, Browser Compatibility, Localization |
+| J. Advanced | Diagnostics, Error Handler, Safe Mode, Update Manager, Plugin Framework, Developer Tools, Privacy Controls, Browser Compatibility, Localization, 1.21 Content |
 
 ## Phase 6 highlights
 
@@ -34,8 +34,22 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 - **Video recording:** Recording Tools saves `.avi` videos to `recordings/` by itself (video only; use OBS if you also need sound).
 - **Replays:** Replay System records your sessions to `replays/` and plays them back with a free camera, pause, 0.25x-8x speed, seeking and bookmark markers.
 
+## 1.21 content (singleplayer and LAN)
+
+Content from Minecraft 1.13-1.21 has been added to the client itself, using ids that 1.12 never uses, so joining normal 1.12 servers is not affected. Settings are in the **1.21 Content** module (Advanced).
+
+- **103 blocks:** deepslate and its ores, tuff, calcite, copper (oxidises; scrape it with an axe), amethyst (geodes, budding amethyst, buds), mangrove/cherry/pale oak wood with saplings, new flowers, mud, moss, sculk, blast furnace, smoker, barrel, scaffolding, lanterns, campfires, froglights, honey, bamboo, powder snow and more.
+- **59 items:** netherite tools and armour (smithing upgrade keeps enchantments), copper, raw ores, mace, spear, trident (throwable), crossbow, wind charge, brush, spyglass, recovery compass, new foods, boats, music discs, scutes, glow ink sacs and goat horns.
+- **12 effects and 12 enchantments:** slow falling, darkness, conduit power, dolphin's grace, wind charged, weaving, oozing, infested...; density, breach, wind burst, multishot, piercing, quick charge, loyalty, riptide, channeling, impaling, swift sneak, soul speed. New potions can be brewed.
+- **World generation** in newly explored chunks: a deepslate layer, copper ore, amethyst geodes, dripstone, sculk, cherry/pale oak/mangrove trees, bamboo and new flowers, nether gold ore and ancient debris.
+- **35 mobs** with spawn eggs (Creative > Miscellaneous): drowned, bogged, pillager, ravager, hoglin, zoglin, piglin (give it a gold ingot to barter), piglin brute, phantom (if you skip sleep for 3 nights), warden (step on a sculk shrieker four times), breeze, creaking (only moves when nobody looks), zombie nautilus, cod, salmon, tropical fish, pufferfish, tadpole, dolphin, axolotl, glow squid, turtle, frog, fox, panda, bee, goat, camel (saddle and ride), trader llama, wandering trader (trades), sniffer, armadillo, allay (give it an item to collect), strider (ride it on lava with a warped fungus on a stick) and happy ghast (saddle it and fly).
+
+The textures are placeholders made by recolouring the 1.12 textures. For the real 1.21 look, open **1.21 Content > Real 1.21 Textures** and pick a 1.21 resource pack or your own installed Minecraft version: the converter copies its block, item, armour and boat textures (mob models are different shapes, so mobs keep their placeholder textures).
+
 What is still not possible, and why:
-- **New 1.21 blocks, mobs and terrain** cannot appear in 1.12 worlds: servers running 1.12 never send them, and adding them would break joining normal servers. The pack converter gives everything that exists in 1.12 the modern look.
+- **1.21 content on servers:** normal 1.12 servers never send the new blocks, items or mobs, so they only exist in singleplayer and LAN worlds.
+- **New biomes, structures and the deep (y < 0) world:** 1.12 worlds have a fixed height of 0-255 and a fixed biome list; the new blocks are added to the existing biomes instead. Waterlogging (blocks inside water) also does not exist in 1.12.
+- **Music disc sounds and 1.21 mob sounds** are not included (they are Mojang's audio). Discs play once a converted 1.21 pack provides the sounds; mobs use similar 1.12 sounds.
 - **Sound in videos:** the game's audio output cannot be captured from inside the game; record with OBS if you need sound.
 - **Browser:** this source builds the desktop client only. A web build is part of Phase 7.
 - **Update Manager** and **Plugin Framework** are off by default and only do something if you set them up.

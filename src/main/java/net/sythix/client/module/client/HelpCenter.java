@@ -53,9 +53,18 @@ public class HelpCenter extends Module
             + "Texture Pack Manager lists your packs and lets you turn them on and off, change their order and mark favourites. Put .zip packs in the resourcepacks folder.\n\n"
             + "# Modern (1.21) textures\n"
             + "Put a resource pack made for Minecraft 1.13-1.21 (for example the 1.21 default textures, or any modern pack you are allowed to use) in the resourcepacks folder. Open Texture Pack Manager > Modern Pack Converter, pick the pack and press Convert. Sythix renames its block, item, mob and interface textures to the 1.12 names and saves \"NAME (1.12).zip\". Turn that pack on and blocks, items and mobs that exist in 1.12 get the modern look.\n\n"
-            + "Textures for things 1.12 does not have (cherry wood, copper, the Warden...) and textures whose layout changed are left out, so nothing shows up broken. New blocks, mobs and terrain cannot appear in 1.12 worlds: servers running 1.12 never send them.\n\n"
+            + "Textures whose layout changed since 1.12 are left out, so nothing shows up broken. The textures for Sythix's own 1.21 blocks and items are converted too; 1.21 Content > Real 1.21 Textures can also read them straight from a Minecraft version you have installed.\n\n"
             + "# Compatibility\n"
             + "Unconverted packs made for newer versions show missing (purple/black) textures. Convert them first, or use packs made for pack_format 3 (1.11-1.12)."},
+        {"1.21 blocks, items and mobs", "New content in singleplayer and LAN",
+            "# What it is\n"
+            + "Sythix adds blocks, items, effects, enchantments, world generation and 35 mobs from Minecraft 1.13-1.21. They work in singleplayer and LAN worlds; normal 1.12 servers do not have them, and joining them is not affected.\n\n"
+            + "# Getting them\n"
+            + "In Creative the new blocks and items are in the normal tabs and the spawn eggs are in Miscellaneous. In Survival, new chunks generate deepslate, copper, amethyst geodes, cherry and pale oak trees and more, and the new mobs spawn in their biomes. Crafting and smelting recipes work like in 1.21 (netherite: put a netherite ingot next to a diamond tool or armour piece).\n\n"
+            + "# Mobs worth knowing\n"
+            + "Give a piglin a gold ingot to barter. Give an allay an item and it collects matching items for you. Step on a sculk shrieker four times and a warden comes (careful!). Saddle a camel, strider (steer with a warped fungus on a stick) or happy ghast to ride it. Phantoms come if you do not sleep for three nights. Creakings only move while nobody looks at them.\n\n"
+            + "# Settings\n"
+            + "The 1.21 Content module (Advanced) turns the new world generation and natural mob spawning on or off. The textures are placeholders; use Real 1.21 Textures for the real look of blocks and items."},
         {"Recording and replays", "Videos, replays and screenshots",
             "# Video\n"
             + "Turn on Recording Tools and press its Recording Mode key (or button). With Built-in Recorder on, Sythix saves an .avi video in the recordings folder - no OBS needed. Sound is not recorded; use OBS if you need it.\n\n"
