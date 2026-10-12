@@ -156,6 +156,8 @@ public final class ModernEffects
         enchant(89, "loyalty", Enchantment.Rarity.UNCOMMON, EnumEnchantmentType.TRIDENT, hand, 3, false);
         enchant(90, "riptide", Enchantment.Rarity.RARE, EnumEnchantmentType.TRIDENT, hand, 3, false);
         enchant(91, "channeling", Enchantment.Rarity.VERY_RARE, EnumEnchantmentType.TRIDENT, hand, 1, false);
+        // 1.21.11: the spear's jab pushes you forward
+        enchant(92, "lunge", Enchantment.Rarity.RARE, EnumEnchantmentType.SPEAR, hand, 3, false);
     }
 
     private static void potionType(String name, Potion effect, int duration, int amplifier)

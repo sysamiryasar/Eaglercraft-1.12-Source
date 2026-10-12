@@ -25,21 +25,36 @@ os.makedirs(out + "/lib", exist_ok=True)
 
 # The game jar without music/sounds (the browser version has no sound) and only English text,
 # which makes it about 30 MB instead of 150 MB.
+# The built-in texture packs go into their own jars of at most ~20 MB, because static hosts such as
+# Cloudflare allow 25 MiB per file.
 src = zipfile.ZipFile("build/libs/EaglerGradle-1.0.0.jar")
 dst = zipfile.ZipFile(out + "/sythix-client.jar", "w", zipfile.ZIP_DEFLATED)
+pack_jars, pack_jar, pack_size = [], None, 0
 for item in src.infolist():
     n = item.filename
     if n.startswith("assets/minecraft/sounds/") and n.endswith(".ogg"):
         continue
     if n.startswith("assets/minecraft/lang/") and not n.endswith("en_us.lang"):
         continue
+    if n.startswith("sythix/texturepacks/") and not n.endswith("/"):
+        if pack_jar is None or pack_size + item.compress_size > 20 * 1024 * 1024:
+            if pack_jar:
+                pack_jar.close()
+            pack_jars.append("sythix-packs-%d.jar" % (len(pack_jars) + 1))
+            pack_jar = zipfile.ZipFile(out + "/" + pack_jars[-1], "w", zipfile.ZIP_DEFLATED)
+            pack_size = 0
+        pack_jar.writestr(item, src.read(n))
+        pack_size += item.compress_size
+        continue
     dst.writestr(item, src.read(n))
 dst.close()
+if pack_jar:
+    pack_jar.close()
 
 # The same libraries as the desktop runtime, except LWJGL (the browser needs 2.9.3, matching its
 # WebAssembly natives) and libraries that only wrap desktop native code.
 skip = ("lwjgl",)
-classpath = ["sythix-client.jar", "lwjgl/lwjgl-2.9.3.jar", "lwjgl/lwjgl_util-2.9.3.jar"]
+classpath = ["sythix-client.jar"] + pack_jars + ["lwjgl/lwjgl-2.9.3.jar", "lwjgl/lwjgl_util-2.9.3.jar"]
 for root, _, files in os.walk("lib/libraries"):
     for f in sorted(files):
         if f.endswith(".jar") and not f.startswith(skip) and "natives" not in f and "-sources" not in f:

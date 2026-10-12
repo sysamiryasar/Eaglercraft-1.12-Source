@@ -1554,7 +1554,20 @@ public abstract class EntityLivingBase extends Entity
         if (!source.isUnblockable())
         {
             this.damageArmor(damage);
-            damage = CombatRules.getDamageAfterAbsorb(damage, (float)this.getTotalArmorValue(), (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+            int breach = net.sythix.modern.ModernItems.breachLevel;
+
+            if (breach > 0 && source.getTrueSource() instanceof net.minecraft.entity.player.EntityPlayer)
+            {
+                // Sythix: Breach (1.21) - armour is 15% less effective per level
+                float armor = (float)this.getTotalArmorValue();
+                float toughness = (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue();
+                float reduction = MathHelper.clamp(armor - damage / (2.0F + toughness / 4.0F), armor * 0.2F, 20.0F) / 25.0F;
+                damage = damage * (1.0F - reduction * Math.max(0.0F, 1.0F - 0.15F * (float)breach));
+            }
+            else
+            {
+                damage = CombatRules.getDamageAfterAbsorb(damage, (float)this.getTotalArmorValue(), (float)this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).getAttributeValue());
+            }
         }
 
         return damage;

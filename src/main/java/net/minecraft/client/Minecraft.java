@@ -1776,6 +1776,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             }
             else if (!this.player.isRowingBoat())
             {
+                // Sythix: a spear jab with Lunge pushes you forward (the server takes the hunger cost)
+                if (net.sythix.modern.ModernItems.tryLunge(this.player) && this.getConnection() != null)
+                {
+                    this.getConnection().sendPacket(new net.minecraft.network.play.client.CPacketCustomPayload("sythix:lunge", new net.minecraft.network.PacketBuffer(io.netty.buffer.Unpooled.buffer())));
+                }
+
                 switch (this.objectMouseOver.typeOfHit)
                 {
                     case ENTITY:

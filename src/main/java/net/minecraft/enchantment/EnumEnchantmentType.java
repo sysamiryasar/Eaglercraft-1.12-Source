@@ -113,6 +113,12 @@ public enum EnumEnchantmentType
         {
             return itemIn == net.sythix.modern.ModernItems.get("trident");
         }
+    },
+    SPEAR {
+        public boolean canEnchantItem(Item itemIn)
+        {
+            return itemIn == net.sythix.modern.ModernItems.get("spear");
+        }
     };
 
     private EnumEnchantmentType()

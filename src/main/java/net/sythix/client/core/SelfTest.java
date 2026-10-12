@@ -276,6 +276,14 @@ public final class SelfTest
             return;
         }
 
+        if ("weapons".equals(System.getProperty("sythix.selftest")))
+        {
+            weaponSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("cpvp".equals(System.getProperty("sythix.selftest")))
         {
             cpvpSteps();
@@ -1606,6 +1614,365 @@ public final class SelfTest
             add("place crystal " + i, 3 + i % 3, () -> useOn(1, spot[0]));
             add("break crystal " + i, 6, () -> hitNear(spot[0].up(), net.minecraft.entity.item.EntityEnderCrystal.class));
         }
+    }
+
+    // ---- Client packs, mace and spear enchantments, attribute swapping ------------------------
+
+    private static final java.util.Map<String, Float> W = new java.util.concurrent.ConcurrentHashMap<String, Float>();
+    private static net.minecraft.entity.monster.EntityZombie plainDummy;
+    private static net.minecraft.entity.monster.EntityZombie armoredDummy;
+    private static double startX;
+    private static double startY;
+    private static double startZ;
+    private static double topY;
+    private static int ticksLeft;
+
+    private static net.minecraft.entity.player.EntityPlayerMP serverPlayer()
+    {
+        return mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+    }
+
+    private static void onServer(java.util.function.Consumer<net.minecraft.entity.player.EntityPlayerMP> task)
+    {
+        mc().getIntegratedServer().addScheduledTask(() -> task.accept(serverPlayer()));
+    }
+
+    private static net.minecraft.item.ItemStack weapon(String name, String enchant, int level)
+    {
+        net.minecraft.item.ItemStack stack = new net.minecraft.item.ItemStack(net.sythix.modern.ModernItems.get(name));
+
+        if (enchant != null)
+        {
+            stack.addEnchantment(net.sythix.modern.ModernEffects.enchant(enchant), level);
+        }
+
+        return stack;
+    }
+
+    /** Lets the next attack count as fully charged (as if the player waited). */
+    private static void fullyCharged(net.minecraft.entity.player.EntityPlayer p)
+    {
+        try
+        {
+            java.lang.reflect.Field f = net.minecraft.entity.EntityLivingBase.class.getDeclaredField("ticksSinceLastSwing");
+            f.setAccessible(true);
+            f.setInt(p, 1000);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** A server-side hit after falling `fall` blocks; stores the damage dealt under `key`. */
+    private static void smash(String key, net.minecraft.entity.player.EntityPlayerMP p, net.minecraft.entity.monster.EntityZombie target, float fall, boolean midAir)
+    {
+        fullyCharged(p);
+        target.hurtResistantTime = 0;
+        target.setHealth(target.getMaxHealth());
+        float before = target.getHealth();
+        p.fallDistance = fall;
+        boolean ground = p.onGround;
+        p.onGround = !midAir;
+        p.attackTargetEntityWithCurrentItem(target);
+        p.onGround = ground;
+        W.put(key, Float.valueOf(before - target.getHealth()));
+    }
+
+    private static net.minecraft.entity.monster.EntityZombie dummy(net.minecraft.world.World world, double x, double z, boolean armored)
+    {
+        net.minecraft.entity.monster.EntityZombie d = new net.minecraft.entity.monster.EntityZombie(world);
+        d.setLocationAndAngles(x, 4.0D, z, 0.0F, 0.0F);
+        d.setNoAI(true);
+        d.enablePersistence();
+        d.getEntityAttribute(net.minecraft.entity.SharedMonsterAttributes.MAX_HEALTH).setBaseValue(1000.0D);
+        // zombies have 2 natural armour points; without them the damage numbers are exact
+        d.getEntityAttribute(net.minecraft.entity.SharedMonsterAttributes.ARMOR).setBaseValue(0.0D);
+        d.setHealth(1000.0F);
+
+        if (armored)
+        {
+            d.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_HELMET));
+            d.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.CHEST, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_CHESTPLATE));
+            d.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.LEGS, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_LEGGINGS));
+            d.setItemStackToSlot(net.minecraft.inventory.EntityEquipmentSlot.FEET, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_BOOTS));
+        }
+
+        world.spawnEntity(d);
+        return d;
+    }
+
+    private static void expect(String what, String key, float want)
+    {
+        Float got = W.get(key);
+
+        if (got != null && Math.abs(got.floatValue() - want) < 0.05F)
+        {
+            pass(String.format("%s: %.1f damage (1.21: %.1f)", what, got, want));
+        }
+        else
+        {
+            fail(what, new IllegalStateException("damage " + got + ", expected " + want));
+        }
+    }
+
+    /** Records the client's highest point for `ticks` ticks (this step repeats itself). */
+    private static void trackHeight(int ticks)
+    {
+        add("track height", 1, () -> {
+            if (ticksLeft <= 0)
+            {
+                ticksLeft = ticks;
+                // measured from the ground the test stands on (y=4), not from wherever the first tick catches the rise
+                startY = 4.0D;
+                topY = startY;
+            }
+
+            topY = Math.max(topY, mc().player.posY);
+
+            if (--ticksLeft > 0)
+            {
+                --index;
+            }
+        });
+    }
+
+    private static void packCheck(String theme, String expectedWidgets, boolean cart)
+    {
+        add("client pack " + theme, 260, () -> {
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + theme + "\"");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, cart ? "true" : "false");
+        });
+        add("check " + theme, 1, () -> {
+            String widgets = packOf("textures/gui/widgets.png");
+            String rail = packOf("textures/blocks/rail_normal.png");
+            boolean railOk = cart == "Harlu Cart Pack".equals(rail);
+
+            if (expectedWidgets.equals(widgets) && railOk)
+            {
+                pass("client pack " + theme + (cart ? " + cart pack" : "") + ": widgets from " + widgets + ", rails from " + rail);
+            }
+            else
+            {
+                fail("client pack " + theme, new IllegalStateException("widgets from " + widgets + ", rails from " + rail));
+            }
+        });
+        add("screenshot " + theme, 2, () -> shot("packs-" + theme.replaceAll("[^A-Za-z]+", "-").toLowerCase() + (cart ? "-cart" : "")));
+    }
+
+    private static void weaponSteps()
+    {
+        add("create weapons world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-weapons"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME + "\"");
+            WorldSettings ws = new WorldSettings(12345L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands();
+            ws.setGeneratorOptions("3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;");
+            mc().launchIntegratedServer("sythix-weapons", "Sythix Weapons Test", ws);
+        });
+        add("wait for world", 1, SelfTest::waitForWorld);
+        add("set up", 60, () -> {
+            mc().displayGuiScreen(null);
+            onServer(p -> {
+                p.world.getGameRules().setOrCreateGameRule("doDaylightCycle", "false");
+                p.world.getGameRules().setOrCreateGameRule("doMobSpawning", "false");
+                p.connection.setPlayerLocation(0.5D, 4.0D, 0.5D, 0.0F, 0.0F);
+                plainDummy = dummy(p.world, -3.5D, -3.5D, false);
+                armoredDummy = dummy(p.world, 3.5D, -3.5D, true);
+                p.inventory.clear();
+                p.inventory.setInventorySlotContents(0, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_SWORD));
+                p.inventory.setInventorySlotContents(1, weapon("mace", null, 0));
+                p.inventory.currentItem = 1;
+            });
+        });
+
+        // ---- client packs: default, blue, red, and the cart pack on top --------------------------
+        add("night for the skies", 1, () -> onServer(p -> p.world.setWorldTime(14000L)));
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.BLUE_THEME, "Fallen Angel", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", true);
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
+        add("day again", 20, () -> onServer(p -> p.world.setWorldTime(6000L)));
+
+        // ---- mace smash damage (server side, exact numbers) ---------------------------------------
+        add("mace smash", 10, () -> onServer(p -> {
+            p.inventory.currentItem = 1;
+            smash("smash", p, plainDummy, 5.0F, false);
+            smash("crit", p, plainDummy, 5.0F, true);
+            p.inventory.setInventorySlotContents(1, weapon("mace", "density", 3));
+            smash("density", p, plainDummy, 5.0F, false);
+            p.inventory.setInventorySlotContents(1, weapon("mace", null, 0));
+            // the test world keeps few chunks loaded (low render distance), so give the dummy the tick
+            // in which worn armour turns into armour points
+            armoredDummy.onUpdate();
+            plainDummy.onUpdate();
+            W.put("armorPoints", Float.valueOf((float)armoredDummy.getTotalArmorValue()));
+            W.put("armorTicks", Float.valueOf((float)armoredDummy.ticksExisted));
+            W.put("armorDead", Float.valueOf(armoredDummy.isDead ? 1.0F : 0.0F));
+            W.put("armorChest", Float.valueOf(armoredDummy.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.CHEST).isEmpty() ? 0.0F : 1.0F));
+            smash("armored", p, armoredDummy, 5.0F, false);
+            p.inventory.setInventorySlotContents(1, weapon("mace", "breach", 4));
+            smash("breach", p, armoredDummy, 5.0F, false);
+            p.inventory.setInventorySlotContents(1, weapon("mace", null, 0));
+            p.fallDistance = 0.0F;
+            smash("ground", p, plainDummy, 0.0F, false);
+        }));
+        add("check mace", 1, () -> {
+            // mace: 1 (hand) + 5 = 6; falling 5 blocks adds 3x4 + 2x2 = 16
+            expect("mace on the ground", "ground", 6.0F);
+            expect("mace smash after 5 blocks", "smash", 22.0F);
+            expect("mace smash as a critical hit", "crit", 25.0F);
+            expect("mace smash with Density III", "density", 29.5F);
+            Float armored = W.get("armored");
+            Float breach = W.get("breach");
+
+            // 1.21: 22 damage vs diamond armour (20 armour, 8 toughness): armour blocks 58%, Breach IV
+            // makes it 60% less effective -> 22 x (1 - 0.58 x 0.4) = 16.9; without Breach 9.2
+            if (armored != null && breach != null && Math.abs(armored.floatValue() - 9.24F) < 0.1F && Math.abs(breach.floatValue() - 16.896F) < 0.1F)
+            {
+                pass(String.format("Breach IV vs diamond armour: %.1f damage instead of %.1f (1.21: 16.9 / 9.2)", breach, armored));
+            }
+            else
+            {
+                fail("breach", new IllegalStateException(armored + " -> " + breach + " (dummy armour points " + W.get("armorPoints") + ", ticks " + W.get("armorTicks") + ", dead " + W.get("armorDead") + ", chestplate " + W.get("armorChest") + ")"));
+            }
+        });
+
+        // ---- attribute swapping --------------------------------------------------------------
+        add("hold the sword", 10, () -> onServer(p -> p.inventory.currentItem = 0));
+        add("swap sword to mace and hit", 10, () -> onServer(p -> {
+            p.inventory.currentItem = 1;
+            smash("swapToMace", p, plainDummy, 5.0F, false);
+        }));
+        add("hold the mace", 10, () -> onServer(p -> p.inventory.currentItem = 1));
+        add("swap mace to sword and hit", 10, () -> onServer(p -> {
+            p.inventory.currentItem = 0;
+            smash("swapToSword", p, plainDummy, 5.0F, false);
+        }));
+        add("check swapping", 1, () -> {
+            // the attack damage attribute changes on the next tick; the item's own effects use the new item
+            expect("attribute swap sword -> mace (sword's 7 + mace smash 16)", "swapToMace", 23.0F);
+            expect("attribute swap mace -> sword (mace's 6, no smash)", "swapToSword", 6.0F);
+        });
+
+        // ---- Wind Burst ---------------------------------------------------------------------------
+        int[] heights = {8, 16, 24};
+
+        for (int level = 1; level <= 3; ++level)
+        {
+            final int lv = level;
+            final int want = heights[level - 1];
+            add("wind burst " + lv, 2, () -> onServer(p -> {
+                p.setGameType(lv == 1 ? GameType.SURVIVAL : GameType.CREATIVE);
+                p.setHealth(20.0F);
+                p.connection.setPlayerLocation(0.5D, 4.0D, 0.5D, 180.0F, 0.0F);
+                p.inventory.setInventorySlotContents(1, weapon("mace", "wind_burst", lv));
+                p.inventory.currentItem = 1;
+            }));
+            add("hit " + lv, 1, () -> onServer(p -> smash("burst" + lv, p, plainDummy, 5.0F, false)));
+            trackHeight(90);
+            add("check wind burst " + lv, 10, () -> {
+                double height = topY - startY;
+
+                if (Math.abs(height - (double)want) < 2.0D)
+                {
+                    pass(String.format("Wind Burst %d launched %.1f blocks up (1.21: about %d)", lv, height, want));
+                }
+                else
+                {
+                    fail("wind burst " + lv, new IllegalStateException(String.format("%.1f blocks, expected about %d", height, want)));
+                }
+
+                if (lv == 1)
+                {
+                    float hp = mc().player.getHealth();
+
+                    if (hp < 20.0F && hp > 0.0F)
+                    {
+                        pass(String.format("Wind Burst landing still hurts like 1.21 (health %.0f/20)", hp));
+                    }
+                    else
+                    {
+                        fail("wind burst fall damage", new IllegalStateException("health " + hp));
+                    }
+                }
+            });
+        }
+
+        // ---- Lunge -----------------------------------------------------------------------------
+        double[] dist = new double[4];
+
+        for (int level = 0; level <= 3; ++level)
+        {
+            final int lv = level;
+            add("lunge " + lv + " setup", 40, () -> onServer(p -> {
+                p.setGameType(GameType.SURVIVAL);
+                p.setHealth(20.0F);
+                p.getFoodStats().setFoodLevel(lv == 0 ? 5 : 20);
+                p.getFoodStats().setFoodSaturationLevel(0.0F);
+                p.connection.setPlayerLocation(0.5D, 4.0D, 0.5D, 0.0F, 0.0F);
+                p.inventory.setInventorySlotContents(2, weapon("spear", "lunge", lv == 0 ? 3 : lv));
+                p.inventory.currentItem = 2;
+                p.connection.sendPacket(new net.minecraft.network.play.server.SPacketHeldItemChange(2));
+            }));
+            add("lunge " + lv, 25, () -> {
+                startX = mc().player.posX;
+                startZ = mc().player.posZ;
+                W.put("food" + lv, Float.valueOf((float)mc().player.getFoodStats().getFoodLevel()));
+                fullyCharged(mc().player);
+
+                try
+                {
+                    java.lang.reflect.Method click = net.minecraft.client.Minecraft.class.getDeclaredMethod("clickMouse");
+                    click.setAccessible(true);
+                    click.invoke(mc());
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    fail("lunge click", e);
+                }
+            });
+            add("lunge " + lv + " result", 1, () -> {
+                dist[lv] = Math.hypot(mc().player.posX - startX, mc().player.posZ - startZ);
+                net.minecraft.entity.player.EntityPlayerMP p = serverPlayer();
+                int food = p.getFoodStats().getFoodLevel();
+                int damage = p.getHeldItemMainhand().getItemDamage();
+
+                if (lv == 0)
+                {
+                    if (dist[0] < 0.2D && food == 5)
+                    {
+                        pass(String.format("Lunge with 5 food does nothing (moved %.2f blocks), like 1.21.11", dist[0]));
+                    }
+                    else
+                    {
+                        fail("lunge when hungry", new IllegalStateException(String.format("moved %.2f, food %d", dist[0], food)));
+                    }
+                }
+                else if (dist[lv] > 0.5D && (lv == 1 || dist[lv] > dist[lv - 1] + 0.3D) && food == 20 - lv && damage == 1)
+                {
+                    pass(String.format("Lunge %d: pushed %.1f blocks forward, cost %d food and 1 durability", lv, dist[lv], lv));
+                }
+                else
+                {
+                    fail("lunge " + lv, new IllegalStateException(String.format("moved %.2f blocks, food %d (expected %d), durability used %d", dist[lv], food, 20 - lv, damage)));
+                }
+            });
+        }
+
+        add("screenshot weapons", 2, () -> shot("weapons-end"));
+        add("leave", 40, () -> {
+            mc().world.sendQuittingDisconnectingPacket();
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
     }
 
     private static void waitForWorld()

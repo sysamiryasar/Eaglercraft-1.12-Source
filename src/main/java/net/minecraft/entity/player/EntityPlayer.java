@@ -1295,8 +1295,6 @@ public abstract class EntityPlayer extends EntityLivingBase
             if (!targetEntity.hitByEntity(this))
             {
                 float f = (float)this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue();
-                // Sythix: mace fall-damage bonus
-                f += net.sythix.modern.ModernItems.bonusDamage(this, targetEntity);
                 float f1;
 
                 if (targetEntity instanceof EntityLivingBase)
@@ -1336,6 +1334,9 @@ public abstract class EntityPlayer extends EntityLivingBase
                     }
 
                     f = f + f1;
+                    // Sythix: mace smash bonus, added after the cooldown and critical hit like 1.21
+                    // (so it can crit, and spam-clicking does not shrink it)
+                    f += net.sythix.modern.ModernItems.bonusDamage(this, targetEntity);
                     boolean flag3 = false;
                     double d0 = (double)(this.distanceWalkedModified - this.prevDistanceWalkedModified);
 
@@ -1367,7 +1368,19 @@ public abstract class EntityPlayer extends EntityLivingBase
                     double d1 = targetEntity.motionX;
                     double d2 = targetEntity.motionY;
                     double d3 = targetEntity.motionZ;
-                    boolean flag5 = targetEntity.attackEntityFrom(DamageSource.causePlayerDamage(this), f);
+                    // Sythix: Breach makes the target's armour less effective for this hit
+                    net.sythix.modern.ModernItems.breachLevel = net.sythix.modern.ModernItems.breachOf(this);
+                    boolean flag5;
+
+                    try
+                    {
+                        flag5 = targetEntity.attackEntityFrom(DamageSource.causePlayerDamage(this), f);
+                    }
+                    finally
+                    {
+                        net.sythix.modern.ModernItems.breachLevel = 0;
+                    }
+
 
                     if (flag5)
                     {

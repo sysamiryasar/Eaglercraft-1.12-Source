@@ -27,7 +27,8 @@ import org.apache.commons.io.FileUtils;
  * Texture packs that ship inside the client (src/main/resources/sythix/texturepacks, built with
  * branding/texture_packs.py):
  *
- * - Cowarted Vanilla is Sythix's default look and is always on. It sits just above Minecraft's own
+ * - Client Pack (Texture Pack Manager): Cowarted Vanilla is Sythix's default look; Blue (Fallen
+ *   Angel) or Red (Red Revolution) replace it while chosen. It sits just above Minecraft's own
  *   textures, so any resource pack you pick still goes on top of it.
  * - Harlu Cart Pack is for cart PvP (clear rails, low fire, small particles) and is switched on in
  *   Texture Pack Manager (Cart Pack) or by the Cart PvP layout in Smart HUD Layout.
@@ -35,21 +36,34 @@ import org.apache.commons.io.FileUtils;
 public final class BuiltInPacks
 {
     public static final String CART_SETTING = "Cart Pack";
+    public static final String THEME_SETTING = "Client Pack";
+    public static final String DEFAULT_THEME = "Default (Cowarted Vanilla)";
+    public static final String BLUE_THEME = "Blue (Fallen Angel)";
+    public static final String RED_THEME = "Red (Red Revolution)";
+    public static final String[] THEMES = {DEFAULT_THEME, BLUE_THEME, RED_THEME};
+
     private static final Pack DEFAULT = new Pack("cowarted", "Cowarted Vanilla");
+    private static final Pack BLUE = new Pack("fallenangel", "Fallen Angel");
+    private static final Pack RED = new Pack("redrevolution", "Red Revolution");
     private static final Pack CART = new Pack("harlu", "Harlu Cart Pack");
 
-    /** Whether the cart pack is on; null until read from the settings. */
+    /** The chosen client pack and whether the cart pack is on; null until read from the settings. */
+    private static String theme;
     private static Boolean cartPack;
 
     private BuiltInPacks()
     {
     }
 
-    /** Adds the active built-in packs right after Minecraft's own (called on every resource reload). */
+    /**
+     * Adds the active built-in packs right after Minecraft's own (called on every resource reload):
+     * one client pack (Cowarted Vanilla unless Blue or Red is chosen) and the cart pack on top of it
+     * when that is switched on. Packs the player adds still go on top of these.
+     */
     public static void addTo(List<IResourcePack> packs)
     {
         int at = Math.min(1, packs.size());
-        packs.add(at, DEFAULT);
+        packs.add(at, themePack(theme()));
 
         if (cartPackOn())
         {
@@ -57,36 +71,50 @@ public final class BuiltInPacks
         }
     }
 
+    private static Pack themePack(String name)
+    {
+        return BLUE_THEME.equals(name) ? BLUE : (RED_THEME.equals(name) ? RED : DEFAULT);
+    }
+
+    public static String theme()
+    {
+        if (theme == null)
+        {
+            JsonElement saved = savedSetting(THEME_SETTING);
+            theme = saved != null && saved.isJsonPrimitive() ? saved.getAsString() : DEFAULT_THEME;
+        }
+
+        return theme;
+    }
+
     public static boolean cartPackOn()
     {
         if (cartPack == null)
         {
-            cartPack = Boolean.valueOf(savedCartSetting());
+            JsonElement saved = savedSetting(CART_SETTING);
+            cartPack = Boolean.valueOf(saved != null && saved.isJsonPrimitive() && saved.getAsBoolean());
         }
 
         return cartPack.booleanValue();
     }
 
-    /** Switches the cart pack on or off and reloads textures if that changed it. */
-    public static void setCartPack(boolean on)
+    /** Follows the Texture Pack Manager settings and reloads textures once when anything changed. */
+    public static void sync(String newTheme, boolean newCart)
     {
-        if (cartPack != null && cartPack.booleanValue() == on)
-        {
-            return;
-        }
-
-        boolean reload = cartPack != null;
-        cartPack = Boolean.valueOf(on);
+        boolean loaded = theme != null && cartPack != null;
+        boolean changed = !themePack(theme()).equals(themePack(newTheme)) || cartPackOn() != newCart;
+        theme = newTheme;
+        cartPack = Boolean.valueOf(newCart);
         Minecraft mc = Minecraft.getMinecraft();
 
-        if (reload && mc.getTextureManager() != null)
+        if (changed && loaded && mc.getTextureManager() != null)
         {
             mc.addScheduledTask(mc::refreshResources);
         }
     }
 
-    /** The first resource load happens before Sythix's settings are loaded: read the flag from config.json. */
-    private static boolean savedCartSetting()
+    /** The first resource load happens before Sythix's settings are loaded: read them from config.json. */
+    private static JsonElement savedSetting(String name)
     {
         try
         {
@@ -95,8 +123,7 @@ public final class BuiltInPacks
             if (config.isFile())
             {
                 JsonObject root = new JsonParser().parse(FileUtils.readFileToString(config, StandardCharsets.UTF_8)).getAsJsonObject();
-                JsonElement value = root.getAsJsonObject("modules").getAsJsonObject("Texture Pack Manager").getAsJsonObject("settings").get(CART_SETTING);
-                return value != null && value.getAsBoolean();
+                return root.getAsJsonObject("modules").getAsJsonObject("Texture Pack Manager").getAsJsonObject("settings").get(name);
             }
         }
         catch (Exception ignored)
@@ -104,7 +131,7 @@ public final class BuiltInPacks
             // no saved setting yet
         }
 
-        return false;
+        return null;
     }
 
     /** A pack read from the client jar, with a file index so lookups never search the jar. */

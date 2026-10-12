@@ -1,5 +1,7 @@
 package net.sythix.modern;
 
+import net.minecraft.util.math.MathHelper;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -150,6 +152,19 @@ public final class ModernItems
 
     public static final String[] DISCS = new String[] {"otherside", "5", "pigstep", "relic", "creator", "creator_music_box", "precipice"};
 
+    /**
+     * Breach level of the mace used in the hit being dealt right now (set around the attack in
+     * EntityPlayer). Like 1.21, each level makes the target's armour 15% less effective.
+     */
+    public static int breachLevel;
+
+    /** The Breach level of the player's mace in hand, or 0. */
+    public static int breachOf(EntityPlayer player)
+    {
+        Item mace = BY_NAME.get("mace");
+        return mace != null && player.getHeldItemMainhand().getItem() == mace ? ModernEffects.level("breach", player.getHeldItemMainhand()) : 0;
+    }
+
     /** Extra melee damage: the mace hits harder the further you fell (and stops your fall). */
     public static float bonusDamage(EntityPlayer player, Entity target)
     {
@@ -166,19 +181,16 @@ public final class ModernItems
         // Density: more damage per block fallen
         bonus += fall * 0.5F * (float)ModernEffects.level("density", held);
 
-        // Breach: hits through armour
-        if (target instanceof EntityLivingBase && ((EntityLivingBase)target).getTotalArmorValue() > 0)
-        {
-            bonus += (6.0F + bonus) * 0.15F * (float)ModernEffects.level("breach", held);
-        }
+        // (Breach works on every mace hit, in the target's armour calculation: see breachLevel)
 
         player.fallDistance = 0.0F;
         int burst = ModernEffects.level("wind_burst", held);
 
-        // Wind Burst: bounce back up after a smash
+        // Wind Burst: bounce back up after a smash, about 8 / 16 / 24 blocks for I / II / III like 1.21
+        // (1.21 does not cancel the fall damage of coming back down, and neither does this)
         if (burst > 0)
         {
-            player.motionY = 0.5D + 0.35D * (double)burst;
+            player.motionY = burst == 1 ? 1.2D : (burst == 2 ? 1.75D : (burst == 3 ? 2.2D : 1.15D + 0.35D * (double)burst));
             player.velocityChanged = true;
         }
 
@@ -197,6 +209,73 @@ public final class ModernItems
         }
 
         return bonus;
+    }
+
+    /** How far a Lunge jab pushes per level, in blocks per tick (1.21.11). */
+    public static final double LUNGE_SPEED = 0.458D;
+    private static final java.util.Map<java.util.UUID, Long> LAST_LUNGE = new java.util.HashMap<java.util.UUID, Long>();
+
+    /** The Lunge level of the spear in the main hand, if Lunge can work right now (else 0). */
+    public static int lungeLevel(EntityPlayer player)
+    {
+        Item spear = BY_NAME.get("spear");
+        net.minecraft.item.ItemStack held = player.getHeldItemMainhand();
+
+        if (spear == null || held.getItem() != spear)
+        {
+            return 0;
+        }
+
+        int level = ModernEffects.level("lunge", held);
+
+        // like 1.21.11: not when riding, gliding or touching water, and only with 7+ food
+        if (level <= 0 || player.isRiding() || player.isElytraFlying() || player.isInWater() || (!player.capabilities.isCreativeMode && player.getFoodStats().getFoodLevel() < 7))
+        {
+            return 0;
+        }
+
+        return level;
+    }
+
+    /**
+     * A jab (left click) with a Lunge spear, on the player's own side (movement is the player's): pushes
+     * them forward horizontally when the attack is fully charged. Returns true if it lunged.
+     */
+    public static boolean tryLunge(EntityPlayer player)
+    {
+        int level = lungeLevel(player);
+
+        if (level <= 0 || player.getCooledAttackStrength(0.0F) < 0.95F)
+        {
+            return false;
+        }
+
+        float yaw = player.rotationYaw * 0.017453292F;
+        double speed = LUNGE_SPEED * (double)level;
+        player.motionX += -(double)MathHelper.sin(yaw) * speed;
+        player.motionZ += (double)MathHelper.cos(yaw) * speed;
+        return true;
+    }
+
+    /** The server's side of a lunge: hunger (4 exhaustion per level) and 1 durability, at most once per attack cooldown. */
+    public static void lungeCost(net.minecraft.entity.player.EntityPlayerMP player)
+    {
+        int level = lungeLevel(player);
+        long now = player.world.getTotalWorldTime();
+        Long last = LAST_LUNGE.get(player.getUniqueID());
+
+        if (level <= 0 || last != null && now - last.longValue() < (long)Math.max(1.0F, player.getCooldownPeriod() * 0.9F))
+        {
+            return;
+        }
+
+        LAST_LUNGE.put(player.getUniqueID(), Long.valueOf(now));
+
+        if (!player.capabilities.isCreativeMode)
+        {
+            player.addExhaustion(4.0F * (float)level);
+            player.getHeldItemMainhand().damageItem(1, player);
+        }
     }
 
     /** Every player tick: turtle shell water breathing, and remembering where you died. */

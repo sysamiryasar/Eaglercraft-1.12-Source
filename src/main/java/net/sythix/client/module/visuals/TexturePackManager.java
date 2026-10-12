@@ -23,6 +23,7 @@ import net.sythix.client.ui.GuiTexturePacks;
 public class TexturePackManager extends Module
 {
     private final BooleanSetting cartPack;
+    private final net.sythix.client.setting.ModeSetting clientPack;
     private final Set<String> favorites = new LinkedHashSet<String>();
     private final KeybindSetting cycleKey;
     private final BooleanSetting warnIncompatible;
@@ -34,7 +35,8 @@ public class TexturePackManager extends Module
         this.add(new ButtonSetting("Pack Manager", "Open the texture pack manager.", "Open", () -> this.mc.displayGuiScreen(new GuiTexturePacks(this.mc.currentScreen))));
         this.cycleKey = this.add(new KeybindSetting("Cycle Favourites Key", "Switch between your favourite packs in game (and no pack).", 0));
         this.warnIncompatible = this.add(new BooleanSetting("Compatibility Warnings", "Mark packs made for other Minecraft versions.", true));
-        this.cartPack = this.add(new BooleanSetting(net.sythix.client.pack.BuiltInPacks.CART_SETTING, "Harlu Cart Pack for cart PvP: clear rails, low fire, small particles and explosions. Sythix's default look (Cowarted Vanilla) is always on underneath.", false));
+        this.clientPack = this.add(new net.sythix.client.setting.ModeSetting(net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "Sythix's built-in look. Default is Cowarted Vanilla; Blue (Fallen Angel) and Red (Red Revolution) replace it while chosen. Packs you add yourself still go on top.", net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, net.sythix.client.pack.BuiltInPacks.THEMES));
+        this.cartPack = this.add(new BooleanSetting(net.sythix.client.pack.BuiltInPacks.CART_SETTING, "Harlu Cart Pack for cart PvP: clear rails, low fire, small particles and explosions. Works on top of any client pack.", false));
         this.add(new ButtonSetting("Modern Pack Converter", "Convert 1.13-1.21 resource packs so 1.12 shows their modern textures.", "Open", () -> this.mc.displayGuiScreen(new net.sythix.client.pack.GuiModernPacks(this.mc.currentScreen))));
     }
 
@@ -166,6 +168,12 @@ public class TexturePackManager extends Module
     }
 
     /** Whether the built-in cart pack (Harlu) is switched on. */
+    /** The chosen built-in client pack (see BuiltInPacks.THEMES). */
+    public String clientPack()
+    {
+        return this.clientPack.get();
+    }
+
     public boolean cartPackOn()
     {
         return this.cartPack.isOn();

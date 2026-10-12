@@ -28,7 +28,6 @@ assets/minecraft/textures/gui/title/background/panorama_2.png
 assets/minecraft/textures/gui/title/background/panorama_3.png
 assets/minecraft/textures/gui/title/background/panorama_4.png
 assets/minecraft/textures/gui/title/background/panorama_5.png
-assets/minecraft/textures/gui/widgets.png
 assets/minecraft/textures/misc/enchanted_item_glint.png
 assets/minecraft/textures/misc/enchanted_item_glint.png.mcmeta
 assets/minecraft/textures/misc/pumpkinblur.png

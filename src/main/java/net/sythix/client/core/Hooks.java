@@ -176,7 +176,7 @@ public final class Hooks
 
         if (packs != null)
         {
-            net.sythix.client.pack.BuiltInPacks.setCartPack(packs.cartPackOn());
+            net.sythix.client.pack.BuiltInPacks.sync(packs.clientPack(), packs.cartPackOn());
         }
 
         if (combatTracking())

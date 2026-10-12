@@ -1,7 +1,11 @@
 """Builds Sythix's built-in texture packs from modern (1.21) resource packs.
 
 Usage:
-  python3 branding/texture_packs.py NAME ORIGINAL.zip CONVERTED.zip VANILLA_ASSETS OUT_DIR
+  python3 branding/texture_packs.py NAME ORIGINAL.zip CONVERTED.zip VANILLA_ASSETS OUT_DIR [--keep PATH]... [--exclude PATH]...
+
+--keep copies a folder of the original pack unchanged (for OptiFine's own folders such as
+assets/minecraft/optifine, which 1.12's OptiFine reads as they are). --exclude leaves files out
+(for example parts whose authors do not allow redistribution).
 
 ORIGINAL.zip is the 1.21 pack, CONVERTED.zip is the same pack after Sythix's Modern Pack
 Converter (Texture Pack Manager > Modern Pack Converter, or ModernPackConverter.convert), and
@@ -136,16 +140,30 @@ def build_sheets(files, vanilla):
 
 def main():
     name, original, converted, vanilla, out = sys.argv[1:6]
+    keep, exclude, rest = [], [], sys.argv[6:]
+    while rest:
+        flag, value, rest = rest[0], rest[1], rest[2:]
+        (keep if flag == "--keep" else exclude).append(value.rstrip("/") + "/")
     vanilla = os.path.join(vanilla, "assets/minecraft")
     with zipfile.ZipFile(original) as z:
-        files = {n: z.read(n) for n in z.namelist() if not n.endswith("/")}
+        files = {n: z.read(n) for n in z.namelist() if not n.endswith("/") and not any(n.startswith(x) for x in exclude)}
     if os.path.isdir(out):
         shutil.rmtree(out)
     os.makedirs(out)
     with zipfile.ZipFile(converted) as z:
         z.extractall(out)
+    for x in exclude:
+        shutil.rmtree(os.path.join(out, x), ignore_errors=True)
+    kept = 0
+    for n, data in files.items():
+        if any(n.startswith(k) for k in keep):
+            dst = os.path.join(out, n)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            with open(dst, "wb") as f:
+                f.write(data)
+            kept += 1
     textures = os.path.join(out, "assets/minecraft/textures")
-    notes = []
+    notes = ["%d OptiFine files kept" % kept] if kept else []
 
     particles = build_particles(files, vanilla)
     if particles:

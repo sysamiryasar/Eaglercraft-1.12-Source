@@ -952,7 +952,7 @@ def effects_lang():
                "wind_charged": "Wind Charged", "weaving": "Weaving", "oozing": "Oozing", "infested": "Infested"}
     enchants = {"swift_sneak": "Swift Sneak", "soul_speed": "Soul Speed", "density": "Density", "breach": "Breach", "wind_burst": "Wind Burst",
                 "multishot": "Multishot", "piercing": "Piercing", "quick_charge": "Quick Charge", "impaling": "Impaling", "loyalty": "Loyalty",
-                "riptide": "Riptide", "channeling": "Channeling"}
+                "riptide": "Riptide", "channeling": "Channeling", "lunge": "Lunge"}
     potions = ["slow_falling", "wind_charged", "weaving", "oozing", "infested"]
     lines = ["", "# Sythix: effects and enchantments from Minecraft 1.13-1.21"]
     for k, v in effects.items():
