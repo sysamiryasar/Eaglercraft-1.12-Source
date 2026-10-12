@@ -975,6 +975,31 @@ public class GameSettings
                     this.clouds = 0;
                     this.mipmapLevels = 0;
                     this.particleSetting = 2;
+                    this.entityShadows = false;
+                    // OptiFine: no texture animation (re-uploads textures every tick), no custom
+                    // skies/colours/models, fast maths, fast trees and items, no clouds
+                    this.ofFastMath = true;
+                    this.ofSmoothFps = false;
+                    this.ofAnimatedTerrain = false;
+                    this.ofAnimatedTextures = false;
+                    this.ofAnimatedWater = 2;
+                    this.ofAnimatedLava = 2;
+                    this.ofCustomSky = false;
+                    this.ofCustomColors = false;
+                    this.ofCustomItems = false;
+                    this.ofCustomEntityModels = false;
+                    this.ofConnectedTextures = 3;
+                    this.ofNaturalTextures = false;
+                    this.ofSmoothBiomes = false;
+                    this.ofSwampColors = false;
+                    this.ofBetterGrass = 3;
+                    this.ofTrees = 1;
+                    this.ofDroppedItems = 1;
+                    this.ofClouds = 3;
+                    this.ofVignette = 1;
+                    this.ofDynamicLights = 3;
+                    this.ofDynamicFov = false;
+                    this.ofLazyChunkLoading = true;
                 }
 
                 return;

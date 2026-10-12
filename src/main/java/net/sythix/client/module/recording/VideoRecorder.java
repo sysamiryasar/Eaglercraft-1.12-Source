@@ -85,6 +85,13 @@ public final class VideoRecorder
             return;
         }
 
+        if (GlStateManager.WEB)
+        {
+            // the browser's OpenGL layer cannot read the screen back
+            Notifications.post("Recording unavailable", "Video recording only works in the desktop client.", Notifications.Kind.ERROR);
+            return;
+        }
+
         Minecraft mc = Minecraft.getMinecraft();
         File dir = new File(mc.mcDataDir, "recordings");
         dir.mkdirs();

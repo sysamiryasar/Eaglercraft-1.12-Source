@@ -1470,6 +1470,12 @@ public class EntityRenderer implements IResourceManagerReloadListener
 
     private void createWorldIcon()
     {
+        if (GlStateManager.WEB)
+        {
+            // browser build: the screen cannot be read back, so the world keeps the default icon
+            return;
+        }
+
         if (this.mc.renderGlobal.getRenderedChunks() > 10 && this.mc.renderGlobal.hasNoChunkUpdates() && !this.mc.getIntegratedServer().isWorldIconSet())
         {
             BufferedImage bufferedimage = ScreenShotHelper.createScreenshot(this.mc.displayWidth, this.mc.displayHeight, this.mc.getFramebuffer());

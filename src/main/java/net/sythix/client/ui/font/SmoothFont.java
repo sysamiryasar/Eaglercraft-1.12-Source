@@ -219,6 +219,8 @@ public final class SmoothFont
         GlStateManager.alphaFunc(GL11.GL_GREATER, 0.004F);
         Tessellator tess = Tessellator.getInstance();
         BufferBuilder buf = tess.getBuffer();
+        // glyphs are collected and drawn together while they come from the same atlas page
+        int batchTexture = -1;
 
         for (int i = 0; i < text.length(); ++i)
         {
@@ -284,22 +286,46 @@ public final class SmoothFont
                 int gr = color >> 8 & 255;
                 int b = color & 255;
                 int a = color >>> 24;
-                GlStateManager.bindTexture(p.texture);
-                buf.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+                if (batchTexture != p.texture)
+                {
+                    if (batchTexture != -1)
+                    {
+                        // re-bind: making a new atlas page above may have bound its texture
+                        GlStateManager.bindTexture(batchTexture);
+                        tess.draw();
+                    }
+
+                    GlStateManager.bindTexture(p.texture);
+                    buf.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+                    batchTexture = p.texture;
+                }
+
                 buf.pos(left + skew, top, 0.0D).tex(u0, v0).color(r, gr, b, a).endVertex();
                 buf.pos(left, top + w, 0.0D).tex(u0, v0 + uv).color(r, gr, b, a).endVertex();
                 buf.pos(left + w, top + w, 0.0D).tex(u0 + uv, v0 + uv).color(r, gr, b, a).endVertex();
                 buf.pos(left + w + skew, top, 0.0D).tex(u0 + uv, v0).color(r, gr, b, a).endVertex();
-                tess.draw();
             }
 
             if (underline || strike)
             {
+                if (batchTexture != -1)
+                {
+                    GlStateManager.bindTexture(batchTexture);
+                    tess.draw();
+                    batchTexture = -1;
+                }
+
                 float ly = underline ? y + 8.2F * size : y + 4.0F * size;
                 line(cx, ly, cx + adv, ly + 0.8F * size, color);
             }
 
             cx += adv;
+        }
+
+        if (batchTexture != -1)
+        {
+            GlStateManager.bindTexture(batchTexture);
+            tess.draw();
         }
 
         GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);

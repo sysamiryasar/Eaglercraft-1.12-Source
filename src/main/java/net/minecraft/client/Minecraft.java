@@ -1214,12 +1214,77 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      * Called repeatedly from run()
      */
     private int webFrames;
+    private long webFrameMark;
+    private int webFramesMark;
+    private long webTickNs, webRenderNs, webDisplayNs, webSyncNs, webSwapNs, webEventsNs;
+
+    /** The sections taking at least 5% of the time, descending into the big ones. */
+    private static String webProfile(net.minecraft.profiler.Profiler profiler, String path, int depth)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for (net.minecraft.profiler.Profiler.Result r : profiler.getProfilingData(path))
+        {
+            if (r.totalUsePercentage < 5.0D || r.profilerName.equals("unspecified") || r.profilerName.isEmpty() || r.profilerName.endsWith("."))
+            {
+                continue;
+            }
+
+            sb.append(' ').append(r.profilerName).append('=').append(Math.round(r.totalUsePercentage)).append('%');
+
+            if (depth < 4 && r.totalUsePercentage >= 15.0D)
+            {
+                String inner = webProfile(profiler, path + "." + r.profilerName, depth + 1);
+
+                if (!inner.isEmpty())
+                {
+                    sb.append(" [").append(inner.trim()).append(']');
+                }
+            }
+        }
+
+        return sb.toString();
+    }
 
     private void runGameLoop() throws IOException
     {
-        if (GlStateManager.WEB && this.webFrames < 400 && (++this.webFrames <= 3 || this.webFrames % 100 == 0))
+        if (GlStateManager.WEB)
         {
-            webStep("frame " + this.webFrames);
+            // browser build: report the average frame time every 100 frames (for tuning)
+            long now = System.nanoTime();
+
+            if (++this.webFrames <= 3)
+            {
+                webStep("frame " + this.webFrames);
+            }
+
+            int n = this.webFrames - this.webFramesMark;
+
+            if (n > 0 && (n >= 100 || now - this.webFrameMark > 15000000000L))
+            {
+                webStep("frame " + this.webFrames + " avg " + (now - this.webFrameMark) / (n * 1000000L) + " ms" + (this.world == null ? " (menu)" : " (world)")
+                    + " tick " + this.webTickNs / (n * 1000000L) + " render " + this.webRenderNs / (n * 1000000L) + " display " + this.webDisplayNs / (n * 1000000L) + " wait " + this.webSyncNs / (n * 1000000L) + " (swap " + this.webSwapNs / (n * 1000000L) + " events " + this.webEventsNs / (n * 1000000L) + ")");
+                this.webFrameMark = now;
+                this.webFramesMark = this.webFrames;
+                this.webTickNs = this.webRenderNs = this.webDisplayNs = this.webSyncNs = this.webSwapNs = this.webEventsNs = 0L;
+
+                if (Boolean.getBoolean("sythix.webdebug"))
+                {
+                    // debug builds: name the busiest parts of the client and the integrated server
+                    this.mcProfiler.profilingEnabled = true;
+                    webStep("client " + webProfile(this.mcProfiler, "root", 0));
+
+                    if (this.integratedServer != null)
+                    {
+                        this.integratedServer.profiler.profilingEnabled = true;
+                        webStep("server " + webProfile(this.integratedServer.profiler, "root", 0));
+                    }
+                }
+            }
+            else if (this.webFrames == 1)
+            {
+                this.webFrameMark = now;
+            }
         }
 
         long i = System.nanoTime();
@@ -1247,7 +1312,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
         for (int j = 0; j < Math.min(10, this.timer.elapsedTicks); ++j)
         {
+            long webT = System.nanoTime();
             this.runTick();
+            this.webTickNs += System.nanoTime() - webT;
         }
 
         this.mcProfiler.endStartSection("preRenderErrors");
@@ -1267,7 +1334,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         if (!this.skipRenderWorld)
         {
             this.mcProfiler.endStartSection("gameRenderer");
+            long webR = System.nanoTime();
             this.entityRenderer.updateCameraAndRender(this.isGamePaused ? this.renderPartialTicksPaused : this.timer.renderPartialTicks, i);
+            this.webRenderNs += System.nanoTime() - webR;
             this.mcProfiler.endStartSection("toasts");
             this.toastGui.drawToast(new ScaledResolution(this));
             net.sythix.client.core.Hooks.renderNotifications(new ScaledResolution(this));
@@ -1289,7 +1358,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         }
         else
         {
-            this.mcProfiler.profilingEnabled = false;
+            this.mcProfiler.profilingEnabled = GlStateManager.WEB && Boolean.getBoolean("sythix.webdebug");
             this.prevFrameTime = System.nanoTime();
         }
 
@@ -1302,8 +1371,10 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.entityRenderer.renderStreamIndicator(this.timer.renderPartialTicks);
         GlStateManager.popMatrix();
         this.mcProfiler.startSection("root");
+        long webD = System.nanoTime();
         this.updateDisplay();
         Thread.yield();
+        this.webDisplayNs += System.nanoTime() - webD;
         this.checkGLError("Post render");
         ++this.fpsCounter;
         boolean flag = this.isSingleplayer() && this.currentScreen != null && this.currentScreen.doesGuiPauseGame() && !this.integratedServer.getPublic();
@@ -1344,7 +1415,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         if (this.isFramerateLimitBelowMax())
         {
             this.mcProfiler.startSection("fpslimit_wait");
+            long webS = System.nanoTime();
             Display.sync(this.getLimitFramerate());
+            this.webSyncNs += System.nanoTime() - webS;
             this.mcProfiler.endSection();
         }
 
@@ -1354,7 +1427,22 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public void updateDisplay()
     {
         this.mcProfiler.startSection("display_update");
-        Display.update();
+
+        if (GlStateManager.WEB)
+        {
+            // browser build: time the buffer swap and the window events separately (for tuning)
+            long t = System.nanoTime();
+            Display.update(false);
+            long t2 = System.nanoTime();
+            Display.processMessages();
+            this.webSwapNs += t2 - t;
+            this.webEventsNs += System.nanoTime() - t2;
+        }
+        else
+        {
+            Display.update();
+        }
+
         this.mcProfiler.endSection();
         this.checkWindowResize();
     }

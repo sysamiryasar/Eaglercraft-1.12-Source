@@ -73,8 +73,10 @@ What is still not possible, and why:
 
 - Worlds and settings are saved in the browser (CheerpJ's `/files` storage).
 - Tested in Chrome: the Sythix menus, mouse input, creating a singleplayer world and playing in it all work (screenshots in `web/screenshots/`).
-- It is much slower than the desktop version: Java runs as WebAssembly, and the singleplayer server runs inside the same browser tab. A new world takes a few minutes to open, and the browser build starts with light settings (render distance 4, Fast graphics). A fast computer and Chrome or Edge work best.
-- No sound, no shaders and no blur effects (WebGL through gl4es offers no framebuffers here). The first start downloads about 30 MB.
+- It is much slower than the desktop version: Java runs as WebAssembly, and the singleplayer server runs inside the same browser tab. A new world takes a few minutes to open. A fast computer and Chrome or Edge work best.
+- Speed tuning for the browser: it starts with light settings (render distance 4, Fast graphics, no animated textures, smooth lighting, clouds, custom skies or entity shadows; all can be raised in Video Settings), menu text is drawn in batches, and the singleplayer server never runs several ticks back to back, so it can use at most about half the time and the picture keeps moving (on a slow computer the world then runs a little slower instead of freezing).
+- No sound, no shaders, no blur effects (WebGL through gl4es offers no framebuffers here), and no screenshots or video recording (the screen cannot be read back; use your system's screenshot key). The first start downloads about 30 MB.
+- Open the page with `#debug` at the end of the address (for example http://localhost:8080/#debug) to log frame times and the busiest parts of the game to the browser console.
 - Joining normal Minecraft servers from a browser needs a WebSocket proxy (browsers cannot open game connections); singleplayer works.
 - CheerpJ is free for personal and open-source projects; other companies need a license from Leaning Technologies.
 

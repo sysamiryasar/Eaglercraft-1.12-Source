@@ -181,6 +181,9 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
     public final Queue < FutureTask<? >> futureTaskQueue = Queues. < FutureTask<? >> newArrayDeque();
     private Thread serverThread;
     private long currentTime = getCurrentTimeMillis();
+
+    /** The Sythix browser build (CheerpJ), where every thread shares one CPU thread. */
+    private static final boolean WEB = Boolean.getBoolean("sythix.web");
     private boolean worldIconSet;
 
     public MinecraftServer(File anvilFileIn, Proxy proxyIn, DataFixer dataFixerIn, YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn, GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
@@ -559,6 +562,19 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IThre
                     {
                         this.tick();
                         i = 0L;
+                    }
+                    else if (WEB)
+                    {
+                        // Sythix browser build: the server shares one thread with the game window.
+                        // It never catches up with several ticks in a row, and after a tick it rests
+                        // at least as long as the tick took, so drawing always gets half the time.
+                        if (i > 50L)
+                        {
+                            long t = getCurrentTimeMillis();
+                            this.tick();
+                            i = Math.min(i - 50L, 50L);
+                            Thread.sleep(Math.max(1L, getCurrentTimeMillis() - t));
+                        }
                     }
                     else
                     {

@@ -18,6 +18,8 @@ public class Profiler
     private final List<Long> timestampList = Lists.<Long>newArrayList();
 
     /** Flag profiling enabled */
+    /** The Sythix browser build, where slow sections are normal and the warnings only cost time. */
+    private static final boolean WEB = Boolean.getBoolean("sythix.web");
     public boolean profilingEnabled;
 
     /** Current profiling section */
@@ -129,7 +131,7 @@ public class Profiler
                     this.profilingMap.put(this.profilingSection, Long.valueOf(k));
                 }
 
-                if (k > 100000000L)
+                if (k > 100000000L && !WEB)
                 {
                     LOGGER.warn("Something's taking too long! '{}' took aprox {} ms", this.profilingSection, Double.valueOf((double)k / 1000000.0D));
                 }

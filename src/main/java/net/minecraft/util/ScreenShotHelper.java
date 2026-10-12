@@ -52,6 +52,12 @@ public class ScreenShotHelper
      */
     public static ITextComponent saveScreenshot(File gameDirectory, @Nullable String screenshotName, int width, int height, Framebuffer buffer)
     {
+        if (GlStateManager.WEB)
+        {
+            // Sythix browser build: the browser's OpenGL layer cannot read the screen back
+            return new TextComponentString("Screenshots only work in the desktop client (in the browser, use your system's screenshot key).");
+        }
+
         try
         {
             File file1 = new File(gameDirectory, "screenshots");

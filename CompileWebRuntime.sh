@@ -15,8 +15,12 @@ python3 - <<'PY'
 import json, os, shutil, zipfile
 
 out = "build/web"
-shutil.rmtree(out, ignore_errors=True)
-shutil.copytree("web", out)
+# empty the folder but keep it, so a running "serve" keeps working after a rebuild
+os.makedirs(out, exist_ok=True)
+for name in os.listdir(out):
+    path = os.path.join(out, name)
+    shutil.rmtree(path) if os.path.isdir(path) else os.remove(path)
+shutil.copytree("web", out, dirs_exist_ok=True)
 os.makedirs(out + "/lib", exist_ok=True)
 
 # The game jar without music/sounds (the browser version has no sound) and only English text,
