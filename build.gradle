@@ -19,9 +19,17 @@ repositories {
     mavenCentral()
 }
 
+java {
+    // the code is compiled to Java 8 bytecode (see below); the TeaVM library is only marked for Java 11
+    disableAutoTargetJvm()
+}
+
 // Source files are UTF-8 (needed for symbols such as the star and gear in the Sythix menus)
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    // Java 8 bytecode: the desktop runtime runs it on any newer Java, and the browser build
+    // (CheerpJ, see CompileWebRuntime.sh) runs Java 8 best
+    options.release = 8
 }
 
 application {

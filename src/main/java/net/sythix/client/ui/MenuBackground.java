@@ -78,7 +78,13 @@ public final class MenuBackground
         Minecraft mc = Minecraft.getMinecraft();
         boolean world = mc.world != null;
 
-        if (!world && "Plain".equals(source))
+        if (!net.minecraft.client.renderer.OpenGlHelper.isFramebufferEnabled())
+        {
+            // no framebuffers (browser build): a plain dark backdrop instead of the blur
+            SythixTheme.drawQuad(left, top, right, bottom, shade(0xFF1A1420, 0xFF08070B, (float)top / height), shade(0xFF1A1420, 0xFF08070B, (float)top / height),
+                shade(0xFF1A1420, 0xFF08070B, (float)bottom / height), shade(0xFF1A1420, 0xFF08070B, (float)bottom / height));
+        }
+        else if (!world && "Plain".equals(source))
         {
             SythixTheme.drawQuad(left, top, right, bottom, shade(0xFF17121C, 0xFF07060A, (float)top / height), shade(0xFF17121C, 0xFF07060A, (float)top / height),
                 shade(0xFF17121C, 0xFF07060A, (float)bottom / height), shade(0xFF17121C, 0xFF07060A, (float)bottom / height));

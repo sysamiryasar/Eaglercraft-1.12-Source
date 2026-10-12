@@ -204,22 +204,36 @@ public class ModelBlock
 
     public static void checkModelHierarchy(Map<ResourceLocation, ModelBlock> p_178312_0_)
     {
+        // Sythix: the same parent-loop check as vanilla (two pointers walking the parents), with
+        // explicit null checks instead of catching NullPointerException, which the browser build
+        // (CheerpJ) cannot rely on
         for (ModelBlock modelblock : p_178312_0_.values())
         {
-            try
-            {
-                ModelBlock modelblock1 = modelblock.parent;
+            ModelBlock slow = modelblock.parent;
 
-                for (ModelBlock modelblock2 = modelblock1.parent; modelblock1 != modelblock2; modelblock2 = modelblock2.parent.parent)
+            if (slow == null)
+            {
+                continue;
+            }
+
+            ModelBlock fast = slow.parent;
+            boolean loop = true;
+
+            while (slow != fast)
+            {
+                if (fast == null || fast.parent == null || slow.parent == null)
                 {
-                    modelblock1 = modelblock1.parent;
+                    loop = false;
+                    break;
                 }
 
-                throw new ModelBlock.LoopException();
+                slow = slow.parent;
+                fast = fast.parent.parent;
             }
-            catch (NullPointerException var5)
+
+            if (loop)
             {
-                ;
+                throw new ModelBlock.LoopException();
             }
         }
     }

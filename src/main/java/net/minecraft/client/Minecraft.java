@@ -460,6 +460,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         }
         catch (Throwable throwable)
         {
+            LOGGER.error("Initializing game failed", throwable);
             CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Initializing game");
             crashreport.makeCategory("Initialization");
             this.displayCrashReport(this.addGraphicsAndWorldToCrashReport(crashreport));
@@ -523,6 +524,15 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     /**
      * Starts the game: initializes the canvas, the title, the settings, etcetera.
      */
+    /** Sythix: progress markers while the browser build starts (where it is slow or stuck). */
+    private static void webStep(String step)
+    {
+        if (GlStateManager.WEB)
+        {
+            LOGGER.info("[web] " + step);
+        }
+    }
+
     private void init() throws LWJGLException, IOException
     {
         this.gameSettings = new GameSettings(this, this.mcDataDir);
@@ -541,17 +551,21 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.setInitialDisplayMode();
         this.createDisplay();
         OpenGlHelper.initializeTextures();
+        webStep("gl helpers ready");
         this.framebufferMc = new Framebuffer(this.displayWidth, this.displayHeight, true);
         this.framebufferMc.setFramebufferColor(0.0F, 0.0F, 0.0F, 0.0F);
+        webStep("framebuffer ready");
         this.registerMetadataSerializers();
         this.mcResourcePackRepository = new ResourcePackRepository(this.fileResourcepacks, new File(this.mcDataDir, "server-resource-packs"), this.mcDefaultResourcePack, this.metadataSerializer_, this.gameSettings);
         this.mcResourceManager = new SimpleReloadableResourceManager(this.metadataSerializer_);
         this.mcLanguageManager = new LanguageManager(this.metadataSerializer_, this.gameSettings.language);
         this.mcResourceManager.registerReloadListener(this.mcLanguageManager);
         this.refreshResources();
+        webStep("resources loaded");
         this.renderEngine = new TextureManager(this.mcResourceManager);
         this.mcResourceManager.registerReloadListener(this.renderEngine);
         this.drawSplashScreen(this.renderEngine);
+        webStep("splash drawn");
         this.skinManager = new SkinManager(this.renderEngine, new File(this.fileAssets, "skins"), this.sessionService);
         this.saveLoader = new AnvilSaveConverter(new File(this.mcDataDir, "saves"), this.dataFixer);
         this.mcSoundHandler = new SoundHandler(this.mcResourceManager, this.gameSettings);
@@ -571,6 +585,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.mcResourceManager.registerReloadListener(new GrassColorReloadListener());
         this.mcResourceManager.registerReloadListener(new FoliageColorReloadListener());
         this.mouseHelper = new MouseHelper();
+        webStep("fonts ready");
         this.checkGLError("Pre startup");
         GlStateManager.enableTexture2D();
         GlStateManager.shadeModel(7425);
@@ -588,6 +603,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.textureMapBlocks.setMipmapLevels(this.gameSettings.mipmapLevels);
         this.renderEngine.loadTickableTexture(TextureMap.LOCATION_BLOCKS_TEXTURE, this.textureMapBlocks);
         this.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        webStep("block textures stitched");
         this.textureMapBlocks.setBlurMipmapDirect(false, this.gameSettings.mipmapLevels > 0);
         this.modelManager = new ModelManager(this.textureMapBlocks);
         this.mcResourceManager.registerReloadListener(this.modelManager);
@@ -602,12 +618,14 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.blockRenderDispatcher = new BlockRendererDispatcher(this.modelManager.getBlockModelShapes(), this.blockColors);
         this.mcResourceManager.registerReloadListener(this.blockRenderDispatcher);
         this.renderGlobal = new RenderGlobal(this);
+        webStep("world renderer ready");
         this.mcResourceManager.registerReloadListener(this.renderGlobal);
         this.populateSearchTreeManager();
         this.mcResourceManager.registerReloadListener(this.searchTreeManager);
         GlStateManager.viewport(0, 0, this.displayWidth, this.displayHeight);
         this.effectRenderer = new ParticleManager(this.world, this.renderEngine);
         this.checkGLError("Post startup");
+        webStep("startup done");
         this.ingameGUI = new GuiIngame(this);
         SythixClient.init(this);
 

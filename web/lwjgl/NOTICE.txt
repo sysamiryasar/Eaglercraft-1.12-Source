@@ -1,0 +1,15 @@
+Files in this folder (used by the Sythix browser build):
+
+lwjgl-2.9.3.jar, lwjgl_util-2.9.3.jar
+  LWJGL 2 - Lightweight Java Game Library, https://www.lwjgl.org
+  Copyright (c) 2002-2008 Lightweight Java Game Library Project. All rights reserved.
+  BSD 3-clause license (https://github.com/LWJGL/lwjgl/blob/master/LICENSE).
+
+libraries/liblwjgl.so (LWJGL's native code compiled to WebAssembly)
+libraries/gl4es.wasm  (gl4es, OpenGL to OpenGL ES/WebGL, https://github.com/ptitSeb/gl4es, MIT license)
+  Both taken from Browsercraft by Leaning Technologies, https://github.com/leaningtech/browsercraft,
+  Apache License 2.0 (see BROWSERCRAFT-LICENSE.txt).
+
+The browser build runs on CheerpJ (https://cheerpj.com), loaded from Leaning Technologies' servers.
+CheerpJ is free for personal projects, open-source projects and one-person companies; other
+companies need a license from Leaning Technologies.

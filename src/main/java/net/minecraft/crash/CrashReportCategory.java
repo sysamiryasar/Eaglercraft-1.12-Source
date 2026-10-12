@@ -148,7 +148,7 @@ public class CrashReportCategory
         {
             StackTraceElement stacktraceelement = this.stackTrace[0];
 
-            if (stacktraceelement.isNativeMethod() == s1.isNativeMethod() && stacktraceelement.getClassName().equals(s1.getClassName()) && stacktraceelement.getFileName().equals(s1.getFileName()) && stacktraceelement.getMethodName().equals(s1.getMethodName()))
+            if (stacktraceelement.isNativeMethod() == s1.isNativeMethod() && java.util.Objects.equals(stacktraceelement.getClassName(), s1.getClassName()) && java.util.Objects.equals(stacktraceelement.getFileName(), s1.getFileName()) && java.util.Objects.equals(stacktraceelement.getMethodName(), s1.getMethodName()))
             {
                 if (s2 != null != this.stackTrace.length > 1)
                 {
