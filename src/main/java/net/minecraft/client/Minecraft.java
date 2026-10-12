@@ -909,6 +909,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     public void refreshResources()
     {
         List<IResourcePack> list = Lists.newArrayList(this.defaultResourcePacks);
+        net.sythix.client.pack.BuiltInPacks.addTo(list);
 
         if (this.integratedServer != null)
         {
@@ -934,6 +935,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             LOGGER.info("Caught error stitching, removing all assigned resourcepacks", (Throwable)runtimeexception);
             list.clear();
             list.addAll(this.defaultResourcePacks);
+            net.sythix.client.pack.BuiltInPacks.addTo(list);
             this.mcResourcePackRepository.setRepositories(Collections.emptyList());
             this.mcResourceManager.reloadResources(list);
             this.gameSettings.resourcePacks.clear();

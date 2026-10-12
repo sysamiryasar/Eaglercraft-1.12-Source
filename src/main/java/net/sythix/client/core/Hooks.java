@@ -172,6 +172,12 @@ public final class Hooks
         }
 
         lastWorld = world;
+        net.sythix.client.module.visuals.TexturePackManager packs = m.get(net.sythix.client.module.visuals.TexturePackManager.class);
+
+        if (packs != null)
+        {
+            net.sythix.client.pack.BuiltInPacks.setCartPack(packs.cartPackOn());
+        }
 
         if (combatTracking())
         {

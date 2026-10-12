@@ -64,7 +64,7 @@ public class SmartHudLayout extends Module
     public SmartHudLayout()
     {
         super("Smart HUD Layout", "One-click HUD presets for crystal and cart PvP, and auto-arranging without overlaps.", Category.INTERFACE, true);
-        this.preset = this.add(new ModeSetting("Preset", "Crystal PvP and Cart PvP switch on the useful elements and place them; Minimal keeps only FPS, CPS and armour; Current Elements only rearranges what is on.", "Crystal PvP", "Crystal PvP", "Cart PvP", "Minimal", "Current Elements"));
+        this.preset = this.add(new ModeSetting("Preset", "Crystal PvP and Cart PvP switch on the useful elements and place them (Cart PvP also turns on the Harlu Cart Pack); Minimal keeps only FPS, CPS and armour; Current Elements only rearranges what is on.", "Crystal PvP", "Crystal PvP", "Cart PvP", "Minimal", "Current Elements"));
         this.add(new ButtonSetting("Apply Preset", "Switch on and arrange the elements of the chosen preset.", "Apply", this::applyPreset));
         this.add(new ButtonSetting("Auto Arrange", "Move the elements that are on into free spots, keeping each near its side of the screen.", "Arrange", () -> this.arrange(false)));
         this.add(new ButtonSetting("Undo", "Put the HUD back as it was before the last preset or arrange.", "Undo", this::undo));
@@ -175,6 +175,14 @@ public class SmartHudLayout extends Module
                     h.setEnabled(false);
                 }
             }
+        }
+
+        net.sythix.client.module.visuals.TexturePackManager packs = m.get(net.sythix.client.module.visuals.TexturePackManager.class);
+
+        if (packs != null && "Cart PvP".equals(p))
+        {
+            // cart PvP: clear rails and low fire from the built-in Harlu Cart Pack
+            packs.setCartPack(true);
         }
 
         Module flow = m.getByName("Crystal Flow Analyzer");

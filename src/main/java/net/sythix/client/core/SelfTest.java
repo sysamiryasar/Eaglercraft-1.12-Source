@@ -1348,6 +1348,19 @@ public final class SelfTest
         }
     }
 
+    /** Which pack a texture is loaded from right now. */
+    private static String packOf(String path)
+    {
+        try
+        {
+            return mc().getResourceManager().getResource(new net.minecraft.util.ResourceLocation(path)).getResourcePackName();
+        }
+        catch (Exception e)
+        {
+            return "missing (" + e + ")";
+        }
+    }
+
     private static void cpvpSteps()
     {
         add("switch on the modules", 1, () -> {
@@ -1369,6 +1382,19 @@ public final class SelfTest
             }
             catch (Exception ignored)
             {
+            }
+        });
+        add("default texture pack", 1, () -> {
+            String widgets = packOf("textures/gui/widgets.png");
+            String rail = packOf("textures/blocks/rail_normal.png");
+
+            if ("Cowarted Vanilla".equals(widgets) && !"Harlu Cart Pack".equals(rail))
+            {
+                pass("Cowarted Vanilla is the default pack (widgets from " + widgets + ", rails from " + rail + ")");
+            }
+            else
+            {
+                fail("default texture pack", new IllegalStateException("widgets from " + widgets + ", rails from " + rail));
             }
         });
         add("open the training lab", 1, net.sythix.client.combat.TrainingWorld::open);
@@ -1517,6 +1543,42 @@ public final class SelfTest
             }
         });
         add("screenshot cpvp-after-pop", 2, () -> shot("cpvp-after-pop"));
+
+        // the cart pack: switch it on and look at the rail lane
+        add("cart pack on", 200, () -> {
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "true");
+            net.minecraft.util.math.BlockPos o = labOrigin();
+            mc().getIntegratedServer().addScheduledTask(() -> {
+                net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+                p.connection.setPlayerLocation((double)o.getX() - 3.5D, 4.0D, (double)o.getZ() + 0.5D, 90.0F, 40.0F);
+            });
+        });
+        add("check cart pack", 1, () -> {
+            String rail = packOf("textures/blocks/rail_normal.png");
+
+            if ("Harlu Cart Pack".equals(rail) && mc().world != null)
+            {
+                pass("cart pack on: rails come from " + rail + ", the world still renders");
+            }
+            else
+            {
+                fail("cart pack", new IllegalStateException("rails from " + rail));
+            }
+        });
+        add("screenshot cpvp-cart-pack", 2, () -> shot("cpvp-cart-pack"));
+        add("cart pack off", 200, () -> set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "false"));
+        add("check cart pack off", 1, () -> {
+            String rail = packOf("textures/blocks/rail_normal.png");
+
+            if (!"Harlu Cart Pack".equals(rail))
+            {
+                pass("cart pack off again (rails from " + rail + ")");
+            }
+            else
+            {
+                fail("cart pack off", new IllegalStateException("rails still from the cart pack"));
+            }
+        });
         add("leave lab", 40, () -> {
             mc().world.sendQuittingDisconnectingPacket();
             mc().loadWorld(null);
