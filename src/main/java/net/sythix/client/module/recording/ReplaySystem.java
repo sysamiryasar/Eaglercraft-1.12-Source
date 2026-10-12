@@ -63,7 +63,7 @@ public class ReplaySystem extends Module
         this.forwardKey = this.add(new KeybindSetting("Replay: Forward 10s Key", "Jump 10 seconds forward.", 205));
         this.slowerKey = this.add(new KeybindSetting("Replay: Slower Key", "Slow the replay down.", 26));
         this.fasterKey = this.add(new KeybindSetting("Replay: Faster Key", "Speed the replay up.", 27));
-        this.markerKey = this.add(new KeybindSetting("Replay: Next Marker Key", "Jump to the next marker.", 50));
+        this.markerKey = this.add(new KeybindSetting("Replay: Next Marker Key", "Jump to the next marker.", 49));
     }
 
     public GuiScreen createScreen(GuiScreen parent)

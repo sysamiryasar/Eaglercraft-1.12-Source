@@ -1587,6 +1587,26 @@ public final class Hooks
         }
     }
 
+    /** Draws the glow layer of an animated Sythix cape over the cape just drawn (local player only). */
+    public static void capeGlow(AbstractClientPlayer player, net.minecraft.client.model.ModelPlayer model)
+    {
+        CosmeticsModule cosmetics = on(CosmeticsModule.class);
+
+        if (cosmetics == null || !cosmetics.showCape() || !(player instanceof EntityPlayerSP) || !net.sythix.client.cosmetic.CapeArt.isArt(ProfileStore.cape))
+        {
+            return;
+        }
+
+        try
+        {
+            net.sythix.client.cosmetic.CapeArt.renderGlow(ProfileStore.cape, () -> model.renderCape(0.0625F));
+        }
+        catch (Throwable t)
+        {
+            fail(CosmeticsModule.class, "cape glow", t);
+        }
+    }
+
     public static void applyEmote(ModelBiped model, Entity entity, float ageInTicks)
     {
         try

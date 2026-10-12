@@ -531,6 +531,12 @@ public class GlStateManager
         normalizeState.setDisabled();
     }
 
+    /** Sythix: the current shade model (so cosmetics can put it back). */
+    public static int getShadeModel()
+    {
+        return activeShadeModel;
+    }
+
     public static void shadeModel(int mode)
     {
         if (mode != activeShadeModel)

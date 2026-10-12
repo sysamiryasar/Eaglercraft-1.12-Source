@@ -6,14 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelPlayer;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.resources.DefaultPlayerSkin;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Session;
-import net.minecraft.util.math.MathHelper;
 import net.sythix.client.SythixClient;
 import net.sythix.client.core.Notifications;
 import net.sythix.client.module.visuals.CosmeticsModule;
@@ -28,24 +21,20 @@ import net.sythix.client.ui.component.SettingsPanel;
 import org.lwjgl.input.Mouse;
 
 /**
- * Profile editor: name, skin, skin model, cape, wings and emotes, with a live 3D preview.
+ * Profile editor: name, skin, skin model and cape, with a live 3D preview (the Wardrobe button
+ * opens the cosmetics and emotes).
  * Skins and capes are client-side: you see them, other players do not.
  */
 public class GuiProfile extends GuiScreen
 {
-    private static final ResourceLocation ALEX = new ResourceLocation("textures/entity/alex.png");
     private final GuiScreen parent;
     private final SettingsPanel panel = new SettingsPanel();
     private final List<Setting<?>> settings = new ArrayList<Setting<?>>();
-    private final ModelPlayer classicModel = new ModelPlayer(0.0F, false);
-    private final ModelPlayer slimModel = new ModelPlayer(0.0F, true);
     private TextSetting name;
     private ModeSetting skin;
     private ModeSetting model;
     private ModeSetting cape;
     private List<String[]> capes;
-    private String previewEmote;
-    private long previewEmoteStart;
     private float yaw = 200.0F;
     private boolean dragging;
     private int lastMouseX;
@@ -97,7 +86,7 @@ public class GuiProfile extends GuiScreen
             }
         }
 
-        this.cape = new ModeSetting("Cape", "Built-in Sythix capes, or your own PNGs from sythix/capes (64x32).", capeValue, capeNames);
+        this.cape = new ModeSetting("Cape", "The ten animated Sythix capes, or your own PNGs from sythix/capes (64x32).", capeValue, capeNames);
         this.settings.add(this.name);
         this.settings.add(new InfoSetting("Name Note", "Your name can only change while you are not in a world.", () -> Minecraft.getMinecraft().world == null ? "Change it here" : "Leave the world to change"));
         this.settings.add(this.skin);
@@ -111,20 +100,12 @@ public class GuiProfile extends GuiScreen
             this.panel.setSettings(this.settings);
         }));
 
-        CosmeticsModule cosmetics = this.cosmetics();
-
-        if (cosmetics != null)
-        {
-            for (Setting<?> s : cosmetics.getSettings())
+        this.settings.add(new ButtonSetting("Wardrobe", "Headwear, wings, auras, extras and emotes, with a live preview.", "Open", () -> {
+            if (this.save())
             {
-                String n = s.getName();
-
-                if (n.equals("Wings") || n.startsWith("Wing ") || n.equals("Show Cape") || n.startsWith("Hat") || n.startsWith("Shoulder Buddy") || n.startsWith("Buddy") || n.startsWith("Aura") || n.equals("Trail Only"))
-                {
-                    this.settings.add(s);
-                }
+                this.mc().displayGuiScreen(new GuiCosmetics(this));
             }
-        }
+        }));
     }
 
     private Minecraft mc()
@@ -207,22 +188,7 @@ public class GuiProfile extends GuiScreen
         }
 
         this.fontRenderer.drawString(this.name.get(), (float)(this.px + 6 + (left - 6) / 2 - this.fontRenderer.getStringWidth(this.name.get()) / 2), (float)(this.py + 30), 0xFFFFFFFF, true);
-        this.fontRenderer.drawString("Drag to rotate", (float)(this.px + 10), (float)(this.py + this.ph - 76), SythixTheme.TEXT_DISABLED, false);
-
-        // Emote preview buttons
-        // Two rows of emote buttons
-        int perRow = (CosmeticsModule.EMOTES.length + 1) / 2;
-        int bw = (left - 6) / perRow - 2;
-
-        for (int i = 0; i < CosmeticsModule.EMOTES.length; ++i)
-        {
-            int bx = this.px + 6 + (i % perRow) * (bw + 2);
-            int by = this.py + this.ph - 64 + (i / perRow) * 16;
-            boolean hover = mouseX >= bx && mouseX < bx + bw && mouseY >= by && mouseY < by + 14;
-            SythixTheme.drawButton((float)bx, (float)by, (float)bw, 14.0F, true, hover ? 1.0F : 0.0F);
-            String label = this.fontRenderer.trimStringToWidth(CosmeticsModule.EMOTES[i], bw - 2);
-            this.fontRenderer.drawString(label, (float)(bx + bw / 2 - this.fontRenderer.getStringWidth(label) / 2), (float)(by + 3), SythixTheme.TEXT, false);
-        }
+        this.fontRenderer.drawString("Drag to rotate", (float)(this.px + 10), (float)(this.py + this.ph - 64), SythixTheme.TEXT_DISABLED, false);
 
         this.panel.render(mouseX, mouseY);
         Setting<?> hovered = this.panel.getHoveredSetting();
@@ -241,96 +207,14 @@ public class GuiProfile extends GuiScreen
         this.fontRenderer.drawString(text, (float)(x + 30 - this.fontRenderer.getStringWidth(text) / 2), (float)(y + 5), SythixTheme.TEXT, false);
     }
 
-    /** Draws the player model with the chosen skin, cape and wings. */
+    /** Draws the player with the chosen skin and cape and the equipped cosmetics. */
     private void drawPlayer(int x, int y, float scale)
     {
-        boolean slim = this.model.is("Slim");
-        ModelPlayer m = slim ? this.slimModel : this.classicModel;
-        ResourceLocation skinTexture = this.skin.is("Default") ? (slim ? ALEX : DefaultPlayerSkin.getDefaultSkinLegacy()) : CosmeticTextures.skin(this.skin.get());
-
-        if (skinTexture == null)
-        {
-            skinTexture = slim ? ALEX : DefaultPlayerSkin.getDefaultSkinLegacy();
-        }
-
-        float age = (float)(Minecraft.getSystemTime() % 100000L) / 50.0F;
-        GlStateManager.enableColorMaterial();
-        // Menus draw without depth writes; the model needs them so the cape stays behind the body
-        GlStateManager.depthMask(true);
-        GlStateManager.clear(256);
-        GlStateManager.enableDepth();
-        GlStateManager.pushMatrix();
-        GlStateManager.translate((float)x, (float)y, 200.0F);
-        // Model space already has +Y pointing down like the screen. The GUI projection is mirrored,
-        // so mirror X once to keep face culling and depth correct
-        GlStateManager.scale(-scale, scale, scale);
-        GlStateManager.rotate(this.yaw, 0.0F, 1.0F, 0.0F);
-        RenderHelper.enableStandardItemLighting();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-
-        // Idle pose with a gentle arm sway
-        m.bipedHead.rotateAngleX = 0.0F;
-        m.bipedHead.rotateAngleY = 0.0F;
-        m.bipedRightArm.rotateAngleX = MathHelper.sin(age * 0.05F) * 0.05F;
-        m.bipedLeftArm.rotateAngleX = -MathHelper.sin(age * 0.05F) * 0.05F;
-        m.bipedRightArm.rotateAngleY = 0.0F;
-        m.bipedLeftArm.rotateAngleY = 0.0F;
-        m.bipedRightArm.rotateAngleZ = 0.06F;
-        m.bipedLeftArm.rotateAngleZ = -0.06F;
-        m.bipedRightLeg.rotateAngleX = 0.0F;
-        m.bipedLeftLeg.rotateAngleX = 0.0F;
-
-        if (this.previewEmote != null && Minecraft.getSystemTime() - this.previewEmoteStart < 3000L)
-        {
-            CosmeticsModule.pose(m, this.previewEmote, age);
-        }
-
-        ModelBase.copyModelAngles(m.bipedHead, m.bipedHeadwear);
-        ModelBase.copyModelAngles(m.bipedLeftArm, m.bipedLeftArmwear);
-        ModelBase.copyModelAngles(m.bipedRightArm, m.bipedRightArmwear);
-        ModelBase.copyModelAngles(m.bipedLeftLeg, m.bipedLeftLegwear);
-        ModelBase.copyModelAngles(m.bipedRightLeg, m.bipedRightLegwear);
-        ModelBase.copyModelAngles(m.bipedBody, m.bipedBodyWear);
-        this.mc.getTextureManager().bindTexture(skinTexture);
-        float s = 0.0625F;
-        m.bipedHead.render(s);
-        m.bipedBody.render(s);
-        m.bipedRightArm.render(s);
-        m.bipedLeftArm.render(s);
-        m.bipedRightLeg.render(s);
-        m.bipedLeftLeg.render(s);
-        GlStateManager.enableBlend();
-        m.bipedHeadwear.render(s);
-        m.bipedBodyWear.render(s);
-        m.bipedRightArmwear.render(s);
-        m.bipedLeftArmwear.render(s);
-        m.bipedRightLegwear.render(s);
-        m.bipedLeftLegwear.render(s);
-        GlStateManager.disableBlend();
-        CosmeticsModule cosmetics = this.cosmetics();
-        ResourceLocation capeTexture = CosmeticTextures.cape(this.selectedCapeId());
-
-        if (capeTexture != null && (cosmetics == null || cosmetics.showCape()))
-        {
-            this.mc.getTextureManager().bindTexture(capeTexture);
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(0.0F, 0.0F, 0.125F);
-            GlStateManager.rotate(6.0F, 1.0F, 0.0F, 0.0F);
-            GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-            m.renderCape(s);
-            GlStateManager.popMatrix();
-        }
-
-        if (cosmetics != null)
-        {
-            LayerSythixCosmetics.drawAll(m, cosmetics, age, false);
-        }
-
-        GlStateManager.popMatrix();
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableRescaleNormal();
-        GlStateManager.disableDepth();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        PlayerPreview.Look look = PlayerPreview.Look.current(this.cosmetics());
+        look.skin = this.skin.is("Default") ? "" : this.skin.get();
+        look.slim = this.model.is("Slim");
+        look.cape = this.selectedCapeId();
+        PlayerPreview.draw(x, y, scale, this.yaw, look);
     }
 
     private boolean save()
@@ -390,23 +274,7 @@ public class GuiProfile extends GuiScreen
             }
         }
 
-        int perRow = (CosmeticsModule.EMOTES.length + 1) / 2;
-        int bw = (left - 6) / perRow - 2;
-        int ey = this.py + this.ph - 64;
-
-        if (mouseY >= ey && mouseY < ey + 30 && mouseX >= this.px + 6 && mouseX < this.px + left)
-        {
-            int column = (mouseX - this.px - 6) / (bw + 2);
-            int index = column < perRow ? column + (mouseY - ey) / 16 * perRow : -1;
-
-            if (index >= 0 && index < CosmeticsModule.EMOTES.length)
-            {
-                this.previewEmote = CosmeticsModule.EMOTES[index];
-                this.previewEmoteStart = Minecraft.getSystemTime();
-            }
-
-            return;
-        }
+        int ey = this.py + this.ph - 52;
 
         if (mouseX >= this.px + 6 && mouseX < this.px + left && mouseY >= this.py + 26 && mouseY < ey)
         {
