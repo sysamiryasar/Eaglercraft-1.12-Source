@@ -411,6 +411,7 @@ public class PlayerControllerMP
     {
         this.syncCurrentPlayItem();
         ItemStack itemstack = player.getHeldItem(hand);
+        net.sythix.client.core.Hooks.onUseOnBlock(itemstack, pos);
         float f = (float)(vec.x - (double)pos.getX());
         float f1 = (float)(vec.y - (double)pos.getY());
         float f2 = (float)(vec.z - (double)pos.getZ());

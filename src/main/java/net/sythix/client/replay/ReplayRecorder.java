@@ -49,6 +49,7 @@ public final class ReplayRecorder
     private static boolean wasSwinging;
     private static int lastHurt;
     private static long bytes;
+    private static boolean sawWorld;
 
     private ReplayRecorder()
     {
@@ -73,6 +74,7 @@ public final class ReplayRecorder
         }
 
         Minecraft mc = Minecraft.getMinecraft();
+        sawWorld = false;
         server = serverName;
         file = new File(ReplayFormat.folder(), new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ReplayFormat.EXTENSION);
 
@@ -173,9 +175,17 @@ public final class ReplayRecorder
 
         if (mc.world == null)
         {
-            stop();
+            // the join packet starts recording on the network thread, a moment before the world
+            // exists here; only a world that was there and is gone means the player left
+            if (sawWorld)
+            {
+                stop();
+            }
+
             return;
         }
+
+        sawWorld = true;
 
         if (p == null)
         {

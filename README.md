@@ -10,18 +10,18 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 - **Profile:** **Profile** on the main menu. Change your offline name, skin (put PNGs in `sythix/skins`), model (classic/slim) and cape (built-in or your own PNG in `sythix/capes`). Skins and capes are shown on your screen only.
 - **Help Center** (mod menu > Client) has guides and troubleshooting.
 
-## The 66 modules
+## The 71 modules
 
 | Section | Modules |
 |---|---|
 | A. Performance | Performance Optimizer, Animation Controller, Particle Controller, Graphics Controller, Resource Manager, Performance Monitor |
-| B. PvP & combat | Keystrokes, CPS Counter, Crosshair, Combat HUD, Combat Animations, Viewmodel, Armor HUD, Potion HUD, Combat Timers, Movement Controls |
+| B. PvP & combat | Keystrokes, CPS Counter, Crosshair, Combat HUD, Combat Animations, Viewmodel, Armor HUD, Potion HUD, Combat Timers, Movement Controls, Crystal Flow Analyzer, CPvP Training Lab |
 | C. Movement | Camera Tools (zoom, freelook, perspective), Movement HUD, Coordinates HUD, Compass HUD, Waypoints (one module with a manager screen) |
 | D. Inventory | Inventory HUD, Item Counters, Item Information, Inventory Enhancements, World Information |
-| E. HUD & interface | HUD Editor, Scoreboard, Tab List, Chat, Notifications, Array List, Interface Theme, Main Menu |
+| E. HUD & interface | HUD Editor, Smart HUD Layout, Scoreboard, Tab List, Chat, Notifications, Array List, Interface Theme, Main Menu |
 | F. Visuals | Environment Visuals, Block Visuals, Texture Pack Manager, Cosmetics, Sound Controller |
 | G. Multiplayer | Server Manager, Connection Monitor, Friends Manager, Party Tools, Server Profiles, Chat Utilities |
-| H. Recording & stats | Screenshot Manager, Recording Tools, Replay System, Statistics Tracker, Practice Tools |
+| H. Recording & stats | Screenshot Manager, Recording Tools, Replay System, Combat Replay, Statistics Tracker, Duel Analytics, Practice Tools |
 | I. Client | Keybind Manager, Profile Manager, Settings Manager, Search and Discovery, Accessibility, Help Center |
 | J. Advanced | Diagnostics, Error Handler, Safe Mode, Update Manager, Plugin Framework, Developer Tools, Privacy Controls, Browser Compatibility, Localization, 1.21 Content |
 
@@ -33,6 +33,16 @@ Sythix Client is a customised PvP client built on top of this Eaglercraft 1.12 s
 - **Modern textures:** *Texture Pack Manager > Modern Pack Converter* turns a 1.13-1.21 resource pack into a 1.12 pack, so blocks, items and mobs that exist in 1.12 get the modern look.
 - **Video recording:** Recording Tools saves `.avi` videos to `recordings/` by itself (video only; use OBS if you also need sound).
 - **Replays:** Replay System records your sessions to `replays/` and plays them back with a free camera, pause, 0.25x-8x speed, seeking and bookmark markers.
+
+## Crystal and cart PvP
+
+Five modules for crystal PvP and TNT minecart (cart) PvP. They only read what your client already sees and never place, hit or aim for you, so they are fine on servers that allow PvP clients.
+
+- **Combat Replay** (Rec & Stats, on by default): every fight is summarised when it ends (when someone dies, or after 8 seconds without combat): damage dealt and taken, hits, crystals placed and hit, crystal speed, break delay (how long your crystals sat before you hit them), TNT minecarts and rail-to-cart time, totem pops, a health graph, a timeline of what happened and tips. If *Replay System > Record Replays* is on, **Watch Replay** opens the replay 3 seconds before the fight. Set a *Last Fight Key* to open the latest review in one press.
+- **CPvP Training Lab** (PvP & Combat): *Open* creates a separate superflat world, *Sythix Training Lab*, with an obsidian arena, a rail lane, four armoured training dummies (each with a totem) and a full crystal and cart kit. Your own worlds are never changed. Drills with personal bests: **Crystal Speed** (crystals broken per second), **Cart Speed** (carts per minute), **Totem Reaction** (put a totem in your offhand when SWAP appears, 5 rounds) and **Dummy Duel** (take down every dummy). *Refill Kit*, *Reset Arena* and Creative/Survival are in its settings.
+- **Smart HUD Layout** (HUD & Interface): *Apply Preset* switches on and places the useful elements for Crystal PvP, Cart PvP or a Minimal screen. *Auto Arrange* moves what is on into free spots, never over the hotbar, health, crosshair, chat or boss bar, and never on top of each other (it leaves room for elements that grow, like the analyzer during a fight). *Undo* puts your old layout back; *Keep Tidy* fixes overlaps by itself.
+- **Crystal Flow Analyzer** (PvP & Combat): live crystals placed and broken per second, your best speed, break delay, totem pops, crystals/carts/totems left and the current fight's damage. In *Auto* it adds cart lines (carts placed, lit and set off, rail-to-cart time) once you use TNT minecarts.
+- **Duel Analytics** (Rec & Stats, on by default): keeps every duel in `sythix/duel-history.json` and shows win rate, streaks, average fight length and damage, charts of your win rate and crystal speed (or rail-to-cart time, or damage) over your last duels, a trend line ("improved by 12%"), records against each opponent and personal bests. Filter by Crystal, Cart or Melee. Training Lab fights are left out unless you switch on *Include Training*.
 
 ## Shaders
 
@@ -82,7 +92,7 @@ What is still not possible, and why:
 
 ## Files
 
-Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `profile.json`, `skins/`, `capes/`, `plugins/` and `benchmarks.json`. Videos go to `recordings/` and replays to `replays/` in the game folder. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.
+Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `fight-reviews.json` and `duel-history.json` (Combat Replay and Duel Analytics), `training-lab.json` (drill bests), `profile.json`, `skins/`, `capes/`, `plugins/` and `benchmarks.json`. Videos go to `recordings/` and replays to `replays/` in the game folder. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.
 
 ## Building
 

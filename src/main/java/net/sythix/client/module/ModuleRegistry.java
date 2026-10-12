@@ -95,6 +95,8 @@ final class ModuleRegistry
         m.register(new PotionHud());
         m.register(new CombatTimers());
         m.register(new MovementControls());
+        m.register(new net.sythix.client.module.pvp.CrystalFlowAnalyzer());
+        m.register(new net.sythix.client.module.pvp.TrainingLab());
         // C. Movement and navigation
         m.register(new CameraTools());
         m.register(new MovementHud());
@@ -109,6 +111,7 @@ final class ModuleRegistry
         m.register(new WorldInformation());
         // E. HUD and interface
         m.register(new HudEditorModule());
+        m.register(new net.sythix.client.module.hud.SmartHudLayout());
         m.register(new ScoreboardModule());
         m.register(new TabListModule());
         m.register(new ChatModule());
@@ -133,7 +136,9 @@ final class ModuleRegistry
         m.register(new ScreenshotManager());
         m.register(new RecordingTools());
         m.register(new ReplaySystem());
+        m.register(new net.sythix.client.module.recording.CombatReplay());
         m.register(new StatisticsTracker());
+        m.register(new net.sythix.client.module.recording.DuelAnalytics());
         m.register(new PracticeTools());
         // I. Client configuration
         m.register(new KeybindManager());

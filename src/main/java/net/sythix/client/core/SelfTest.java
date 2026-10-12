@@ -51,7 +51,7 @@ public final class SelfTest
     private static final boolean ACTIVE = System.getProperty("sythix.selftest") != null;
 
     /** Buttons that open external programs, need the network or would undo the test itself. */
-    private static final Set<String> SKIP_BUTTONS = new HashSet<String>(Arrays.asList("Open Folder", "Plugin Folder", "Reset Everything", "Enter Safe Mode", "Exit And Restore", "Check Now", "Reload Config", "Cape Folder", "Skin Folder", "Clear Server Pack Cache"));
+    private static final Set<String> SKIP_BUTTONS = new HashSet<String>(Arrays.asList("Open Folder", "Plugin Folder", "Reset Everything", "Enter Safe Mode", "Exit And Restore", "Check Now", "Reload Config", "Cape Folder", "Skin Folder", "Clear Server Pack Cache", "Training Lab"));
 
     private static final class Step
     {
@@ -271,6 +271,14 @@ public final class SelfTest
         if ("worldgen".equals(System.getProperty("sythix.selftest")))
         {
             worldgenSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
+        if ("cpvp".equals(System.getProperty("sythix.selftest")))
+        {
+            cpvpSteps();
             add("report", 1, SelfTest::report);
             add("quit", 1, () -> mc().shutdown());
             return;
@@ -1292,6 +1300,251 @@ public final class SelfTest
     }
 
     private static int waitTicks;
+
+    // ---- Crystal and cart PvP modules ----------------------------------------------------------
+
+    private static net.minecraft.util.math.BlockPos labOrigin()
+    {
+        net.minecraft.util.math.BlockPos spawn = mc().getIntegratedServer().getWorld(0).getSpawnPoint();
+        return new net.minecraft.util.math.BlockPos(spawn.getX(), 4, spawn.getZ());
+    }
+
+    /** Right-clicks the top of a block with the item in a hotbar slot, the same way a player does. */
+    private static void useOn(int slot, net.minecraft.util.math.BlockPos block)
+    {
+        mc().player.inventory.currentItem = slot;
+        mc().playerController.processRightClickBlock(mc().player, mc().world, block, net.minecraft.util.EnumFacing.UP, new net.minecraft.util.math.Vec3d((double)block.getX() + 0.5D, (double)block.getY() + 1.0D, (double)block.getZ() + 0.5D), net.minecraft.util.EnumHand.MAIN_HAND);
+        mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND);
+    }
+
+    /** Hits the nearest end crystal (or TNT minecart) to a position, the same way a player does. */
+    private static void hitNear(net.minecraft.util.math.BlockPos pos, Class<? extends net.minecraft.entity.Entity> type)
+    {
+        net.minecraft.entity.Entity best = null;
+
+        for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+        {
+            if (type.isInstance(e) && !e.isDead && e.getDistanceSq(pos) < 6.0D && (best == null || e.getDistanceSq(pos) < best.getDistanceSq(pos)))
+            {
+                best = e;
+            }
+        }
+
+        if (best != null)
+        {
+            mc().playerController.attackEntity(mc().player, best);
+            mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND);
+        }
+    }
+
+    private static void press(Class<? extends Module> type, String name)
+    {
+        for (Setting<?> s : modules().get(type).getSettings())
+        {
+            if (s.getName().equals(name) && s instanceof net.sythix.client.setting.ButtonSetting)
+            {
+                ((net.sythix.client.setting.ButtonSetting)s).press();
+            }
+        }
+    }
+
+    private static void cpvpSteps()
+    {
+        add("switch on the modules", 1, () -> {
+            modules().get(net.sythix.client.module.recording.CombatReplay.class).setEnabled(true);
+            modules().get(net.sythix.client.module.recording.DuelAnalytics.class).setEnabled(true);
+            modules().get(net.sythix.client.module.pvp.CrystalFlowAnalyzer.class).setEnabled(true);
+            modules().get(net.sythix.client.module.pvp.TrainingLab.class).setEnabled(true);
+            modules().get(net.sythix.client.module.hud.SmartHudLayout.class).setEnabled(true);
+            set(net.sythix.client.module.recording.DuelAnalytics.class, "Include Training", "true");
+            set(net.sythix.client.module.recording.DuelAnalytics.class, "Show HUD", "true");
+            set(net.sythix.client.module.recording.ReplaySystem.class, "Record Replays", "\"Everything\"");
+
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), net.sythix.client.combat.TrainingWorld.FOLDER));
+                new File(new File(mc().mcDataDir, "sythix"), "fight-reviews.json").delete();
+                new File(new File(mc().mcDataDir, "sythix"), "duel-history.json").delete();
+                new File(new File(mc().mcDataDir, "sythix"), "training-lab.json").delete();
+            }
+            catch (Exception ignored)
+            {
+            }
+        });
+        add("open the training lab", 1, net.sythix.client.combat.TrainingWorld::open);
+        add("wait for the lab", 1, SelfTest::waitForWorld);
+        add("arena is built", 100, () -> mc().displayGuiScreen(null));
+        add("check arena", 1, () -> {
+            net.minecraft.util.math.BlockPos o = labOrigin();
+            int dummies = 0;
+
+            for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+            {
+                dummies += "Training Dummy".equals(e.getCustomNameTag()) ? 1 : 0;
+            }
+
+            boolean obsidian = mc().world.getBlockState(o.down()).getBlock() == net.minecraft.init.Blocks.OBSIDIAN;
+            boolean kit = mc().player.inventory.getStackInSlot(1).getItem() == net.minecraft.init.Items.END_CRYSTAL && mc().player.getHeldItemOffhand().getItem() == net.minecraft.init.Items.TOTEM_OF_UNDYING;
+
+            if (net.sythix.client.combat.TrainingWorld.isActive() && obsidian && dummies == 4 && kit)
+            {
+                pass("training lab: arena, 4 dummies and the kit are ready");
+            }
+            else
+            {
+                fail("training lab", new IllegalStateException("lab=" + net.sythix.client.combat.TrainingWorld.isActive() + " obsidian=" + obsidian + " dummies=" + dummies + " kit=" + kit));
+            }
+
+            // stand three blocks behind the crystal spot, facing the dummies
+            mc().getIntegratedServer().addScheduledTask(() -> {
+                net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+                p.connection.setPlayerLocation((double)o.getX() + 0.5D, 4.0D, (double)o.getZ() - 0.5D, 0.0F, 20.0F);
+            });
+        });
+        add("settle", 20, () -> {
+        });
+
+        net.minecraft.util.math.BlockPos[] spot = new net.minecraft.util.math.BlockPos[1];
+        add("find spot", 1, () -> spot[0] = labOrigin().add(0, -1, 2));
+        // a rail and a TNT minecart next to the dummies, set off by the first crystal
+        add("place rail", 6, () -> useOn(3, labOrigin().add(1, -1, 4)));
+        add("place tnt minecart", 10, () -> useOn(4, labOrigin().add(1, 0, 4)));
+        crystalCyclesLater(spot, 12);
+        add("fight ends", 220, () -> {
+        });
+        add("check fight", 1, () -> {
+            java.util.List<net.sythix.client.combat.Fight> fights = modules().get(net.sythix.client.module.recording.CombatReplay.class).fights();
+            java.util.List<net.sythix.client.combat.Fight> duels = modules().get(net.sythix.client.module.recording.DuelAnalytics.class).duels();
+            net.sythix.client.combat.CombatTracker.Session s = net.sythix.client.combat.CombatTracker.session();
+
+            if (!fights.isEmpty() && !duels.isEmpty())
+            {
+                net.sythix.client.combat.Fight f = fights.get(fights.size() - 1);
+                pass(String.format("fight recorded: %s vs %s (%s), %d crystals placed / %d broken, break delay %d ms, %d cart(s) (rail to cart %d ms), dealt %.1f, opponent pops %d, %d events, replay %s",
+                    f.result, f.opponent, f.type(), f.crystalsPlaced, f.crystalsBroken, f.avgBreakDelay(), f.cartsPlaced, f.avgRailToCart(), f.damageDealt, f.popsOpponent, f.events.size(), f.replayFile != null));
+            }
+            else
+            {
+                fail("fight tracking", new IllegalStateException("fights=" + fights.size() + " duels=" + duels.size() + " session placed=" + s.crystalsPlaced + " broken=" + s.crystalsBroken + " carts=" + s.cartsPlaced));
+            }
+        });
+        add("apply crystal pvp layout", 10, () -> press(net.sythix.client.module.hud.SmartHudLayout.class, "Apply Preset"));
+        add("check layout", 1, () -> {
+            if (!modules().get(net.sythix.client.module.hud.SmartHudLayout.class).hasOverlap())
+            {
+                pass("smart hud layout: crystal pvp preset has no overlaps");
+            }
+            else
+            {
+                fail("smart hud layout", new IllegalStateException("after the preset: " + modules().get(net.sythix.client.module.hud.SmartHudLayout.class).overlapReport()));
+            }
+        });
+        add("screenshot cpvp-hud", 2, () -> shot("cpvp-hud"));
+        add("undo layout", 4, () -> press(net.sythix.client.module.hud.SmartHudLayout.class, "Undo"));
+        add("auto arrange", 4, () -> press(net.sythix.client.module.hud.SmartHudLayout.class, "Auto Arrange"));
+        add("check arrange", 1, () -> {
+            if (!modules().get(net.sythix.client.module.hud.SmartHudLayout.class).hasOverlap())
+            {
+                pass("smart hud layout: auto arrange leaves no overlaps");
+            }
+            else
+            {
+                fail("smart hud layout", new IllegalStateException("after auto arrange: " + modules().get(net.sythix.client.module.hud.SmartHudLayout.class).overlapReport()));
+            }
+        });
+        add("let the notifications fade", 160, () -> {
+        });
+        show("cpvp-review", () -> {
+            java.util.List<net.sythix.client.combat.Fight> fights = modules().get(net.sythix.client.module.recording.CombatReplay.class).fights();
+            return new net.sythix.client.combat.GuiFightReview(null, fights.get(fights.size() - 1));
+        });
+        show("cpvp-fights", () -> modules().get(net.sythix.client.module.recording.CombatReplay.class).createScreen(null));
+        show("cpvp-analytics", () -> modules().get(net.sythix.client.module.recording.DuelAnalytics.class).createScreen(null));
+        add("close", 10, () -> mc().displayGuiScreen(null));
+
+        // a 10 second Crystal Speed drill
+        add("start drill", 2, () -> {
+            set(net.sythix.client.module.pvp.TrainingLab.class, "Drill Length", "10");
+            press(net.sythix.client.module.pvp.TrainingLab.class, "Reset Arena");
+            press(net.sythix.client.module.pvp.TrainingLab.class, "Start Drill");
+        });
+        add("countdown", 70, () -> {
+        });
+        crystalCyclesLater(spot, 14);
+        add("screenshot cpvp-drill", 1, () -> shot("cpvp-drill"));
+        add("drill ends", 120, () -> {
+        });
+        add("check drill", 1, () -> {
+            File bests = new File(new File(mc().mcDataDir, "sythix"), "training-lab.json");
+
+            try
+            {
+                String text = bests.isFile() ? FileUtils.readFileToString(bests, java.nio.charset.StandardCharsets.UTF_8) : "";
+
+                if (text.contains("Crystal Speed"))
+                {
+                    pass("training lab drill finished with a personal best: " + text);
+                }
+                else
+                {
+                    fail("training lab drill", new IllegalStateException("no personal best saved"));
+                }
+            }
+            catch (Exception e)
+            {
+                fail("training lab drill", e);
+            }
+        });
+
+        // a totem pop in survival
+        add("survival", 10, () -> press(net.sythix.client.module.pvp.TrainingLab.class, "Refill Kit"));
+        add("lethal damage", 30, () -> {
+            set(net.sythix.client.module.pvp.TrainingLab.class, "Lab Game Mode", "\"Survival\"");
+            mc().getIntegratedServer().addScheduledTask(() -> {
+                net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+                p.setGameType(net.minecraft.world.GameType.SURVIVAL);
+                p.attackEntityFrom(net.minecraft.util.DamageSource.GENERIC, 100.0F);
+            });
+        });
+        add("check pop", 1, () -> {
+            if (net.sythix.client.combat.CombatTracker.session().popsSelf > 0 && mc().player.getHealth() > 0.0F)
+            {
+                pass("totem pop seen (" + net.sythix.client.combat.CombatTracker.session().popsSelf + "), still alive");
+            }
+            else
+            {
+                fail("totem pop", new IllegalStateException("pops=" + net.sythix.client.combat.CombatTracker.session().popsSelf + " health=" + mc().player.getHealth()));
+            }
+        });
+        add("screenshot cpvp-after-pop", 2, () -> shot("cpvp-after-pop"));
+        add("leave lab", 40, () -> {
+            mc().world.sendQuittingDisconnectingPacket();
+            mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+    }
+
+    private static void standBehind(net.minecraft.util.math.BlockPos spot)
+    {
+        mc().getIntegratedServer().addScheduledTask(() -> {
+            net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
+            p.connection.setPlayerLocation((double)spot.getX() + 0.5D, 4.0D, (double)spot.getZ() - 2.5D, 0.0F, 30.0F);
+            p.motionX = 0.0D;
+            p.motionZ = 0.0D;
+        });
+    }
+
+    /** Crystal place/break cycles on a spot that is only known once the lab is loaded. */
+    private static void crystalCyclesLater(net.minecraft.util.math.BlockPos[] spot, int count)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            // explosions push the player back (even in creative); step back in like a player would
+            add("stand " + i, 1, () -> standBehind(spot[0]));
+            add("place crystal " + i, 3 + i % 3, () -> useOn(1, spot[0]));
+            add("break crystal " + i, 6, () -> hitNear(spot[0].up(), net.minecraft.entity.item.EntityEnderCrystal.class));
+        }
+    }
 
     private static void waitForWorld()
     {

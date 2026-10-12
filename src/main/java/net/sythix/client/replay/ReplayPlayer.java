@@ -113,7 +113,8 @@ public final class ReplayPlayer
         play(replay, 0L);
     }
 
-    private static void play(File replay, long startAt)
+    /** Opens a replay and jumps to startAt milliseconds (leaving the current world first). */
+    public static void play(File replay, long startAt)
     {
         Minecraft mc = Minecraft.getMinecraft();
 

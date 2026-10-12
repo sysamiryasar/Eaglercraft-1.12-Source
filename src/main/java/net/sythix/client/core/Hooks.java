@@ -172,7 +172,75 @@ public final class Hooks
         }
 
         lastWorld = world;
+
+        if (combatTracking())
+        {
+            try
+            {
+                net.sythix.client.combat.CombatTracker.tick();
+            }
+            catch (Throwable t)
+            {
+                ModuleErrors.report(null, "combat tracker", t);
+            }
+        }
+
         m.forEachEnabled("tick", Module::onTick);
+    }
+
+    /** Whether any module that uses the combat tracker is switched on. */
+    private static boolean combatTracking()
+    {
+        return on(net.sythix.client.module.recording.CombatReplay.class) != null || on(net.sythix.client.module.recording.DuelAnalytics.class) != null
+            || on(net.sythix.client.module.pvp.CrystalFlowAnalyzer.class) != null || on(net.sythix.client.module.pvp.TrainingLab.class) != null;
+    }
+
+    /** The player right-clicked a block with an item (crystals, carts, rails, obsidian). */
+    public static void onUseOnBlock(net.minecraft.item.ItemStack stack, net.minecraft.util.math.BlockPos pos)
+    {
+        try
+        {
+            if (combatTracking())
+            {
+                net.sythix.client.combat.CombatTracker.onUseOnBlock(stack, pos);
+            }
+        }
+        catch (Throwable t)
+        {
+            ModuleErrors.report(null, "combat tracker", t);
+        }
+    }
+
+    /** Someone used a totem of undying. */
+    public static void onTotemPop(Entity entity)
+    {
+        try
+        {
+            if (combatTracking())
+            {
+                net.sythix.client.combat.CombatTracker.onTotemPop(entity);
+            }
+        }
+        catch (Throwable t)
+        {
+            ModuleErrors.report(null, "combat tracker", t);
+        }
+    }
+
+    /** An explosion packet arrived. */
+    public static void onExplosion(double x, double y, double z, float strength)
+    {
+        try
+        {
+            if (combatTracking())
+            {
+                net.sythix.client.combat.CombatTracker.onExplosion(x, y, z, strength);
+            }
+        }
+        catch (Throwable t)
+        {
+            ModuleErrors.report(null, "combat tracker", t);
+        }
     }
 
     /** The player attacked an entity. */
@@ -182,6 +250,18 @@ public final class Hooks
 
         if (m != null && target != null)
         {
+            if (combatTracking())
+            {
+                try
+                {
+                    net.sythix.client.combat.CombatTracker.onAttack(target);
+                }
+                catch (Throwable t)
+                {
+                    ModuleErrors.report(null, "combat tracker", t);
+                }
+            }
+
             m.forEachEnabled("attack", module -> module.onAttack(target));
         }
     }

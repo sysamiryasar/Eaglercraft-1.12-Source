@@ -1121,6 +1121,11 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
         Entity entity = packetIn.getEntity(this.clientWorldController);
 
+        if (entity != null && packetIn.getOpCode() == 35)
+        {
+            net.sythix.client.core.Hooks.onTotemPop(entity);
+        }
+
         if (entity != null)
         {
             if (packetIn.getOpCode() == 21)
@@ -1186,6 +1191,7 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient
         PacketThreadUtil.checkThreadAndEnqueue(packetIn, this, this.gameController);
         Explosion explosion = new Explosion(this.gameController.world, (Entity)null, packetIn.getX(), packetIn.getY(), packetIn.getZ(), packetIn.getStrength(), packetIn.getAffectedBlockPositions());
         explosion.doExplosionB(true);
+        net.sythix.client.core.Hooks.onExplosion(packetIn.getX(), packetIn.getY(), packetIn.getZ(), packetIn.getStrength());
         this.gameController.player.motionX += (double)packetIn.getMotionX();
         this.gameController.player.motionY += (double)packetIn.getMotionY();
         this.gameController.player.motionZ += (double)packetIn.getMotionZ();
