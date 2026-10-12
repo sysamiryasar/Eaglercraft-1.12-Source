@@ -11,10 +11,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourcePack;
@@ -22,6 +25,8 @@ import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.MetadataSerializer;
 import net.minecraft.util.ResourceLocation;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Texture packs that ship inside the client (src/main/resources/sythix/texturepacks, built with
@@ -32,6 +37,10 @@ import org.apache.commons.io.FileUtils;
  *   textures, so any resource pack you pick still goes on top of it.
  * - Harlu Cart Pack is for cart PvP (clear rails, low fire, small particles) and is switched on in
  *   Texture Pack Manager (Cart Pack) or by the Cart PvP layout in Smart HUD Layout.
+ *
+ * In the browser the packs' files are not in the game jar but in zips next to it (packs/NAME-N.zip,
+ * listed in the sythix.packs property by CompileWebRuntime.sh), so a pack is only downloaded once it
+ * is actually used instead of every pack at every first start.
  */
 public final class BuiltInPacks
 {
@@ -42,6 +51,7 @@ public final class BuiltInPacks
     public static final String RED_THEME = "Red (Red Revolution)";
     public static final String[] THEMES = {DEFAULT_THEME, BLUE_THEME, RED_THEME};
 
+    private static final Logger LOGGER = LogManager.getLogger();
     private static final Pack DEFAULT = new Pack("cowarted", "Cowarted Vanilla");
     private static final Pack BLUE = new Pack("fallenangel", "Fallen Angel");
     private static final Pack RED = new Pack("redrevolution", "Red Revolution");
@@ -139,12 +149,64 @@ public final class BuiltInPacks
     {
         private final String root;
         private final String name;
+        private final String folder;
         private Set<String> files;
+        private List<ZipFile> zips;
 
         Pack(String folder, String name)
         {
+            this.folder = folder;
             this.root = "/sythix/texturepacks/" + folder + "/";
             this.name = name;
+        }
+
+        /** Browser only: this pack's zips, opened (and so downloaded) the first time a file is read. */
+        private List<ZipFile> zips()
+        {
+            if (this.zips == null)
+            {
+                List<ZipFile> list = new ArrayList<ZipFile>();
+                String dir = System.getProperty("sythix.packdir");
+
+                for (String zip : System.getProperty("sythix.packs", "").split(","))
+                {
+                    if (zip.startsWith(this.folder + "-"))
+                    {
+                        try
+                        {
+                            list.add(new ZipFile(new File(dir, zip)));
+                        }
+                        catch (IOException e)
+                        {
+                            LOGGER.warn("[Sythix] Could not open built-in pack file " + zip + ": " + e);
+                        }
+                    }
+                }
+
+                this.zips = list;
+            }
+
+            return this.zips;
+        }
+
+        private InputStream open(String path) throws IOException
+        {
+            if (System.getProperty("sythix.packdir") == null)
+            {
+                return BuiltInPacks.class.getResourceAsStream(this.root + path);
+            }
+
+            for (ZipFile zip : this.zips())
+            {
+                ZipEntry entry = zip.getEntry(path);
+
+                if (entry != null)
+                {
+                    return zip.getInputStream(entry);
+                }
+            }
+
+            return null;
         }
 
         private Set<String> files()
@@ -187,7 +249,7 @@ public final class BuiltInPacks
 
         public InputStream getInputStream(ResourceLocation location) throws IOException
         {
-            InputStream in = this.resourceExists(location) ? BuiltInPacks.class.getResourceAsStream(this.root + path(location)) : null;
+            InputStream in = this.resourceExists(location) ? this.open(path(location)) : null;
 
             if (in == null)
             {

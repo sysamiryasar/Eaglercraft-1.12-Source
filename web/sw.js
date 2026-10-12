@@ -8,7 +8,7 @@
 //    (new version in the URL this worker is registered with) starts a fresh cache.
 const VERSION = new URL(self.location).searchParams.get('v') || 'dev';
 const CACHE = 'sythix-' + VERSION;
-const GAME_FILE = /\.(jar|wasm|so|js|png|json)$/;
+const GAME_FILE = /\.(jar|zip|wasm|so|js|png|json)$/;
 const memory = new Map(); // path -> Promise<{ buffer, type }> for this worker's lifetime
 
 self.addEventListener('install', () => self.skipWaiting());
