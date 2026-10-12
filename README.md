@@ -91,6 +91,23 @@ What is still not possible, and why:
 - **Speed:** multiplayer runs about 2.5x faster than singleplayer in the browser (no built-in server sharing the thread). *Resolution* on the start page (75% or 50%) draws fewer pixels and helps a lot on weak computers (menu frames 80 ms -> 36 ms at 50% in testing). After the first visit the game files are kept by the browser (`sw.js`), so the next start skips the 60 MB download, and `preload.json` loads the Java runtime in parallel.
 - CheerpJ is free for personal and open-source projects; other companies need a license from Leaning Technologies.
 
+## Hosting on Cloudflare (free)
+
+The browser version is plain static files, served by Cloudflare's free static assets (Workers). In the Cloudflare dashboard, connect this GitHub repository and use:
+
+| Setting | Value |
+|---|---|
+| Build command | `bash cloudflare/build.sh` |
+| Deploy command | `npx wrangler deploy` |
+| Non-production branch deploy command (previews) | `npx wrangler versions upload` |
+| Root directory | `/` (repository root) |
+
+- `cloudflare/build.sh` downloads JDK 17 if the build machine has none (Cloudflare's has no Java), compiles the client, writes the site to `build/web` and stops the build if any game file is missing or over Cloudflare's 25 MiB file limit. A build takes a few minutes.
+- `wrangler.jsonc` tells Cloudflare to serve `build/web`. Its `"name"` must be the Worker's name in the dashboard.
+- Cloudflare's static files don't answer HTTP Range requests, which CheerpJ needs; `sw.js` (a service worker) handles them in the browser, so no paid features are needed. Private windows that block service workers get a clear message instead.
+- Multiplayer is separate: run `web/proxy/sythix_proxy.py` on any always-on server (`web/proxy/README.md`) and add `web/config.json` with `{"proxy": "wss://your-proxy"}`.
+- Local test of the exact Cloudflare setup: `bash cloudflare/build.sh && npx wrangler dev`, then open http://localhost:8787.
+
 ## Files
 
 Everything Sythix stores is in the `sythix/` folder of the game directory: `config.json` (all settings), `profiles/`, `backups/` (automatic, newest 10 kept), `waypoints.json`, `match-history.json` (statistics), `fight-reviews.json` and `duel-history.json` (Combat Replay and Duel Analytics), `training-lab.json` (drill bests), `profile.json`, `skins/`, `capes/`, `plugins/` and `benchmarks.json`. Videos go to `recordings/` and replays to `replays/` in the game folder. Nothing is sent over the internet by default. If something breaks, use **Safe Mode** or restore a backup in **Settings Manager**.

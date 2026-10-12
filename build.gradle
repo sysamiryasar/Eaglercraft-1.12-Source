@@ -1,7 +1,8 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.teavm' version '0.9.2'
+    // The TeaVM plugin (an unused, never-working JavaScript target) was removed: it was the only
+    // thing downloaded from Maven Central. The browser version is built with CompileWebRuntime.sh.
 }
 
 group = 'org.eaglergradle'
@@ -20,7 +21,7 @@ repositories {
 }
 
 java {
-    // the code is compiled to Java 8 bytecode (see below); the TeaVM library is only marked for Java 11
+    // the code is compiled to Java 8 bytecode (see below)
     disableAutoTargetJvm()
 }
 
@@ -82,24 +83,4 @@ dependencies {
     implementation files('lib/libraries/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar')
     implementation files('lib/libraries/com/google/code/findbugs/jsr305/3.0.1/jsr305-3.0.1.jar')
     implementation files('lib/libraries/vecmath-1.5.2.jar')
-
-    //TeaVM
-    teavm(teavm.libs.jso)
-    teavm(teavm.libs.jsoApis)
-}
-
-teavm.js {
-    obfuscated = true
-    sourceMap = true
-    targetFileName = "../classes.js"
-    // optimization = OptimizationLevel.ADVANCED
-    outOfProcess = false
-    fastGlobalAnalysis = false
-    processMemory = 1024
-    entryPointName = 'main'
-    mainClass = 'Start'
-    outputDir = file("javascript")
-    properties = null
-    sourceMap = true
-    debugInformation = false
 }

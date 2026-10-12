@@ -11,7 +11,85 @@ const bar = document.getElementById('bar');
 const base = '/app' + location.pathname.replace(/[^/]*$/, '');
 
 function status(text) {
+	statusEl.classList.remove('error');
 	statusEl.textContent = text;
+}
+
+/** Shows a problem with what to do about it (and keeps it in the console for bug reports). */
+function problem(title, details) {
+	console.error('[Sythix] ' + title + (details ? ': ' + details : ''));
+	statusEl.classList.add('error');
+	statusEl.textContent = '';
+	const b = document.createElement('b');
+	b.textContent = title;
+	statusEl.appendChild(b);
+
+	if (details) {
+		const d = document.createElement('div');
+		d.textContent = details;
+		statusEl.appendChild(d);
+	}
+}
+
+// ---- Checks before starting (clear messages instead of a stuck loading screen) ----------------
+function browserProblems() {
+	const problems = [];
+
+	if (typeof WebAssembly !== 'object') {
+		problems.push('This browser has no WebAssembly. Use a current Chrome, Edge, Firefox or Safari.');
+	}
+
+	const gl = document.createElement('canvas').getContext('webgl');
+
+	if (!gl) {
+		problems.push('WebGL is not available (graphics acceleration may be off in the browser settings, or the graphics driver is blocked).');
+	}
+
+	if (!window.indexedDB) {
+		problems.push('This browser blocks site storage (IndexedDB), which the game needs for worlds and settings. Private windows often do this.');
+	}
+
+	if (typeof cheerpjInit !== 'function') {
+		problems.push('The Java engine (CheerpJ, from cjrtnc.leaningtech.com) did not load. Check the internet connection, or an ad/script blocker.');
+	}
+
+	return problems;
+}
+
+/** Waits until sw.js controls the page (it answers CheerpJ's piece requests on hosts that can't). */
+async function serviceWorkerReady() {
+	if (!('serviceWorker' in navigator) || location.protocol === 'file:') {
+		return false;
+	}
+
+	if (navigator.serviceWorker.controller) {
+		return true;
+	}
+
+	await Promise.race([
+		new Promise((resolve) => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })),
+		new Promise((resolve) => setTimeout(resolve, 15000))
+	]);
+	return !!navigator.serviceWorker.controller;
+}
+
+/** Every file the game needs, checked before Java starts. */
+async function missingFiles(files) {
+	const needed = files.classpath.concat(['lwjgl/libraries/lwjgl.js', 'lwjgl/libraries/liblwjgl.so', 'lwjgl/libraries/gl4es.wasm']);
+	const results = await Promise.all(needed.map((f) => fetch(f, { method: 'HEAD', cache: 'no-cache' }).then((r) => (r.ok ? null : f + ' (HTTP ' + r.status + ')')).catch(() => f + ' (network error)')));
+	return results.filter((r) => r);
+}
+
+/** CheerpJ needs files in pieces (HTTP Range); the server or sw.js must provide that. */
+async function rangeWorks() {
+	try {
+		const r = await fetch('sythix-client.jar', { headers: { Range: 'bytes=0-1' } });
+		const ok = r.status === 206;
+		await r.arrayBuffer();
+		return ok;
+	} catch (e) {
+		return false;
+	}
 }
 
 try {
@@ -277,10 +355,56 @@ async function start() {
 	bar.style.display = 'block';
 
 	try {
-		status('Loading Java (CheerpJ)...');
 		store('sythix-proxy', proxyInput.value.trim());
 		store('sythix-scale', scaleInput.value);
-		const files = await filesPromise;
+
+		if (document.getElementById('fullscreen').checked && document.documentElement.requestFullscreen) {
+			// must happen right after the click; the game fills whatever size the window has
+			await document.documentElement.requestFullscreen().catch(() => {});
+		}
+
+		status('Checking the browser...');
+		const browser = browserProblems();
+
+		if (browser.length) {
+			problem("Sythix can't run in this browser", browser.join(' '));
+			bar.style.display = 'none';
+			play.disabled = false;
+			return;
+		}
+
+		let files;
+
+		try {
+			files = await filesPromise;
+		} catch (e) {
+			problem('The game files list (files.json) is missing', 'The site was not built or uploaded completely. Build it with cloudflare/build.sh or CompileWebRuntime.sh and publish all of build/web.');
+			bar.style.display = 'none';
+			play.disabled = false;
+			return;
+		}
+
+		status('Checking the game files...');
+		const swReady = await serviceWorkerReady();
+		const missing = await missingFiles(files);
+
+		if (missing.length) {
+			problem('Some game files are missing from the website', missing.join(', ') + '. Publish the whole build/web folder.');
+			bar.style.display = 'none';
+			play.disabled = false;
+			return;
+		}
+
+		if (!(await rangeWorks())) {
+			problem("The game files can't be read in pieces", swReady
+				? 'The web server does not support HTTP Range requests and the service worker could not help. Try reloading the page.'
+				: 'This web server does not support HTTP Range requests, and this browser blocked the service worker that works around it (private windows often do). Use a normal window, or host the site where Range requests work.');
+			bar.style.display = 'none';
+			play.disabled = false;
+			return;
+		}
+
+		status('Loading Java (CheerpJ)...');
 		const preload = await preloadPromise;
 		await cheerpjInit({
 			...(preload ? { preloadResources: preload, preloadProgress: (done, total) => status('Loading Java (CheerpJ)... ' + Math.round(100 * done / total) + '%') } : {}),
@@ -322,12 +446,17 @@ async function start() {
 		document.getElementById('start').style.display = 'flex';
 		display.style.display = 'none';
 		bar.style.display = 'none';
-		status('The game closed (exit code ' + exit + '). Press Play to start again.');
+		if (exit === 0) {
+			status('The game closed. Press Play to start again.');
+		} else {
+			problem('The game stopped with an error (exit code ' + exit + ')', 'Details are in the browser console (F12). Press Play to start again.');
+		}
+
 		play.disabled = false;
 	} catch (e) {
 		console.error(e);
 		bar.style.display = 'none';
-		status('Could not start: ' + e);
+		problem('The game could not start', String(e && e.message ? e.message : e) + ' (details in the browser console, F12)');
 		play.disabled = false;
 	}
 }
