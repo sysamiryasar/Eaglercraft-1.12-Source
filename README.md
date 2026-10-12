@@ -72,8 +72,10 @@ What is still not possible, and why:
 `./CompileWebRuntime.sh` builds a browser version into `build/web` (about 55 MB). It runs the same client with [CheerpJ](https://cheerpj.com), a Java virtual machine in WebAssembly, plus LWJGL and gl4es compiled to WebAssembly (from Leaning Technologies' Browsercraft). Upload the folder to any web host (GitHub Pages, Netlify, your own server) or test it locally with `./CompileWebRuntime.sh serve` and open http://localhost:8080.
 
 - Worlds and settings are saved in the browser (CheerpJ's `/files` storage).
-- The browser version has no sound, no shaders, no blur effects (WebGL through gl4es has no framebuffers here) and runs slower than the desktop version; the first start downloads about 30 MB.
-- Joining normal Minecraft servers from a browser needs a WebSocket proxy (browsers cannot open game connections); singleplayer worlds are created and run inside the browser.
+- Tested in Chrome: the Sythix menus, mouse input, creating a singleplayer world and getting in-game all work (screenshots in `web/screenshots/`).
+- It is much slower than the desktop version: Java runs as WebAssembly, and the singleplayer server runs inside the same browser tab. A new world takes a few minutes to open, and the browser build starts with light settings (render distance 4, Fast graphics). A fast computer and Chrome or Edge work best.
+- No sound, no shaders and no blur effects (WebGL through gl4es offers no framebuffers here). The first start downloads about 30 MB.
+- Joining normal Minecraft servers from a browser needs a WebSocket proxy (browsers cannot open game connections); singleplayer works.
 - CheerpJ is free for personal and open-source projects; other companies need a license from Leaning Technologies.
 
 ## Files

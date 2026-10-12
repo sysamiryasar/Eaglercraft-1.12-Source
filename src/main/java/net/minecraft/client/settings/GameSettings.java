@@ -966,6 +966,17 @@ public class GameSettings
         {
             if (!this.optionsFile.exists())
             {
+                if (net.minecraft.client.renderer.GlStateManager.WEB)
+                {
+                    // Sythix browser build: light settings on the first start (can be raised later)
+                    this.renderDistanceChunks = 4;
+                    this.fancyGraphics = false;
+                    this.ambientOcclusion = 0;
+                    this.clouds = 0;
+                    this.mipmapLevels = 0;
+                    this.particleSetting = 2;
+                }
+
                 return;
             }
 
