@@ -52,6 +52,7 @@ function proxy(request, url, env) {
 function refuse(ws, reason) {
 	try {
 		ws.send(reason.slice(0, 120));
+		// a close reason may be at most 123 bytes
 		ws.close(1008, reason.slice(0, 120));
 	} catch (e) {
 		// already closed
@@ -154,7 +155,8 @@ async function relay(ws, target, allowPrivate) {
 	try {
 		await Promise.race([socket.opened, timeout]);
 	} catch (e) {
-		refuse(ws, "Can't reach " + target.replace(/:\d+$/, ''));
+		// Cloudflare doesn't let Workers connect to servers on its own network (Hypixel, for one)
+		refuse(ws, "Can't reach " + target.replace(/:\d+$/, '') + ' (servers protected by Cloudflare need the separate Sythix proxy)');
 
 		try {
 			socket.close();
