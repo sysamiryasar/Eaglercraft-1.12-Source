@@ -575,7 +575,7 @@ async function start() {
 		await cheerpjInit({
 			...(preload ? { preloadResources: preload, preloadProgress: (done, total) => { status('Loading Java (CheerpJ)... ' + Math.round(100 * done / total) + '%'); if (loadTarget < 30) { loading(6 + Math.round(24 * done / total), 'Loading Java', 6 + Math.round(24 * done / total)); } } } : {}),
 			version: 8,
-			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.packdir=' + base + 'packs', 'sythix.packs=' + (files.packs || []).join(','), 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim()],
+			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.packdir=' + base + 'packs', 'sythix.packs=' + (files.packs || []).join(','), 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim(), 'sythix.site=' + location.origin],
 			libraries: { 'libGL.so.1': base + 'lwjgl/libraries/gl4es.wasm' },
 			enableX11: true,
 			// Minecraft 1.12 cannot use input methods, and CheerpJ's would swallow the Enter key

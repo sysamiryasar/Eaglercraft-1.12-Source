@@ -11,6 +11,6 @@
     "directory": "./build/web",
     "binding": "ASSETS",
     "not_found_handling": "none",
-    "run_worker_first": ["/proxy", "/proxy/*"]
+    "run_worker_first": ["/proxy", "/proxy/*", "/skin/*"]
   }
 }

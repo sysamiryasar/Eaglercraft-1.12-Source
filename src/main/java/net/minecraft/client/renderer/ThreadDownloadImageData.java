@@ -45,8 +45,27 @@ public class ThreadDownloadImageData extends SimpleTexture
     {
         super(textureResourceLocation);
         this.cacheFile = cacheFileIn;
-        this.imageUrl = imageUrlIn;
+        this.imageUrl = webSkinUrl(imageUrlIn);
         this.imageBuffer = imageBufferIn;
+    }
+
+    /**
+     * Browser build: Mojang's skin server doesn't let other sites' pages download skins (CORS), so
+     * skins come through the site's own /skin/ address (cloudflare/worker.js).
+     */
+    private static String webSkinUrl(String url)
+    {
+        String site = System.getProperty("sythix.site", "");
+        String prefix = "textures.minecraft.net/texture/";
+        int at = url == null ? -1 : url.indexOf(prefix);
+
+        if (!net.sythix.client.web.WebConnection.WEB || site.isEmpty() || at < 0 || !(url.startsWith("http://") || url.startsWith("https://")))
+        {
+            return url;
+        }
+
+        String hash = url.substring(at + prefix.length());
+        return hash.matches("[0-9a-f]{16,80}") ? site + "/skin/" + hash : url;
     }
 
     private void checkTextureUploaded()
