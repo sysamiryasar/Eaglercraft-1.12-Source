@@ -173,7 +173,9 @@ final class LegacyMetadata
                     byteValue(out, 6, (flags & 16) != 0 ? 1 : 0);
                 }
 
-                byteValue(out, 0, flags & ~16);
+                // bits 6 and 7 (glowing, elytra) don't exist in 1.8; some servers still set them
+                // (VoidSent's lobby NPCs glow), and a 1.8 client ignores them, so this does too
+                byteValue(out, 0, flags & ~(16 | 64 | 128));
                 return;
 
             case 1:
