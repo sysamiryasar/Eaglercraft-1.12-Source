@@ -211,6 +211,14 @@ public final class SelfTest
             return;
         }
 
+        if ("eagler".equals(System.getProperty("sythix.selftest")))
+        {
+            eaglerSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("ui".equals(System.getProperty("sythix.selftest")))
         {
             add("let the menu settle", 40, () -> mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu()));
@@ -2237,6 +2245,248 @@ public final class SelfTest
         add("leave", 40, () -> {
             mc().world.sendQuittingDisconnectingPacket();
             mc().loadWorld(null);
+            mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
+        });
+    }
+
+    /**
+     * Eaglercraft (wss://) servers: server list query, join, then things that need the 1.8 <-> 1.12
+     * translation (chunks, mobs and their data, potions, spawn eggs, hits, block placing, chat).
+     * Needs an Eaglercraft server at -Dsythix.eagler (default ws://127.0.0.1:8081/) whose 1.8
+     * server makes the player an operator.
+     */
+    private static void eaglerSteps()
+    {
+        final String address = System.getProperty("sythix.eagler", "ws://127.0.0.1:8081/");
+        final net.minecraft.client.multiplayer.ServerData data = new net.minecraft.client.multiplayer.ServerData("Eaglercraft test", address, false);
+        final net.minecraft.client.network.ServerPinger pinger = new net.minecraft.client.network.ServerPinger();
+        add("server list query", 80, () -> {
+            try
+            {
+                pinger.ping(data);
+            }
+            catch (Exception e)
+            {
+                fail("server list query", e);
+            }
+        });
+        add("check server list", 1, () -> {
+            pinger.pingPendingNetworks();
+            String motd = data.serverMOTD == null ? "" : net.minecraft.util.text.TextFormatting.getTextWithoutFormattingCodes(data.serverMOTD);
+
+            if (data.pingToServer >= 0L && !motd.isEmpty() && !motd.contains("Can't connect") && !motd.contains("Pinging"))
+            {
+                pass("server list shows the Eaglercraft server: \"" + motd + "\", " + net.minecraft.util.text.TextFormatting.getTextWithoutFormattingCodes(data.populationInfo) + " players, ping " + data.pingToServer + " ms");
+            }
+            else
+            {
+                fail("server list query", new IllegalStateException("motd=" + motd + " ping=" + data.pingToServer));
+            }
+        });
+        add("join eaglercraft server", 1, () -> mc().displayGuiScreen(new net.minecraft.client.multiplayer.GuiConnecting(new net.minecraft.client.gui.GuiMainMenu(), mc(), data)));
+        add("wait for server world", 1, SelfTest::waitForWorld);
+        add("let chunks arrive", 100, () -> mc().displayGuiScreen(null));
+        add("check world", 1, () -> {
+            net.minecraft.util.math.BlockPos below = new net.minecraft.util.math.BlockPos(mc().player).down();
+            int solid = 0;
+
+            for (int x = -16; x <= 16; ++x)
+            {
+                for (int z = -16; z <= 16; ++z)
+                {
+                    if (mc().world.getBlockState(below.add(x, 0, z)).getMaterial().isSolid())
+                    {
+                        ++solid;
+                    }
+                }
+            }
+
+            int chunks = 0;
+
+            for (int cx = -4; cx <= 4; ++cx)
+            {
+                for (int cz = -4; cz <= 4; ++cz)
+                {
+                    if (mc().world.getChunkProvider().getLoadedChunk((below.getX() >> 4) + cx, (below.getZ() >> 4) + cz) != null)
+                    {
+                        ++chunks;
+                    }
+                }
+            }
+
+            if (solid > 100 && chunks > 20)
+            {
+                pass("joined the Eaglercraft server: " + chunks + " chunks, ground under the player (" + mc().world.getBlockState(below).getBlock().getLocalizedName() + ")");
+            }
+            else
+            {
+                fail("world from the Eaglercraft server", new IllegalStateException(chunks + " chunks, " + solid + " solid blocks under the player at " + below));
+            }
+        });
+        add("screenshot eagler world", 1, () -> shot("eagler-world"));
+        add("chat", 20, () -> mc().player.sendChatMessage("Hello from Sythix over Eaglercraft"));
+        add("setup", 30, () -> {
+            mc().player.sendChatMessage("/gamemode 1");
+            mc().player.sendChatMessage("/time set 6000");
+            mc().player.sendChatMessage("/clear");
+        });
+        add("give items", 30, () -> {
+            mc().player.sendChatMessage("/give @p potion 1 16421");
+            mc().player.sendChatMessage("/give @p potion 1 8233");
+            mc().player.sendChatMessage("/give @p spawn_egg 1 50");
+            mc().player.sendChatMessage("/give @p diamond_sword 1 0 {ench:[{id:16,lvl:5}]}");
+            mc().player.sendChatMessage("/give @p stone 64");
+        });
+        add("check items", 1, () -> {
+            boolean splash = false;
+            boolean strength = false;
+            boolean egg = false;
+            boolean sword = false;
+
+            for (net.minecraft.item.ItemStack stack : mc().player.inventory.mainInventory)
+            {
+                if (stack.getItem() == net.minecraft.init.Items.SPLASH_POTION && net.minecraft.potion.PotionUtils.getPotionFromItem(stack) == net.minecraft.init.PotionTypes.STRONG_HEALING)
+                {
+                    splash = true;
+                }
+
+                if (stack.getItem() == net.minecraft.init.Items.POTIONITEM && net.minecraft.potion.PotionUtils.getPotionFromItem(stack) == net.minecraft.init.PotionTypes.STRONG_STRENGTH)
+                {
+                    strength = true;
+                }
+
+                if (stack.getItem() == net.minecraft.init.Items.SPAWN_EGG && "minecraft:creeper".equals(String.valueOf(net.minecraft.item.ItemMonsterPlacer.getNamedIdFrom(stack))))
+                {
+                    egg = true;
+                }
+
+                if (stack.getItem() == net.minecraft.init.Items.DIAMOND_SWORD && stack.isItemEnchanted())
+                {
+                    sword = true;
+                }
+            }
+
+            if (splash && strength && egg && sword)
+            {
+                pass("1.8 items arrive as 1.12 items: splash potion of Healing II, potion of Strength II, creeper egg, enchanted sword");
+            }
+            else
+            {
+                fail("items", new IllegalStateException("splash healing " + splash + ", strength " + strength + ", creeper egg " + egg + ", sword " + sword + ": " + mc().player.inventory.mainInventory));
+            }
+        });
+        add("summon mobs", 60, () -> {
+            mc().player.sendChatMessage("/summon Zombie ~3 ~ ~ {NoAI:1b,CustomName:\"Target\",CustomNameVisible:1b}");
+            mc().player.sendChatMessage("/summon Skeleton ~-3 ~ ~ {NoAI:1b,SkeletonType:1}");
+            mc().player.sendChatMessage("/summon EntityHorse ~ ~ ~4 {NoAI:1b,Type:1}");
+            mc().player.sendChatMessage("/summon Sheep ~ ~ ~-4 {NoAI:1b,Color:14}");
+            mc().player.sendChatMessage("/summon ArmorStand ~2 ~ ~2");
+            mc().player.sendChatMessage("/summon Item ~-2 ~ ~-2 {Item:{id:minecraft:golden_apple,Count:1}}");
+        });
+        add("check mobs", 1, () -> {
+            java.util.Map<String, String> found = new java.util.TreeMap<String, String>();
+
+            for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+            {
+                if (e != mc().player)
+                {
+                    found.put(e.getClass().getSimpleName(), e.hasCustomName() ? e.getCustomNameTag() : (e instanceof net.minecraft.entity.passive.EntitySheep ? String.valueOf(((net.minecraft.entity.passive.EntitySheep)e).getFleeceColor()) : (e instanceof net.minecraft.entity.item.EntityItem ? ((net.minecraft.entity.item.EntityItem)e).getItem().getDisplayName() : "")));
+                }
+            }
+
+            boolean ok = "Target".equals(found.get("EntityZombie")) && found.containsKey("EntityWitherSkeleton") && found.containsKey("EntityDonkey") && "red".equalsIgnoreCase(found.get("EntitySheep")) && found.containsKey("EntityArmorStand") && "Golden Apple".equals(found.get("EntityItem"));
+
+            if (ok)
+            {
+                pass("1.8 mobs arrive as the right 1.12 mobs with their data: " + found);
+            }
+            else
+            {
+                fail("mobs", new IllegalStateException(found.toString()));
+            }
+        });
+        add("screenshot eagler mobs", 1, () -> shot("eagler-mobs"));
+        add("survival for the hit", 20, () -> mc().player.sendChatMessage("/gamemode 0"));
+        add("hit the zombie", 20, () -> {
+            for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+            {
+                if (e instanceof net.minecraft.entity.monster.EntityZombie)
+                {
+                    mc().player.inventory.currentItem = 0;
+                    mc().playerController.attackEntity(mc().player, e);
+                    mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND);
+                }
+            }
+        });
+        add("check hit", 1, () -> {
+            for (net.minecraft.entity.Entity e : mc().world.loadedEntityList)
+            {
+                if (e instanceof net.minecraft.entity.monster.EntityZombie)
+                {
+                    float health = ((net.minecraft.entity.EntityLivingBase)e).getHealth();
+
+                    if (health < 20.0F)
+                    {
+                        pass("hit the zombie: the server took its health to " + health);
+                    }
+                    else
+                    {
+                        fail("hit", new IllegalStateException("zombie health still " + health));
+                    }
+
+                    return;
+                }
+            }
+
+            pass("hit the zombie: it died");
+        });
+        add("place a block", 20, () -> {
+            for (int i = 0; i < 9; ++i)
+            {
+                if (mc().player.inventory.mainInventory.get(i).getItem() == net.minecraft.item.Item.getItemFromBlock(net.minecraft.init.Blocks.STONE))
+                {
+                    mc().player.inventory.currentItem = i;
+                    mc().getConnection().sendPacket(new net.minecraft.network.play.client.CPacketHeldItemChange(i));
+                }
+            }
+
+            net.minecraft.util.math.BlockPos ground = new net.minecraft.util.math.BlockPos(mc().player).down().east(2);
+            mc().playerController.processRightClickBlock(mc().player, mc().world, ground, net.minecraft.util.EnumFacing.UP, new net.minecraft.util.math.Vec3d(ground.getX() + 0.5D, ground.getY() + 1.0D, ground.getZ() + 0.5D), net.minecraft.util.EnumHand.MAIN_HAND);
+        });
+        add("check block", 1, () -> {
+            net.minecraft.util.math.BlockPos placed = new net.minecraft.util.math.BlockPos(mc().player).east(2);
+            net.minecraft.block.Block block = mc().world.getBlockState(placed).getBlock();
+
+            if (block == net.minecraft.init.Blocks.STONE)
+            {
+                pass("placed a stone block and the server kept it");
+            }
+            else
+            {
+                fail("block placing", new IllegalStateException("block at " + placed + " is " + block.getLocalizedName()));
+            }
+        });
+        add("walk forward", 40, () -> net.minecraft.client.settings.KeyBinding.setKeyBindState(mc().gameSettings.keyBindForward.getKeyCode(), true));
+        add("stop walking", 20, () -> net.minecraft.client.settings.KeyBinding.setKeyBindState(mc().gameSettings.keyBindForward.getKeyCode(), false));
+        show("eagler-inventory", () -> new net.minecraft.client.gui.inventory.GuiInventory(mc().player));
+        add("close inventory", 10, () -> mc().displayGuiScreen(null));
+        add("still connected", 1, () -> {
+            if (mc().world != null && mc().getConnection() != null && mc().getConnection().getNetworkManager().isChannelOpen())
+            {
+                pass("still connected after walking, chat, commands, hits and menus (" + mc().getConnection().getPlayerInfoMap().size() + " player(s) in the tab list)");
+            }
+            else
+            {
+                fail("Eaglercraft connection", new IllegalStateException("disconnected: " + mc().currentScreen));
+            }
+        });
+        add("disconnect", 40, () -> {
+            if (mc().world != null)
+            {
+                mc().world.sendQuittingDisconnectingPacket();
+                mc().loadWorld(null);
+            }
+
             mc().displayGuiScreen(new net.minecraft.client.gui.GuiMainMenu());
         });
     }
