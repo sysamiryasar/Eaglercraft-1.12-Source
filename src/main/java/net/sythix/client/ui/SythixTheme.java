@@ -325,21 +325,97 @@ public final class SythixTheme
         drawRect(left, top, right, bottom, withAlpha(BLACK, alpha));
     }
 
+    /** Browser clipping: the depth test was on before beginClip. */
+    private static boolean clipDepthWasOn;
+    private static boolean webClipping;
+
     /**
-     * Clips drawing to a rectangle in GUI coordinates until endClip is called. This is the only
-     * place that uses raw OpenGL, so a browser build only needs to adapt this method.
+     * True while browser clipping is on. Drawing that would clear the depth buffer (a 3D preview)
+     * must not do it then: the depth buffer holds the clip walls, and inside them it is already clear.
+     */
+    public static boolean webClipping()
+    {
+        return webClipping;
+    }
+
+    /**
+     * Clips drawing to a rectangle in GUI coordinates until endClip is called (not nested).
+     *
+     * The desktop uses the scissor test. The browser's OpenGL layer (gl4es on WebGL) has no
+     * glScissor, so there the area outside the rectangle is fenced off in the depth buffer instead:
+     * invisible "walls" are drawn close to the viewer, and everything drawn until endClip fails the
+     * depth test behind them.
      */
     public static void beginClip(int left, int top, int right, int bottom)
     {
         Minecraft mc = Minecraft.getMinecraft();
-        int factor = new ScaledResolution(mc).getScaleFactor();
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(left * factor, mc.displayHeight - bottom * factor, Math.max(0, (right - left) * factor), Math.max(0, (bottom - top) * factor));
+
+        if (!GlStateManager.WEB)
+        {
+            int factor = new ScaledResolution(mc).getScaleFactor();
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor(left * factor, mc.displayHeight - bottom * factor, Math.max(0, (right - left) * factor), Math.max(0, (bottom - top) * factor));
+            return;
+        }
+
+        ScaledResolution res = new ScaledResolution(mc);
+        float w = (float)res.getScaledWidth();
+        float h = (float)res.getScaledHeight();
+        clipDepthWasOn = GlStateManager.isDepthTestEnabled();
+        GlStateManager.clear(256);
+        GlStateManager.enableDepth();
+        GlStateManager.depthMask(true);
+        GlStateManager.depthFunc(519);
+        GlStateManager.colorMask(false, false, false, false);
+        GlStateManager.disableTexture2D();
+        // GUI depth runs from -1000 (far) to 1000 (near the viewer); the walls go right at the front
+        float z = 990.0F;
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(7, DefaultVertexFormats.POSITION);
+        wall(buffer, 0.0F, 0.0F, w, (float)top, z);
+        wall(buffer, 0.0F, (float)bottom, w, h, z);
+        wall(buffer, 0.0F, (float)top, (float)left, (float)bottom, z);
+        wall(buffer, (float)right, (float)top, w, (float)bottom, z);
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
+        GlStateManager.colorMask(true, true, true, true);
+        GlStateManager.depthMask(false);
+        GlStateManager.depthFunc(515);
+        webClipping = true;
+    }
+
+    private static void wall(BufferBuilder buffer, float x0, float y0, float x1, float y1, float z)
+    {
+        if (x1 <= x0 || y1 <= y0)
+        {
+            return;
+        }
+
+        buffer.pos((double)x0, (double)y1, (double)z).endVertex();
+        buffer.pos((double)x1, (double)y1, (double)z).endVertex();
+        buffer.pos((double)x1, (double)y0, (double)z).endVertex();
+        buffer.pos((double)x0, (double)y0, (double)z).endVertex();
     }
 
     public static void endClip()
     {
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        if (!GlStateManager.WEB)
+        {
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            return;
+        }
+
+        // take the walls down again
+        webClipping = false;
+        GlStateManager.depthMask(true);
+        GlStateManager.clear(256);
+        GlStateManager.depthFunc(515);
+
+        if (!clipDepthWasOn)
+        {
+            GlStateManager.disableDepth();
+        }
     }
 
     /** Smoothly moves current toward target; speed is in units per second. */
