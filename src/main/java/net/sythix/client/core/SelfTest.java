@@ -276,6 +276,14 @@ public final class SelfTest
             return;
         }
 
+        if ("cosmetics".equals(System.getProperty("sythix.selftest")))
+        {
+            cosmeticSteps();
+            add("report", 1, SelfTest::report);
+            add("quit", 1, () -> mc().shutdown());
+            return;
+        }
+
         if ("weapons".equals(System.getProperty("sythix.selftest")))
         {
             weaponSteps();
@@ -1554,7 +1562,7 @@ public final class SelfTest
 
         // the cart pack: switch it on and look at the rail lane
         add("cart pack on", 200, () -> {
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "true");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.CART_CHOICE + "\"");
             net.minecraft.util.math.BlockPos o = labOrigin();
             mc().getIntegratedServer().addScheduledTask(() -> {
                 net.minecraft.entity.player.EntityPlayerMP p = mc().getIntegratedServer().getPlayerList().getPlayers().get(0);
@@ -1574,7 +1582,7 @@ public final class SelfTest
             }
         });
         add("screenshot cpvp-cart-pack", 2, () -> shot("cpvp-cart-pack"));
-        add("cart pack off", 200, () -> set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, "false"));
+        add("cart pack off", 200, () -> set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE + "\""));
         add("check cart pack off", 1, () -> {
             String rail = packOf("textures/blocks/rail_normal.png");
 
@@ -1740,8 +1748,7 @@ public final class SelfTest
     private static void packCheck(String theme, String expectedWidgets, boolean cart)
     {
         add("client pack " + theme, 260, () -> {
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + theme + "\"");
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.CART_SETTING, cart ? "true" : "false");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + theme + "\"");
         });
         add("check " + theme, 1, () -> {
             String widgets = packOf("textures/gui/widgets.png");
@@ -1750,7 +1757,7 @@ public final class SelfTest
 
             if (expectedWidgets.equals(widgets) && railOk)
             {
-                pass("client pack " + theme + (cart ? " + cart pack" : "") + ": widgets from " + widgets + ", rails from " + rail);
+                pass("texture pack " + theme + ": widgets from " + widgets + ", rails from " + rail);
             }
             else
             {
@@ -1758,6 +1765,252 @@ public final class SelfTest
             }
         });
         add("screenshot " + theme, 2, () -> shot("packs-" + theme.replaceAll("[^A-Za-z]+", "-").toLowerCase() + (cart ? "-cart" : "")));
+    }
+
+    private static net.sythix.client.module.visuals.CosmeticsModule cosmeticsModule()
+    {
+        return modules().get(net.sythix.client.module.visuals.CosmeticsModule.class);
+    }
+
+    /** Takes everything off. */
+    private static void undress()
+    {
+        net.sythix.client.module.visuals.CosmeticsModule c = cosmeticsModule();
+        net.sythix.client.cosmetic.ProfileStore.cape = "none";
+
+        for (String category : new String[] {net.sythix.client.cosmetic.CosmeticCatalog.HEADWEAR, net.sythix.client.cosmetic.CosmeticCatalog.WINGS, net.sythix.client.cosmetic.CosmeticCatalog.AURAS})
+        {
+            c.slot(category).set(net.sythix.client.cosmetic.CosmeticCatalog.NONE);
+        }
+
+        for (net.sythix.client.cosmetic.CosmeticCatalog.Item item : net.sythix.client.cosmetic.CosmeticCatalog.in(net.sythix.client.cosmetic.CosmeticCatalog.EXTRAS))
+        {
+            c.extra(item.name).set(Boolean.FALSE);
+        }
+    }
+
+    /** Wears every cosmetic in turn in a flat world and takes a screenshot of each; then the emote wheel, emotes and the wardrobe. */
+    private static void cosmeticSteps()
+    {
+        add("create cosmetics world", 1, () -> {
+            try
+            {
+                FileUtils.deleteDirectory(new File(new File(mc().mcDataDir, "saves"), "sythix-cosmetics"));
+            }
+            catch (Exception ignored)
+            {
+            }
+
+            modules().get(net.sythix.client.module.visuals.CosmeticsModule.class).setEnabled(true);
+            set(net.sythix.client.module.visuals.CosmeticsModule.class, "Spawn Entrance", "true");
+            WorldSettings ws = new WorldSettings(12345L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands();
+            ws.setGeneratorOptions("3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;");
+            mc().launchIntegratedServer("sythix-cosmetics", "Sythix Cosmetics Test", ws);
+        });
+        add("wait for world", 1, SelfTest::waitForWorld);
+        add("screenshot spawn entrance", 14, () -> {
+            mc().displayGuiScreen(null);
+            mc().gameSettings.hideGUI = true;
+            mc().gameSettings.thirdPersonView = 2;
+        });
+        add("shot spawn", 1, () -> cleanShot("cos-49-spawn-entrance"));
+        add("set up", 40, () -> {
+            onServer(p -> {
+                p.world.getGameRules().setOrCreateGameRule("doDaylightCycle", "false");
+                p.world.getGameRules().setOrCreateGameRule("doMobSpawning", "false");
+                p.world.setWorldTime(13800L);
+                p.connection.setPlayerLocation(0.5D, 4.0D, 0.5D, 0.0F, 0.0F);
+                p.inventory.clear();
+                p.inventory.setInventorySlotContents(0, new net.minecraft.item.ItemStack(net.minecraft.init.Items.DIAMOND_SWORD));
+            });
+            undress();
+            // zoom in so the player fills the screenshots
+            mc().gameSettings.fovSetting = 34.0F;
+        });
+
+        for (net.sythix.client.cosmetic.CosmeticCatalog.Item item : net.sythix.client.cosmetic.CosmeticCatalog.all())
+        {
+            final net.sythix.client.cosmetic.CosmeticCatalog.Item it = item;
+            String file = String.format("cos-%02d-%s", it.number, it.name.toLowerCase().replaceAll("[^a-z0-9]+", "-"));
+            boolean back = it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.CAPES) || it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.WINGS) || it.name.equals("Afterimage");
+
+            if (it.name.equals("Spawn Entrance"))
+            {
+                continue;
+            }
+
+            add("wear " + it.name, it.name.equals("Footstep Runes") || it.name.equals("Afterimage") ? 2 : 16, () -> {
+                undress();
+                // auras and ground effects need the feet in view: a wider, downward camera
+                boolean ground = it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.AURAS) || it.name.equals("Footstep Runes") || it.name.equals("Victory Burst") || it.name.equals("Signature Emblem");
+                mc().gameSettings.fovSetting = ground ? 62.0F : 34.0F;
+                mc().player.rotationYaw = 0.0F;
+                // the front camera mirrors the pitch: looking up puts it above you, looking down at the ground
+                mc().player.rotationPitch = ground ? (it.name.equals("Signature Emblem") ? 12.0F : (it.name.equals("Prism Bloom") ? -60.0F : -38.0F)) : 8.0F;
+                mc().gameSettings.thirdPersonView = back ? 1 : 2;
+                boolean night = it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.AURAS) || it.name.equals("Footstep Runes") || it.name.equals("Weapon Trails");
+                onServer(p -> p.world.setWorldTime(night ? 18000L : 6000L));
+                net.sythix.client.module.visuals.CosmeticsModule c = cosmeticsModule();
+
+                switch (it.category)
+                {
+                    case net.sythix.client.cosmetic.CosmeticCatalog.CAPES:
+                        net.sythix.client.cosmetic.ProfileStore.cape = it.capeId();
+                        break;
+                    case net.sythix.client.cosmetic.CosmeticCatalog.EXTRAS:
+                        c.extra(it.name).set(Boolean.TRUE);
+                        break;
+                    default:
+                        c.slot(it.category).set(it.name);
+                }
+
+                if (it.name.equals("Victory Burst"))
+                {
+                    c.onFightEnded(true);
+                }
+            });
+
+            if (it.name.equals("Footstep Runes") || it.name.equals("Afterimage"))
+            {
+                // walk sideways for a moment so there are footsteps / silhouettes
+                for (int i = 0; i < 14; ++i)
+                {
+                    add("walk", 1, () -> {
+                        mc().player.motionX = 0.22D;
+                    });
+                }
+            }
+
+            if (it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.WINGS))
+            {
+                // also from the front and the side, to be sure the wings stay behind the body
+                add("front " + it.name, 3, () -> mc().gameSettings.thirdPersonView = 2);
+                add("shot front " + it.name, 1, () -> cleanShot(file + "-front"));
+                add("side " + it.name, 3, () -> {
+                    mc().gameSettings.thirdPersonView = 1;
+                    mc().player.rotationYaw = 90.0F;
+                    mc().player.renderYawOffset = 0.0F;
+                    mc().player.prevRenderYawOffset = 0.0F;
+                });
+                add("shot side " + it.name, 1, () -> cleanShot(file + "-side"));
+                add("back " + it.name, 3, () -> {
+                    mc().player.rotationYaw = 0.0F;
+                    mc().gameSettings.thirdPersonView = 1;
+                });
+            }
+
+            if (it.name.equals("Weapon Trails"))
+            {
+                add("swing", 3, () -> mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND));
+            }
+
+            add("shot " + it.name, 1, () -> {
+                cleanShot(file);
+                pass("wore " + String.format("%02d", it.number) + " " + it.name);
+            });
+        }
+
+        // emotes: the wheel, then one emote played from it
+        add("emote wheel", 10, () -> {
+            undress();
+            mc().gameSettings.fovSetting = 70.0F;
+            mc().gameSettings.hideGUI = false;
+            mc().displayGuiScreen(new net.sythix.client.cosmetic.GuiEmoteWheel(cosmeticsModule()));
+        });
+        add("shot wheel", 1, () -> cleanShot("emote-wheel"));
+        add("play dance", 20, () -> {
+            mc().displayGuiScreen(null);
+            mc().gameSettings.hideGUI = true;
+            mc().gameSettings.thirdPersonView = 0;
+            cosmeticsModule().play("Dance");
+        });
+        add("check emote", 1, () -> {
+            boolean ok = "Dance".equals(cosmeticsModule().currentEmote()) && mc().gameSettings.thirdPersonView == 2;
+            cleanShot("emote-dance");
+
+            if (ok)
+            {
+                pass("emote plays and switches to the front camera");
+            }
+            else
+            {
+                fail("emote", new IllegalStateException("emote " + cosmeticsModule().currentEmote() + " view " + mc().gameSettings.thirdPersonView));
+            }
+        });
+
+        for (String emote : net.sythix.client.cosmetic.Emotes.ALL)
+        {
+            add("emote " + emote, 12, () -> cosmeticsModule().play(emote));
+            add("shot emote " + emote, 1, () -> cleanShot("emote-" + emote.toLowerCase().replaceAll("[^a-z]+", "-")));
+        }
+
+        add("stop emote", 2, () -> cosmeticsModule().stopEmote());
+        add("check camera back", 1, () -> {
+            if (mc().gameSettings.thirdPersonView == 0)
+            {
+                pass("camera back to first person after the emote");
+            }
+            else
+            {
+                fail("emote camera", new IllegalStateException("view " + mc().gameSettings.thirdPersonView));
+            }
+        });
+
+        // the wardrobe, every tab
+        String[] tabs = {"Capes", "Headwear", "Wings", "Auras", "Extras", "Emotes"};
+
+        for (int i = 0; i < tabs.length; ++i)
+        {
+            final int tab = i;
+            add("wardrobe " + tabs[i], 6, () -> {
+                mc().gameSettings.hideGUI = false;
+
+                if (tab == 0)
+                {
+                    // a full outfit, so the preview shows several cosmetics together
+                    net.sythix.client.module.visuals.CosmeticsModule c = cosmeticsModule();
+                    net.sythix.client.cosmetic.ProfileStore.cape = "sythix:sythix_genesis";
+                    c.slot(net.sythix.client.cosmetic.CosmeticCatalog.HEADWEAR).set("Rift Crown");
+                    c.slot(net.sythix.client.cosmetic.CosmeticCatalog.WINGS).set("Void Wings");
+                    c.slot(net.sythix.client.cosmetic.CosmeticCatalog.AURAS).set("Divine Radiance");
+                    c.extra("Rift Companion").set(Boolean.TRUE);
+                    c.extra("Signature Emblem").set(Boolean.TRUE);
+                }
+
+                mc().displayGuiScreen(new net.sythix.client.cosmetic.GuiCosmetics(null, tabs[tab]));
+            });
+            add("shot wardrobe " + tabs[i], 1, () -> cleanShot("wardrobe-" + tabs[tab].toLowerCase()));
+        }
+
+        add("check errors", 1, () -> {
+            mc().displayGuiScreen(null);
+            List<String> errors = ModuleErrors.getReports();
+
+            if (errors.isEmpty())
+            {
+                pass("no cosmetic errors");
+            }
+            else
+            {
+                fail("cosmetic errors: " + errors, new IllegalStateException());
+            }
+        });
+    }
+
+    /** A screenshot written straight to a file (no "Screenshot saved" pop-up in the next one). */
+    private static void cleanShot(String name)
+    {
+        try
+        {
+            java.awt.image.BufferedImage image = ScreenShotHelper.createScreenshot(mc().displayWidth, mc().displayHeight, mc().getFramebuffer());
+            File dir = new File(mc().mcDataDir, "screenshots");
+            dir.mkdirs();
+            javax.imageio.ImageIO.write(image, "png", new File(dir, "selftest-" + name + ".png"));
+        }
+        catch (Exception e)
+        {
+            fail("screenshot " + name, e);
+        }
     }
 
     private static void weaponSteps()
@@ -1771,7 +2024,7 @@ public final class SelfTest
             {
             }
 
-            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.THEME_SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME + "\"");
+            set(net.sythix.client.module.visuals.TexturePackManager.class, net.sythix.client.pack.BuiltInPacks.SETTING, "\"" + net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE + "\"");
             WorldSettings ws = new WorldSettings(12345L, GameType.CREATIVE, false, false, WorldType.FLAT).enableCommands();
             ws.setGeneratorOptions("3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;");
             mc().launchIntegratedServer("sythix-weapons", "Sythix Weapons Test", ws);
@@ -1794,11 +2047,24 @@ public final class SelfTest
 
         // ---- client packs: default, blue, red, and the cart pack on top --------------------------
         add("night for the skies", 1, () -> onServer(p -> p.world.setWorldTime(14000L)));
-        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.BLUE_THEME, "Fallen Angel", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", false);
-        packCheck(net.sythix.client.pack.BuiltInPacks.RED_THEME, "Red Revolution", true);
-        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_THEME, "Cowarted Vanilla", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE, "Cowarted Vanilla", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.RED_CHOICE, "Red Revolution", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.BLUE_CHOICE, "Fallen Angel", false);
+        packCheck(net.sythix.client.pack.BuiltInPacks.CART_CHOICE, "Cowarted Vanilla", true);
+        packCheck(net.sythix.client.pack.BuiltInPacks.DEFAULT_CHOICE, "Cowarted Vanilla", false);
+        add("texture pack list order", 1, () -> {
+            String order = String.join(", ", net.sythix.client.pack.BuiltInPacks.choiceNames());
+            String old = net.sythix.client.pack.BuiltInPacks.migrate(null, new com.google.gson.JsonPrimitive("Red (Red Revolution)"), new com.google.gson.JsonPrimitive(true)) + "/" + net.sythix.client.pack.BuiltInPacks.migrate(null, new com.google.gson.JsonPrimitive("Default (Cowarted Vanilla)"), new com.google.gson.JsonPrimitive(true)) + "/" + net.sythix.client.pack.BuiltInPacks.migrate(null, null, null);
+
+            if ("SMP/Red, SMP/Blue, Cart, Default".equals(order) && "SMP/Red/Cart/Default".equals(old))
+            {
+                pass("texture pack list: " + order + "; old settings carry over (" + old + ")");
+            }
+            else
+            {
+                fail("texture pack list", new IllegalStateException(order + " / " + old));
+            }
+        });
         add("day again", 20, () -> onServer(p -> p.world.setWorldTime(6000L)));
 
         // ---- mace smash damage (server side, exact numbers) ---------------------------------------
@@ -2338,14 +2604,11 @@ public final class SelfTest
     {
         Class<net.sythix.client.module.visuals.CosmeticsModule> c = net.sythix.client.module.visuals.CosmeticsModule.class;
         modules().get(c).setEnabled(true);
-        set(c, "Hat", "\"Crown\"");
-        set(c, "Hat Color", "{\"argb\":\"#FFFFD020\"}");
-        set(c, "Shoulder Buddy", "\"Slime\"");
-        set(c, "Wings", "true");
-        set(c, "Wing Style", "\"Angel\"");
-        set(c, "Wing Color", "{\"argb\":\"#E0FFFFFF\"}");
-        set(c, "Aura", "\"Hearts\"");
-        net.sythix.client.cosmetic.ProfileStore.cape = "anim:chroma";
+        set(c, "Headwear", "\"Rift Crown\"");
+        set(c, "Wings", "\"Celestial Wings\"");
+        set(c, "Aura", "\"Void Aura\"");
+        set(c, "Rift Companion", "true");
+        net.sythix.client.cosmetic.ProfileStore.cape = "sythix:sythix_genesis";
         pass("cosmetics equipped");
     }
 

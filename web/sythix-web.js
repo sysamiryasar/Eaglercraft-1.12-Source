@@ -17,6 +17,7 @@ function status(text) {
 
 /** Shows a problem with what to do about it (and keeps it in the console for bug reports). */
 function problem(title, details) {
+	loadingDone(false);
 	console.error('[Sythix] ' + title + (details ? ': ' + details : ''));
 	statusEl.classList.add('error');
 	statusEl.textContent = '';
@@ -29,6 +30,74 @@ function problem(title, details) {
 		d.textContent = details;
 		statusEl.appendChild(d);
 	}
+}
+
+// ---- Loading screen: Sythix logo and a progress bar from Play to the main menu -----------------
+// The game reports its startup steps (WebLoading.java); between steps the bar creeps on slowly
+// towards the next one, so it never looks stuck.
+const loadingEl = document.getElementById('loading');
+const loadingFill = document.getElementById('loading-fill');
+const loadingStep = document.getElementById('loading-step');
+const GAME_STEPS = [40, 46, 48, 49, 52, 54, 56, 58, 90, 91, 92, 94, 96, 98, 100];
+let loadShown = 0;
+let loadTarget = 0;
+let loadCeiling = 0;
+let loadTimer = null;
+
+function loadingTick() {
+	if (loadShown < loadTarget) {
+		loadShown = Math.min(loadTarget, loadShown + Math.max(0.4, (loadTarget - loadShown) * 0.3));
+	} else if (loadShown < loadCeiling - 0.5) {
+		loadShown += (loadCeiling - loadShown) * 0.012;
+	}
+
+	loadingFill.style.width = loadShown.toFixed(1) + '%';
+}
+
+/** Shows the loading screen at percent (0-100); it may creep towards ceiling while waiting. */
+function loading(percent, text, ceiling) {
+	if (percent < loadTarget) {
+		return; // a late report from an earlier stage (CheerpJ's preload keeps reporting in the background)
+	}
+
+	loadTarget = percent;
+	loadCeiling = Math.max(loadCeiling, loadTarget, ceiling === undefined ? GAME_STEPS.find((p) => p > percent) || 100 : ceiling);
+
+	if (text) {
+		loadingStep.textContent = text + (percent < 100 ? '...' : '');
+	}
+
+	if (!loadTimer) {
+		loadingEl.classList.remove('done');
+		loadingEl.style.display = 'flex';
+		loadTimer = setInterval(loadingTick, 50);
+	}
+
+	if (percent >= 100) {
+		loadingDone(true);
+	}
+}
+
+/** Hides the loading screen (with a short fade once the game is on screen). */
+function loadingDone(ready) {
+	if (!loadTimer) {
+		return;
+	}
+
+	clearInterval(loadTimer);
+	loadTimer = null;
+	loadingFill.style.width = ready ? '100%' : loadingFill.style.width;
+	loadingEl.classList.add('done');
+	setTimeout(() => {
+		loadingEl.style.display = 'none';
+		loadingEl.classList.remove('placed');
+
+		for (const el of loadingEl.querySelectorAll('img, .track, .step')) {
+			el.removeAttribute('style');
+		}
+
+		loadShown = loadTarget = loadCeiling = 0;
+	}, ready ? 350 : 0);
 }
 
 // ---- Checks before starting (clear messages instead of a stuck loading screen) ----------------
@@ -75,7 +144,7 @@ async function serviceWorkerReady() {
 
 /** Every file the game needs, checked before Java starts. */
 async function missingFiles(files) {
-	const needed = files.classpath.concat(['lwjgl/libraries/lwjgl.js', 'lwjgl/libraries/liblwjgl.so', 'lwjgl/libraries/gl4es.wasm']);
+	const needed = files.classpath.concat((files.packs || []).map((f) => 'packs/' + f), ['lwjgl/libraries/lwjgl.js', 'lwjgl/libraries/liblwjgl.so', 'lwjgl/libraries/gl4es.wasm']);
 	const results = await Promise.all(needed.map((f) => fetch(f, { method: 'HEAD', cache: 'no-cache' }).then((r) => (r.ok ? null : f + ' (HTTP ' + r.status + ')')).catch(() => f + ' (network error)')));
 	return results.filter((r) => r);
 }
@@ -226,7 +295,52 @@ function onKey(e, down) {
 document.addEventListener('keydown', (e) => onKey(e, true), true);
 document.addEventListener('keyup', (e) => onKey(e, false), true);
 
+/**
+ * The game says where its own loading screen draws the logo and bar (fractions of the window): the
+ * page's logo and bar glide there, so when the page's loading screen fades out the game's looks
+ * exactly the same and its menu intro carries on from it.
+ */
+function placeLoading(x, y, size, barY, barWidth, barHeight) {
+	const img = loadingEl.querySelector('img');
+	const track = loadingEl.querySelector('.track');
+	const parts = [[img, img.getBoundingClientRect()], [track, track.getBoundingClientRect()], [loadingStep, loadingStep.getBoundingClientRect()]];
+
+	if (!loadingEl.classList.contains('placed')) {
+		// start from where they are now, then move
+		for (const [el, r] of parts) {
+			el.style.left = r.left + 'px';
+			el.style.top = r.top + 'px';
+
+			if (el !== loadingStep) {
+				el.style.width = r.width + 'px';
+				el.style.height = r.height + 'px';
+			}
+		}
+
+		loadingStep.style.left = '0';
+		loadingEl.classList.add('placed');
+		void loadingEl.offsetWidth;
+	}
+
+	const W = window.innerWidth;
+	const H = window.innerHeight;
+	img.style.left = x * W + 'px';
+	img.style.top = y * H + 'px';
+	img.style.width = img.style.height = size * H + 'px';
+	track.style.left = (W - barWidth * W) / 2 + 'px';
+	track.style.top = barY * H + 'px';
+	track.style.width = barWidth * W + 'px';
+	track.style.height = Math.max(2, barHeight * H) + 'px';
+	loadingStep.style.top = (barY + barHeight) * H + 12 + 'px';
+}
+
 const natives = {
+	async Java_net_sythix_client_web_WebLoading_layout(lib, x, y, size, barY, barWidth, barHeight) {
+		placeLoading(x / 10000, y / 10000, size / 10000, barY / 10000, barWidth / 10000, barHeight / 10000);
+	},
+	async Java_net_sythix_client_web_WebLoading_step(lib, percent, text) {
+		loading(percent, text);
+	},
 	async Java_net_sythix_client_web_WebInput_poll(lib, out) {
 		const n = Math.min(keyQueue.length, out.length);
 		out.set(keyQueue.splice(0, n - (n % 4)));
@@ -364,6 +478,7 @@ async function start() {
 		}
 
 		status('Checking the browser...');
+		loading(1, 'Checking the browser', 3);
 		const browser = browserProblems();
 
 		if (browser.length) {
@@ -385,6 +500,7 @@ async function start() {
 		}
 
 		status('Checking the game files...');
+		loading(3, 'Checking the game files', 6);
 		const swReady = await serviceWorkerReady();
 		const missing = await missingFiles(files);
 
@@ -404,12 +520,19 @@ async function start() {
 			return;
 		}
 
+		if (swReady) {
+			// download the game files in parallel while Java starts, instead of one by one when Java
+			// first asks for each (sw.js keeps them and answers Java's requests from memory)
+			files.classpath.concat((files.packs || []).filter((f) => f.startsWith('cowarted-')).map((f) => 'packs/' + f)).forEach((f) => fetch(f).then((r) => r.arrayBuffer()).catch(() => {}));
+		}
+
 		status('Loading Java (CheerpJ)...');
+		loading(6, 'Loading Java', 30);
 		const preload = await preloadPromise;
 		await cheerpjInit({
-			...(preload ? { preloadResources: preload, preloadProgress: (done, total) => status('Loading Java (CheerpJ)... ' + Math.round(100 * done / total) + '%') } : {}),
+			...(preload ? { preloadResources: preload, preloadProgress: (done, total) => { status('Loading Java (CheerpJ)... ' + Math.round(100 * done / total) + '%'); if (loadTarget < 30) { loading(6 + Math.round(24 * done / total), 'Loading Java', 6 + Math.round(24 * done / total)); } } } : {}),
 			version: 8,
-			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim()],
+			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.packdir=' + base + 'packs', 'sythix.packs=' + (files.packs || []).join(','), 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim()],
 			libraries: { 'libGL.so.1': base + 'lwjgl/libraries/gl4es.wasm' },
 			enableX11: true,
 			// Minecraft 1.12 cannot use input methods, and CheerpJ's would swallow the Enter key
@@ -419,6 +542,7 @@ async function start() {
 		});
 
 		status('Starting Sythix Client...');
+		loading(30, 'Starting Sythix Client', 40);
 		const display = document.getElementById('display');
 		display.style.display = 'block';
 		// Resolution: the game draws fewer pixels and the browser stretches the picture to the window
@@ -443,6 +567,7 @@ async function start() {
 		const classpath = files.classpath.map((f) => base + f).join(':');
 		const exit = await cheerpjRunMain('Start', classpath, '--gameDir', '/files/sythix', '--width', String(width), '--height', String(height));
 		gameRunning = false;
+		loadingDone(false);
 		document.getElementById('start').style.display = 'flex';
 		display.style.display = 'none';
 		bar.style.display = 'none';

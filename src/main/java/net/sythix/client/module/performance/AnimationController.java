@@ -73,7 +73,8 @@ public class AnimationController extends Module
             this.screenOpened = Minecraft.getSystemTime();
         }
 
-        if (!this.motion() || this.menuAnimation.is("Off") || screen instanceof net.minecraft.client.gui.GuiChat || screen instanceof net.sythix.client.ui.GuiHudEditor)
+        if (!this.motion() || this.menuAnimation.is("Off") || screen instanceof net.minecraft.client.gui.GuiChat || screen instanceof net.sythix.client.ui.GuiHudEditor
+            || (screen instanceof net.minecraft.client.gui.GuiMainMenu && net.minecraft.client.gui.GuiMainMenu.introRunning()))
         {
             return false;
         }

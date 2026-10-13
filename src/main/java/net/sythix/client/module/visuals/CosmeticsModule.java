@@ -1,10 +1,21 @@
 package net.sythix.client.module.visuals;
 
+import java.util.Random;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.model.ModelBiped;
+import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.sythix.client.cosmetic.AuraRenderer;
+import net.sythix.client.cosmetic.CosmeticCatalog;
+import net.sythix.client.cosmetic.Emotes;
+import net.sythix.client.cosmetic.ExtrasRenderer;
+import net.sythix.client.cosmetic.GuiCosmetics;
+import net.sythix.client.cosmetic.GuiEmoteWheel;
 import net.sythix.client.cosmetic.GuiProfile;
 import net.sythix.client.module.Category;
 import net.sythix.client.module.Module;
@@ -14,86 +25,110 @@ import net.sythix.client.setting.ColorSetting;
 import net.sythix.client.setting.KeybindSetting;
 import net.sythix.client.setting.ModeSetting;
 import net.sythix.client.setting.NumberSetting;
-import net.sythix.client.cosmetic.BuddyRenderer;
-import net.sythix.client.cosmetic.HatRenderer;
-import net.sythix.client.cosmetic.WingRenderer;
-import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.util.EnumParticleTypes;
+import net.sythix.client.setting.TextSetting;
 
 /**
- * #38 Capes, wings and emotes for your own player. Cosmetics are drawn only on your screen;
- * other players do not see them.
+ * #38 Cosmetics and emotes for your own player: the 48 Sythix cosmetics (capes, headwear, wings,
+ * auras and extras) and the emote wheel. Cosmetics are drawn only on your screen; other players
+ * do not see them.
  */
 public class CosmeticsModule extends Module
 {
-    public static final String[] EMOTES = new String[] {"Wave", "Point", "T-Pose", "Dab", "Cheer", "Clap", "Facepalm"};
-
     private final BooleanSetting showCape;
-    private final BooleanSetting wings;
-    private final ColorSetting wingColor;
+    private final ModeSetting headwear;
+    private final ModeSetting wings;
     private final NumberSetting wingFlap;
     private final NumberSetting wingSize;
-    private final ModeSetting wingStyle;
-    private final ModeSetting hat;
-    private final ColorSetting hatColor;
-    private final ModeSetting buddy;
-    private final ColorSetting buddyColor;
     private final ModeSetting aura;
     private final NumberSetting auraAmount;
-    private final ColorSetting auraColor;
-    private final BooleanSetting auraTrail;
     private final BooleanSetting auraFirstPerson;
-    private final KeybindSetting[] emoteKeys = new KeybindSetting[EMOTES.length];
+    private final BooleanSetting trails;
+    private final ModeSetting trailColor;
+    private final BooleanSetting runes;
+    private final BooleanSetting companion;
+    private final BooleanSetting victory;
+    private final BooleanSetting afterimage;
+    private final BooleanSetting spawnEntrance;
+    private final BooleanSetting emblem;
+    private final TextSetting emblemText;
+    private final ColorSetting emblemColor;
+    private final ModeSetting emblemStyle;
+    private final KeybindSetting wheelKey;
+    private final ModeSetting[] wheelSlots = new ModeSetting[8];
     private final NumberSetting emoteLength;
+    private final BooleanSetting emoteCamera;
+    private final BooleanSetting stopWhenMoving;
     private String emote;
     private long emoteStart;
+    private int cameraBefore = -1;
+    private EntityPlayerSP lastPlayer;
+    private double runeX = Double.NaN;
+    private double runeZ;
+    private int runeCount;
+    private boolean swinging;
 
     public CosmeticsModule()
     {
-        super("Cosmetics", "Capes, wings, hats, buddies, auras and emotes for your player (visible on your screen).", Category.VISUALS, true);
-        this.add(new ButtonSetting("Profile", "Change your name, skin and cape with a live preview.", "Open", () -> this.mc.displayGuiScreen(new GuiProfile(this.mc.currentScreen))));
-        this.showCape = this.add(new BooleanSetting("Show Cape", "Show the cape chosen in your profile.", true));
-        this.wings = this.add(new BooleanSetting("Wings", "Show wings on your back.", false));
-        this.wingColor = this.add(new ColorSetting("Wing Color", "Colour of the wings.", 0xE0D81820, true)).visibleWhen(this.wings::isOn);
-        this.wingFlap = this.add(new NumberSetting("Wing Flap Speed", "How fast the wings move.", 1.0D, 0.0D, 3.0D, 0.1D, "x")).visibleWhen(this.wings::isOn);
-        this.wingSize = this.add(new NumberSetting("Wing Size", "Size of the wings.", 1.0D, 0.5D, 1.5D, 0.05D, "x")).visibleWhen(this.wings::isOn);
-        this.wingStyle = this.add(new ModeSetting("Wing Style", "Shape of the wings.", "Feathered", WingRenderer.STYLES)).visibleWhen(this.wings::isOn);
-        this.hat = this.add(new ModeSetting("Hat", "Something to wear on your head.", "None", HatRenderer.HATS));
-        this.hatColor = this.add(new ColorSetting("Hat Color", "Main colour of the hat.", 0xFF1A1A20, false)).visibleWhen(() -> !this.hat.is("None"));
-        this.buddy = this.add(new ModeSetting("Shoulder Buddy", "A little companion on your shoulder.", "None", BuddyRenderer.BUDDIES));
-        this.buddyColor = this.add(new ColorSetting("Buddy Color", "Colour of your buddy.", 0xFF55D06A, false)).visibleWhen(() -> !this.buddy.is("None"));
-        this.aura = this.add(new ModeSetting("Aura", "Particles around you (only you see them).", "None", AURAS));
-        this.auraAmount = this.add(new NumberSetting("Aura Amount", "How many particles.", 3.0D, 1.0D, 10.0D, 1.0D)).visibleWhen(() -> !this.aura.is("None"));
-        this.auraColor = this.add(new ColorSetting("Aura Color", "Colour of the Dust aura.", 0xFFD81820, false)).visibleWhen(() -> this.aura.is("Dust"));
-        this.auraTrail = this.add(new BooleanSetting("Trail Only", "Only spawn particles while you move (a trail).", false)).visibleWhen(() -> !this.aura.is("None"));
-        this.auraFirstPerson = this.add(new BooleanSetting("Aura In First Person", "Also spawn the aura in first person (it can get in your view).", false)).visibleWhen(() -> !this.aura.is("None"));
+        super("Cosmetics", "Capes, headwear, wings, auras, extras and the emote wheel for your player (shown on your screen).", Category.VISUALS, true);
+        this.add(new ButtonSetting("Wardrobe", "Pick cosmetics and emotes with a live preview.", "Open", () -> this.mc.displayGuiScreen(new GuiCosmetics(this.mc.currentScreen))));
+        this.add(new ButtonSetting("Profile", "Change your name, skin and cape.", "Open", () -> this.mc.displayGuiScreen(new GuiProfile(this.mc.currentScreen))));
+        this.showCape = this.add(new BooleanSetting("Show Cape", "Show the cape chosen in the wardrobe or profile.", true));
+        this.headwear = this.add(new ModeSetting("Headwear", "Something to wear on your head.", CosmeticCatalog.NONE, CosmeticCatalog.choices(CosmeticCatalog.HEADWEAR)));
+        this.wings = this.add(new ModeSetting("Wings", "Wings on your back.", CosmeticCatalog.NONE, CosmeticCatalog.choices(CosmeticCatalog.WINGS)));
+        this.wingFlap = this.add(new NumberSetting("Wing Flap Speed", "How fast the wings move.", 1.0D, 0.0D, 3.0D, 0.1D, "x")).visibleWhen(() -> !this.wings.is(CosmeticCatalog.NONE));
+        this.wingSize = this.add(new NumberSetting("Wing Size", "Size of the wings.", 1.0D, 0.5D, 1.5D, 0.05D, "x")).visibleWhen(() -> !this.wings.is(CosmeticCatalog.NONE));
+        this.aura = this.add(new ModeSetting("Aura", "An effect all around you.", CosmeticCatalog.NONE, CosmeticCatalog.choices(CosmeticCatalog.AURAS)));
+        this.auraAmount = this.add(new NumberSetting("Aura Particles", "How many particles the aura makes.", 3.0D, 0.0D, 10.0D, 1.0D)).visibleWhen(() -> !this.aura.is(CosmeticCatalog.NONE));
+        this.auraFirstPerson = this.add(new BooleanSetting("Aura In First Person", "Also show the aura in first person (it can get in your view).", false)).visibleWhen(() -> !this.aura.is(CosmeticCatalog.NONE));
+        this.trails = this.add(new BooleanSetting("Weapon Trails", "A trail of light when you swing.", false));
+        this.trailColor = this.add(new ModeSetting("Trail Color", "Colour of the weapon trail.", "Purple", ExtrasRenderer.TRAIL_COLORS)).visibleWhen(this.trails::isOn);
+        this.runes = this.add(new BooleanSetting("Footstep Runes", "Glowing rune circles under your feet as you walk.", false));
+        this.companion = this.add(new BooleanSetting("Rift Companion", "A tiny floating crystal by your shoulder.", false));
+        this.victory = this.add(new BooleanSetting("Victory Burst", "A burst of light when you win a duel.", false));
+        this.afterimage = this.add(new BooleanSetting("Afterimage", "Fading silhouettes follow you while you move.", false));
+        this.spawnEntrance = this.add(new BooleanSetting("Spawn Entrance", "A portal opens around you when you join a world.", false));
+        this.emblem = this.add(new BooleanSetting("Signature Emblem", "An animated SYTHIX badge above your head (third person).", false));
+        this.emblemText = this.add(new TextSetting("Emblem Text", "The text under the emblem.", "SYTHIX", 16)).visibleWhen(this.emblem::isOn);
+        this.emblemColor = this.add(new ColorSetting("Emblem Color", "Colour of the emblem's glow and text.", 0xFFB050FF, false)).visibleWhen(this.emblem::isOn);
+        this.emblemStyle = this.add(new ModeSetting("Emblem Style", "How the emblem moves.", "Spin", ExtrasRenderer.EMBLEM_STYLES)).visibleWhen(this.emblem::isOn);
+        this.wheelKey = this.add(new KeybindSetting("Emote Wheel Key", "Hold to open the emote wheel, point at an emote and let go to play it.", 50));
 
-        for (int i = 0; i < EMOTES.length; ++i)
+        for (int i = 0; i < this.wheelSlots.length; ++i)
         {
-            this.emoteKeys[i] = this.add(new KeybindSetting(EMOTES[i] + " Emote Key", "Plays the " + EMOTES[i] + " emote (see it in third person, F5).", 0));
+            this.wheelSlots[i] = this.add(new ModeSetting("Wheel Slot " + (i + 1), "The emote in this spot of the emote wheel.", Emotes.WHEEL_DEFAULT[i], Emotes.ALL));
         }
 
-        this.emoteLength = this.add(new NumberSetting("Emote Length", "How long an emote plays.", 3.0D, 1.0D, 10.0D, 0.5D, "s"));
+        this.emoteLength = this.add(new NumberSetting("Emote Length", "How long an emote plays.", 4.0D, 1.0D, 10.0D, 0.5D, "s"));
+        this.emoteCamera = this.add(new BooleanSetting("Emote Camera", "Switch to the front camera while an emote plays, then back.", true));
+        this.stopWhenMoving = this.add(new BooleanSetting("Stop When Moving", "Moving, jumping or attacking ends the emote.", true));
+        net.sythix.client.combat.CombatTracker.addListener(fight -> {
+            if (this.isEnabled())
+            {
+                this.onFightEnded(fight.isWin());
+            }
+        });
     }
 
     public GuiScreen createScreen(GuiScreen parent)
     {
-        return new GuiProfile(parent);
+        return new GuiCosmetics(parent);
     }
+
+    // ---- what is equipped ------------------------------------------------------------------------
 
     public boolean showCape()
     {
         return this.showCape.isOn();
     }
 
-    public boolean showWings()
+    public String headwear()
     {
-        return this.wings.isOn();
+        return this.headwear.get();
     }
 
-    public int wingColor()
+    public String wings()
     {
-        return this.wingColor.getColor();
+        return this.wings.get();
     }
 
     public float wingFlap()
@@ -106,208 +141,391 @@ public class CosmeticsModule extends Module
         return this.wingSize.getFloat();
     }
 
-    public static final String[] AURAS = new String[] {"None", "Hearts", "Flames", "Notes", "Sparkles", "Dust", "Portal", "Snow", "Clouds"};
-
-    public String wingStyle()
+    public String aura()
     {
-        return this.wingStyle.get();
+        return this.aura.get();
     }
 
-    public String hat()
+    public boolean auraFirstPerson()
     {
-        return this.hat.get();
+        return this.auraFirstPerson.isOn();
     }
 
-    public int hatColor()
+    public String trailColor()
     {
-        return this.hatColor.getColor();
+        return this.trailColor.get();
     }
 
-    public String buddy()
+    public boolean companion()
     {
-        return this.buddy.get();
+        return this.companion.isOn();
     }
 
-    public int buddyColor()
+    public boolean afterimage()
     {
-        return this.buddyColor.getColor();
+        return this.afterimage.isOn();
     }
 
-    public void onTick()
+    public boolean emblem()
     {
-        EntityPlayerSP p = this.mc.player;
+        return this.emblem.isOn();
+    }
 
-        if (this.aura.is("None") || p == null || this.mc.world == null || p.isInvisible() || this.mc.isGamePaused())
+    public String emblemText()
+    {
+        return this.emblemText.get();
+    }
+
+    public int emblemColor()
+    {
+        return this.emblemColor.getColor();
+    }
+
+    public String emblemStyle()
+    {
+        return this.emblemStyle.get();
+    }
+
+    /** The setting that equips a cosmetic of this category (null for capes and extras). */
+    public ModeSetting slot(String category)
+    {
+        switch (category)
         {
-            return;
-        }
-
-        if (this.mc.gameSettings.thirdPersonView == 0 && !this.auraFirstPerson.isOn())
-        {
-            return;
-        }
-
-        boolean moving = Math.abs(p.posX - p.prevPosX) + Math.abs(p.posZ - p.prevPosZ) > 0.02D;
-
-        if (this.auraTrail.isOn() && !moving)
-        {
-            return;
-        }
-
-        java.util.Random rand = p.getRNG();
-        int count = this.auraAmount.getInt();
-
-        // Hearts and notes are big, so spawn them less often
-        if ((this.aura.is("Hearts") || this.aura.is("Notes")) && p.ticksExisted % 4 != 0)
-        {
-            return;
-        }
-
-        for (int i = 0; i < (this.aura.is("Hearts") || this.aura.is("Notes") ? 1 : count); ++i)
-        {
-            double x = p.posX + (rand.nextDouble() - 0.5D) * (this.auraTrail.isOn() ? 0.4D : 1.2D);
-            double y = p.posY + (this.auraTrail.isOn() ? 0.1D : rand.nextDouble() * 2.0D);
-            double z = p.posZ + (rand.nextDouble() - 0.5D) * (this.auraTrail.isOn() ? 0.4D : 1.2D);
-            this.spawn(x, y, z, rand);
+            case CosmeticCatalog.HEADWEAR:
+                return this.headwear;
+            case CosmeticCatalog.WINGS:
+                return this.wings;
+            case CosmeticCatalog.AURAS:
+                return this.aura;
+            default:
+                return null;
         }
     }
 
-    private void spawn(double x, double y, double z, java.util.Random rand)
+    /** The on/off setting for an extra, by its name. */
+    public BooleanSetting extra(String name)
     {
-        EnumParticleTypes type;
-        double a = 0.0D;
-        double b = 0.0D;
-        double c = 0.0D;
-
-        switch (this.aura.get())
+        switch (name)
         {
-            case "Hearts":
-                type = EnumParticleTypes.HEART;
+            case "Weapon Trails":
+                return this.trails;
+            case "Footstep Runes":
+                return this.runes;
+            case "Rift Companion":
+                return this.companion;
+            case "Victory Burst":
+                return this.victory;
+            case "Afterimage":
+                return this.afterimage;
+            case "Spawn Entrance":
+                return this.spawnEntrance;
+            default:
+                return this.emblem;
+        }
+    }
+
+    /** Settings that belong to an extra (shown under it in the wardrobe). */
+    public java.util.List<net.sythix.client.setting.Setting<?>> optionsFor(String name)
+    {
+        java.util.List<net.sythix.client.setting.Setting<?>> list = new java.util.ArrayList<net.sythix.client.setting.Setting<?>>();
+
+        switch (name)
+        {
+            case "Weapon Trails":
+                list.add(this.trailColor);
                 break;
-            case "Flames":
-                type = EnumParticleTypes.FLAME;
-                b = 0.01D;
+            case "Signature Emblem":
+                list.add(this.emblemText);
+                list.add(this.emblemColor);
+                list.add(this.emblemStyle);
                 break;
-            case "Notes":
-                type = EnumParticleTypes.NOTE;
-                a = (double)rand.nextInt(25) / 24.0D;
+            case CosmeticCatalog.WINGS:
+                list.add(this.wingFlap);
+                list.add(this.wingSize);
                 break;
-            case "Sparkles":
-                type = EnumParticleTypes.FIREWORKS_SPARK;
-                a = (rand.nextDouble() - 0.5D) * 0.02D;
-                b = 0.02D;
-                c = (rand.nextDouble() - 0.5D) * 0.02D;
+            case CosmeticCatalog.AURAS:
+                list.add(this.auraAmount);
+                list.add(this.auraFirstPerson);
                 break;
-            case "Dust":
-                type = EnumParticleTypes.REDSTONE;
-                int col = this.auraColor.getArgb();
-                // Redstone dust uses the motion as colour; 0 red means "default red", so nudge it
-                a = Math.max(0.001D, (double)((col >> 16) & 255) / 255.0D);
-                b = (double)((col >> 8) & 255) / 255.0D;
-                c = (double)(col & 255) / 255.0D;
-                break;
-            case "Portal":
-                type = EnumParticleTypes.PORTAL;
-                a = (rand.nextDouble() - 0.5D) * 0.5D;
-                b = -rand.nextDouble() * 0.5D;
-                c = (rand.nextDouble() - 0.5D) * 0.5D;
-                break;
-            case "Snow":
-                type = EnumParticleTypes.SNOW_SHOVEL;
+            case CosmeticCatalog.CAPES:
+                list.add(this.showCape);
                 break;
             default:
-                type = EnumParticleTypes.CLOUD;
-                b = 0.01D;
         }
 
-        this.mc.world.spawnParticle(type, x, y, z, a, b, c);
+        return list;
     }
+
+    public java.util.List<net.sythix.client.setting.Setting<?>> emoteSettings()
+    {
+        java.util.List<net.sythix.client.setting.Setting<?>> list = new java.util.ArrayList<net.sythix.client.setting.Setting<?>>();
+        list.add(this.wheelKey);
+        list.add(this.emoteLength);
+        list.add(this.emoteCamera);
+        list.add(this.stopWhenMoving);
+        return list;
+    }
+
+    public String wheelSlot(int i)
+    {
+        return this.wheelSlots[i].get();
+    }
+
+    public void setWheelSlot(int i, String emote)
+    {
+        this.wheelSlots[i].set(emote);
+    }
+
+    public int wheelKey()
+    {
+        return this.wheelKey.getKey();
+    }
+
+    // ---- emotes -----------------------------------------------------------------------------------
 
     public void onKey(int keyCode)
     {
-        for (int i = 0; i < EMOTES.length; ++i)
+        if (keyCode != 0 && keyCode == this.wheelKey.getKey() && this.mc.currentScreen == null && this.mc.player != null)
         {
-            if (keyCode != 0 && keyCode == this.emoteKeys[i].getKey())
-            {
-                this.play(EMOTES[i]);
-            }
+            this.mc.displayGuiScreen(new GuiEmoteWheel(this));
         }
     }
 
     public void play(String name)
     {
+        boolean wasPlaying = this.emote != null;
         this.emote = name;
         this.emoteStart = Minecraft.getSystemTime();
+
+        if (this.emoteCamera.isOn() && !wasPlaying && this.mc.world != null)
+        {
+            this.cameraBefore = this.mc.gameSettings.thirdPersonView;
+            this.mc.gameSettings.thirdPersonView = 2;
+        }
+    }
+
+    public void stopEmote()
+    {
+        if (this.emote != null)
+        {
+            this.emote = null;
+
+            if (this.cameraBefore >= 0)
+            {
+                this.mc.gameSettings.thirdPersonView = this.cameraBefore;
+                this.cameraBefore = -1;
+            }
+        }
     }
 
     public String currentEmote()
     {
         if (this.emote != null && Minecraft.getSystemTime() - this.emoteStart > (long)(this.emoteLength.getFloat() * 1000.0F))
         {
-            this.emote = null;
+            this.stopEmote();
         }
 
         return this.emote;
     }
 
-    /** Overrides arm angles while an emote plays. */
-    public static void pose(ModelBiped model, String emote, float ageInTicks)
-    {
-        float t = ageInTicks * 0.3F;
-
-        switch (emote)
-        {
-            case "Wave":
-                model.bipedRightArm.rotateAngleX = (float)Math.PI;
-                model.bipedRightArm.rotateAngleZ = 0.4F + MathHelper.sin(t) * 0.4F;
-                break;
-            case "Point":
-                model.bipedRightArm.rotateAngleX = -(float)Math.PI / 2.0F;
-                model.bipedRightArm.rotateAngleY = -0.1F;
-                break;
-            case "T-Pose":
-                model.bipedRightArm.rotateAngleX = 0.0F;
-                model.bipedLeftArm.rotateAngleX = 0.0F;
-                model.bipedRightArm.rotateAngleZ = (float)Math.PI / 2.0F;
-                model.bipedLeftArm.rotateAngleZ = -(float)Math.PI / 2.0F;
-                break;
-            case "Dab":
-                model.bipedRightArm.rotateAngleX = -2.3F;
-                model.bipedRightArm.rotateAngleZ = -0.6F;
-                model.bipedLeftArm.rotateAngleX = -1.4F;
-                model.bipedLeftArm.rotateAngleY = 0.8F;
-                model.bipedHead.rotateAngleX = 0.6F;
-                model.bipedHead.rotateAngleY = -0.5F;
-                break;
-            case "Clap":
-                model.bipedRightArm.rotateAngleX = -1.2F;
-                model.bipedLeftArm.rotateAngleX = -1.2F;
-                model.bipedRightArm.rotateAngleY = -0.35F - MathHelper.abs(MathHelper.sin(t * 1.5F)) * 0.35F;
-                model.bipedLeftArm.rotateAngleY = 0.35F + MathHelper.abs(MathHelper.sin(t * 1.5F)) * 0.35F;
-                break;
-            case "Facepalm":
-                model.bipedRightArm.rotateAngleX = -2.4F;
-                model.bipedRightArm.rotateAngleY = -0.55F;
-                model.bipedHead.rotateAngleX = 0.45F;
-                model.bipedHead.rotateAngleY = MathHelper.sin(t * 0.7F) * 0.25F;
-                break;
-            default:
-                model.bipedRightArm.rotateAngleX = (float)Math.PI + MathHelper.sin(t) * 0.3F;
-                model.bipedLeftArm.rotateAngleX = (float)Math.PI - MathHelper.sin(t) * 0.3F;
-                model.bipedRightArm.rotateAngleZ = 0.3F;
-                model.bipedLeftArm.rotateAngleZ = -0.3F;
-                break;
-        }
-    }
-
-    /** Applies the active emote if the model belongs to the local player. */
+    /** Applies the playing emote if the model belongs to the local player. */
     public void applyEmote(ModelBiped model, Entity entity, float ageInTicks)
     {
         String e = this.currentEmote();
 
         if (e != null && entity == this.mc.player)
         {
-            pose(model, e, ageInTicks);
+            Emotes.pose(model, e, (float)(Minecraft.getSystemTime() - this.emoteStart) / 50.0F);
         }
+    }
+
+    // ---- every tick ---------------------------------------------------------------------------------
+
+    public void onTick()
+    {
+        EntityPlayerSP p = this.mc.player;
+
+        if (p == null || this.mc.world == null)
+        {
+            this.lastPlayer = null;
+            return;
+        }
+
+        if (p != this.lastPlayer)
+        {
+            // a new player entity: you joined a world, respawned or changed dimension
+            this.lastPlayer = p;
+            ExtrasRenderer.clear();
+            this.runeX = Double.NaN;
+
+            if (this.spawnEntrance.isOn())
+            {
+                ExtrasRenderer.addPortal(this.mc.world, p.posX, p.posY, p.posZ);
+            }
+        }
+
+        if (this.emote != null && this.stopWhenMoving.isOn() && (p.movementInput.moveForward != 0.0F || p.movementInput.moveStrafe != 0.0F || p.movementInput.jump || p.isSwingInProgress))
+        {
+            this.stopEmote();
+        }
+
+        if (this.mc.isGamePaused() || p.isInvisible())
+        {
+            return;
+        }
+
+        boolean moving = Math.abs(p.posX - p.prevPosX) + Math.abs(p.posZ - p.prevPosZ) > 0.02D;
+        boolean thirdPerson = this.mc.gameSettings.thirdPersonView != 0;
+
+        if (!this.aura.is(CosmeticCatalog.NONE) && this.auraAmount.getInt() > 0 && (thirdPerson || this.auraFirstPerson.isOn()))
+        {
+            AuraRenderer.particles(this.aura.get(), p, this.mc.world, this.auraAmount.getInt(), moving);
+        }
+
+        this.wingParticles(p, thirdPerson);
+
+        if (this.afterimage.isOn())
+        {
+            ExtrasRenderer.recordGhost(p);
+        }
+
+        if (this.runes.isOn() && p.onGround)
+        {
+            double dx = p.posX - this.runeX;
+            double dz = p.posZ - this.runeZ;
+
+            if (Double.isNaN(this.runeX) || dx * dx + dz * dz > 1.3D)
+            {
+                this.runeX = p.posX;
+                this.runeZ = p.posZ;
+                // alternate left and right foot
+                float yaw = p.rotationYaw * 0.017453292F;
+                double side = (this.runeCount++ % 2 == 0 ? 0.18D : -0.18D);
+                ExtrasRenderer.addRune(p.posX + Math.cos(yaw) * side, p.posY, p.posZ + Math.sin(yaw) * side, this.runeCount % 5, (float)(this.runeCount * 37 % 360));
+            }
+        }
+    }
+
+    private void wingParticles(EntityPlayerSP p, boolean thirdPerson)
+    {
+        if (!thirdPerson || this.wings.is(CosmeticCatalog.NONE) || p.ticksExisted % 4 != 0)
+        {
+            return;
+        }
+
+        Random rand = p.getRNG();
+        float yaw = p.renderYawOffset * 0.017453292F;
+        double side = rand.nextBoolean() ? 1.0D : -1.0D;
+        // a point out on one wing, behind the shoulders
+        double x = p.posX - Math.sin(yaw) * -0.3D + Math.cos(yaw) * side * (0.4D + rand.nextDouble() * 0.5D);
+        double z = p.posZ + Math.cos(yaw) * -0.3D + Math.sin(yaw) * side * (0.4D + rand.nextDouble() * 0.5D);
+        double y = p.posY + 1.0D + rand.nextDouble() * 0.6D;
+
+        switch (this.wings.get())
+        {
+            case "Celestial Wings":
+                this.mc.world.spawnParticle(EnumParticleTypes.REDSTONE, x, y, z, 1.0D, 0.82D, 0.25D);
+                break;
+            case "Frost Wings":
+                this.mc.world.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x, y, z, 0.0D, -0.01D, 0.0D);
+                break;
+            case "Void Wings":
+            case "Phantom Wings":
+                this.mc.world.spawnParticle(EnumParticleTypes.PORTAL, x, y, z, 0.0D, -0.2D, 0.0D);
+                break;
+            case "Infernal Wings":
+                this.mc.world.spawnParticle(EnumParticleTypes.DRIP_LAVA, x, y, z, 0.0D, 0.0D, 0.0D);
+                break;
+            case "Astral Wings":
+                this.mc.world.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x, y, z, 0.0D, 0.0D, 0.0D);
+                break;
+            default:
+        }
+    }
+
+    /** Called by CombatTracker when a fight ends. */
+    public void onFightEnded(boolean won)
+    {
+        if (won && this.victory.isOn() && this.mc.player != null && this.mc.world != null)
+        {
+            this.victoryBurst();
+        }
+    }
+
+    public void victoryBurst()
+    {
+        if (this.mc.player != null && this.mc.world != null)
+        {
+            ExtrasRenderer.addBurst(this.mc.world, this.mc.player.posX, this.mc.player.posY, this.mc.player.posZ);
+        }
+    }
+
+    public void spawnPortal()
+    {
+        if (this.mc.player != null && this.mc.world != null)
+        {
+            ExtrasRenderer.addPortal(this.mc.world, this.mc.player.posX, this.mc.player.posY, this.mc.player.posZ);
+        }
+    }
+
+    // ---- every frame ----------------------------------------------------------------------------
+
+    public void onRenderWorld(float partialTicks)
+    {
+        EntityPlayerSP p = this.mc.player;
+
+        if (p == null || this.mc.world == null)
+        {
+            return;
+        }
+
+        if (this.trails.isOn())
+        {
+            this.sampleTrail(p, partialTicks);
+        }
+
+        RenderManager rm = this.mc.getRenderManager();
+        ExtrasRenderer.renderWorld(rm, ExtrasRenderer.trailColor(this.trailColor.get()));
+
+        if (this.emblem.isOn() && this.mc.gameSettings.thirdPersonView != 0 && !p.isInvisible())
+        {
+            double x = p.prevPosX + (p.posX - p.prevPosX) * (double)partialTicks - rm.viewerPosX;
+            double y = p.prevPosY + (p.posY - p.prevPosY) * (double)partialTicks - rm.viewerPosY;
+            double z = p.prevPosZ + (p.posZ - p.prevPosZ) * (double)partialTicks - rm.viewerPosZ;
+            net.minecraft.client.renderer.GlStateManager.pushMatrix();
+            net.minecraft.client.renderer.GlStateManager.translate(x, y + (double)p.height + (p.isSneaking() ? 0.25D : 0.45D), z);
+            net.minecraft.client.renderer.GlStateManager.rotate(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
+            net.minecraft.client.renderer.GlStateManager.rotate((float)(this.mc.gameSettings.thirdPersonView == 2 ? -1 : 1) * rm.playerViewX, 1.0F, 0.0F, 0.0F);
+            net.minecraft.client.renderer.GlStateManager.scale(-0.025F, -0.025F, 0.025F);
+            ExtrasRenderer.emblem(this.emblemText.get(), this.emblemColor.getColor(), this.emblemStyle.get(), (float)p.ticksExisted + partialTicks);
+            net.minecraft.client.renderer.GlStateManager.popMatrix();
+        }
+    }
+
+    /** While a swing plays, records where the weapon's tip is: a slash from upper right to lower left. */
+    private void sampleTrail(EntityPlayerSP p, float partialTicks)
+    {
+        if (!p.isSwingInProgress)
+        {
+            if (this.swinging)
+            {
+                ExtrasRenderer.breakTrail();
+            }
+
+            this.swinging = false;
+            return;
+        }
+
+        this.swinging = true;
+        float progress = p.getSwingProgress(partialTicks);
+        Vec3d eye = p.getPositionEyes(partialTicks);
+        Vec3d forward = p.getLook(partialTicks);
+        Vec3d right = forward.crossProduct(new Vec3d(0.0D, 1.0D, 0.0D)).normalize();
+        Vec3d up = right.crossProduct(forward).normalize();
+        double sx = 0.6D - 1.15D * (double)progress;
+        double sy = 0.45D - 0.8D * (double)progress;
+        double bulge = 0.25D * (double)MathHelper.sin(progress * (float)Math.PI);
+        Vec3d point = eye.add(forward.scale(0.8D + bulge)).add(right.scale(sx)).add(up.scale(sy - 0.15D));
+        ExtrasRenderer.addTrailPoint(point);
     }
 }

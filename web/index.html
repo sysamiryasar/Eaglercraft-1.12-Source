@@ -35,6 +35,18 @@
   .field { display: block; margin: 8px 0 0; }
   .field span { display: block; margin-bottom: 4px; }
   .field input, .field select { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--edge); background: rgba(0, 0, 0, 0.35); color: var(--text); font: inherit; font-size: 13px; }
+  #loading { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    background: radial-gradient(900px 500px at 50% 120%, rgba(216, 24, 32, 0.22), transparent 60%), linear-gradient(#16161b, #0b0b0e); transition: opacity 0.3s ease; }
+  #loading.done { opacity: 0; pointer-events: none; }
+  #loading.placed img, #loading.placed .track, #loading.placed .step { position: absolute; transition: left 0.6s ease, top 0.6s ease, width 0.6s ease, height 0.6s ease; }
+  #loading.placed img { animation: none; filter: none; }
+  #loading.placed .step { left: 0; right: 0; text-align: center; }
+  #loading img { width: min(220px, 40vh); height: auto; animation: glow 2.4s ease-in-out infinite; }
+  @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(216, 24, 32, 0.35)); } 50% { filter: drop-shadow(0 0 34px rgba(255, 122, 61, 0.55)); } }
+  #loading .track { width: min(320px, calc(100% - 64px)); height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  #loading .fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--red), var(--ember)); box-shadow: 0 0 12px rgba(255, 122, 61, 0.6); }
+  #loading .step { color: var(--muted); font-size: 13px; min-height: 18px; }
+  @media (prefers-reduced-motion: reduce) { #loading img { animation: none; } }
   label { display: flex; gap: 8px; align-items: flex-start; text-align: left; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
 </style>
 </head>
@@ -64,6 +76,11 @@
   </div>
 </div>
 <div id="display"></div>
+<div id="loading" aria-live="polite">
+  <img src="logo.png" alt="Sythix Client">
+  <div class="track"><div class="fill" id="loading-fill"></div></div>
+  <div class="step" id="loading-step">Starting...</div>
+</div>
 <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
 <script type="module" src="sythix-web.js"></script>
 </body>

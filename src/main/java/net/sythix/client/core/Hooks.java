@@ -176,7 +176,7 @@ public final class Hooks
 
         if (packs != null)
         {
-            net.sythix.client.pack.BuiltInPacks.sync(packs.clientPack(), packs.cartPackOn());
+            net.sythix.client.pack.BuiltInPacks.sync(packs.builtInPack());
         }
 
         if (combatTracking())
@@ -1584,6 +1584,26 @@ public final class Hooks
         {
             fail(CosmeticsModule.class, "cape", t);
             return null;
+        }
+    }
+
+    /** Draws the glow layer of an animated Sythix cape over the cape just drawn (local player only). */
+    public static void capeGlow(AbstractClientPlayer player, net.minecraft.client.model.ModelPlayer model)
+    {
+        CosmeticsModule cosmetics = on(CosmeticsModule.class);
+
+        if (cosmetics == null || !cosmetics.showCape() || !(player instanceof EntityPlayerSP) || !net.sythix.client.cosmetic.CapeArt.isArt(ProfileStore.cape))
+        {
+            return;
+        }
+
+        try
+        {
+            net.sythix.client.cosmetic.CapeArt.renderGlow(ProfileStore.cape, () -> model.renderCape(0.0625F));
+        }
+        catch (Throwable t)
+        {
+            fail(CosmeticsModule.class, "cape glow", t);
         }
     }
 

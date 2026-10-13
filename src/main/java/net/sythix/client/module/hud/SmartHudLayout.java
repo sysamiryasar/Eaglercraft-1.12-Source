@@ -182,7 +182,7 @@ public class SmartHudLayout extends Module
         if (packs != null && "Cart PvP".equals(p))
         {
             // cart PvP: clear rails and low fire from the built-in Harlu Cart Pack
-            packs.setCartPack(true);
+            packs.setBuiltInPack(net.sythix.client.pack.BuiltInPacks.CART_CHOICE);
         }
 
         Module flow = m.getByName("Crystal Flow Analyzer");

@@ -377,6 +377,8 @@ public class Minecraft implements IThreadListener, ISnooperInfo
     private SoundHandler mcSoundHandler;
     private MusicTicker mcMusicTicker;
     private ResourceLocation mojangLogo;
+    private Framebuffer splashFramebuffer;
+    private boolean splashLayoutReported;
     private final MinecraftSessionService sessionService;
     private SkinManager skinManager;
     private final Queue < FutureTask<? >> scheduledTasks = Queues. < FutureTask<? >> newArrayDeque();
@@ -525,16 +527,36 @@ public class Minecraft implements IThreadListener, ISnooperInfo
      * Starts the game: initializes the canvas, the title, the settings, etcetera.
      */
     /** Sythix: progress markers while the browser build starts (where it is slow or stuck). */
+    /** When the game classes were loaded; startup steps are logged relative to it. */
+    private static final long BOOT_TIME = System.currentTimeMillis();
+
     private static void webStep(String step)
     {
+        LOGGER.info((GlStateManager.WEB ? "[web] " : "[startup] ") + step + " at " + (System.currentTimeMillis() - BOOT_TIME) + " ms");
+    }
+
+    /**
+     * A startup step: logged with its time, shown on the page's loading screen in the browser and as
+     * the progress bar of the Sythix loading screen (once that is on screen).
+     */
+    private void startupStep(String step, int percent, String text)
+    {
+        webStep(step);
+
         if (GlStateManager.WEB)
         {
-            LOGGER.info("[web] " + step);
+            net.sythix.client.web.WebLoading.report(percent, text);
+        }
+
+        if (this.mojangLogo != null)
+        {
+            this.drawSplashProgress(percent);
         }
     }
 
     private void init() throws LWJGLException, IOException
     {
+        startupStep("init start", 40, "Starting the game");
         this.gameSettings = new GameSettings(this, this.mcDataDir);
         this.creativeSettings = new CreativeSettings(this, this.mcDataDir);
         this.defaultResourcePacks.add(this.mcDefaultResourcePack);
@@ -550,22 +572,23 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.setWindowIcon();
         this.setInitialDisplayMode();
         this.createDisplay();
+        startupStep("window created", 46, "Opening the window");
         OpenGlHelper.initializeTextures();
-        webStep("gl helpers ready");
+        startupStep("gl helpers ready", 48, "Preparing graphics");
         this.framebufferMc = new Framebuffer(this.displayWidth, this.displayHeight, true);
         this.framebufferMc.setFramebufferColor(0.0F, 0.0F, 0.0F, 0.0F);
-        webStep("framebuffer ready");
+        startupStep("framebuffer ready", 49, "Preparing graphics");
         this.registerMetadataSerializers();
         this.mcResourcePackRepository = new ResourcePackRepository(this.fileResourcepacks, new File(this.mcDataDir, "server-resource-packs"), this.mcDefaultResourcePack, this.metadataSerializer_, this.gameSettings);
         this.mcResourceManager = new SimpleReloadableResourceManager(this.metadataSerializer_);
         this.mcLanguageManager = new LanguageManager(this.metadataSerializer_, this.gameSettings.language);
         this.mcResourceManager.registerReloadListener(this.mcLanguageManager);
         this.refreshResources();
-        webStep("resources loaded");
+        startupStep("resources loaded", 52, "Reading resource packs");
         this.renderEngine = new TextureManager(this.mcResourceManager);
         this.mcResourceManager.registerReloadListener(this.renderEngine);
         this.drawSplashScreen(this.renderEngine);
-        webStep("splash drawn");
+        startupStep("splash drawn", 54, "Loading sounds and fonts");
         this.skinManager = new SkinManager(this.renderEngine, new File(this.fileAssets, "skins"), this.sessionService);
         this.saveLoader = new AnvilSaveConverter(new File(this.mcDataDir, "saves"), this.dataFixer);
         this.mcSoundHandler = new SoundHandler(this.mcResourceManager, this.gameSettings);
@@ -585,7 +608,7 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.mcResourceManager.registerReloadListener(new GrassColorReloadListener());
         this.mcResourceManager.registerReloadListener(new FoliageColorReloadListener());
         this.mouseHelper = new MouseHelper();
-        webStep("fonts ready");
+        startupStep("fonts ready", 56, "Loading textures");
         this.checkGLError("Pre startup");
         GlStateManager.enableTexture2D();
         GlStateManager.shadeModel(7425);
@@ -603,29 +626,33 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         this.textureMapBlocks.setMipmapLevels(this.gameSettings.mipmapLevels);
         this.renderEngine.loadTickableTexture(TextureMap.LOCATION_BLOCKS_TEXTURE, this.textureMapBlocks);
         this.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-        webStep("block textures stitched");
+        startupStep("block textures stitched", 58, "Building block and item models");
         this.textureMapBlocks.setBlurMipmapDirect(false, this.gameSettings.mipmapLevels > 0);
         this.modelManager = new ModelManager(this.textureMapBlocks);
         this.mcResourceManager.registerReloadListener(this.modelManager);
+        startupStep("models baked", 90, "Preparing item rendering");
         this.blockColors = BlockColors.init();
         this.itemColors = ItemColors.init(this.blockColors);
         this.renderItem = new RenderItem(this.renderEngine, this.modelManager, this.itemColors);
+        startupStep("item renderer ready", 91, "Preparing world rendering");
         this.renderManager = new RenderManager(this.renderEngine, this.renderItem);
         this.itemRenderer = new ItemRenderer(this);
         this.mcResourceManager.registerReloadListener(this.renderItem);
         this.entityRenderer = new EntityRenderer(this, this.mcResourceManager);
         this.mcResourceManager.registerReloadListener(this.entityRenderer);
+        startupStep("entity renderer ready", 92, "Preparing world rendering");
         this.blockRenderDispatcher = new BlockRendererDispatcher(this.modelManager.getBlockModelShapes(), this.blockColors);
         this.mcResourceManager.registerReloadListener(this.blockRenderDispatcher);
         this.renderGlobal = new RenderGlobal(this);
-        webStep("world renderer ready");
+        startupStep("world renderer ready", 94, "Building creative search");
         this.mcResourceManager.registerReloadListener(this.renderGlobal);
         this.populateSearchTreeManager();
+        startupStep("search trees ready", 96, "Almost ready");
         this.mcResourceManager.registerReloadListener(this.searchTreeManager);
         GlStateManager.viewport(0, 0, this.displayWidth, this.displayHeight);
         this.effectRenderer = new ParticleManager(this.world, this.renderEngine);
         this.checkGLError("Post startup");
-        webStep("startup done");
+        startupStep("startup done", 98, "Opening the main menu");
         this.ingameGUI = new GuiIngame(this);
         SythixClient.init(this);
 
@@ -640,6 +667,12 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
         this.renderEngine.deleteTexture(this.mojangLogo);
         this.mojangLogo = null;
+
+        if (this.splashFramebuffer != null)
+        {
+            this.splashFramebuffer.deleteFramebuffer();
+            this.splashFramebuffer = null;
+        }
         this.loadingScreen = new LoadingScreenRenderer(this);
         this.debugRenderer = new DebugRenderer(this);
 
@@ -1021,9 +1054,38 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     private void drawSplashScreen(TextureManager textureManagerInstance) throws LWJGLException
     {
+        InputStream inputstream = null;
+
+        try
+        {
+            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_SPLASH_LOGO);
+            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("sythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
+        }
+        catch (IOException ioexception)
+        {
+            LOGGER.error("Unable to load logo: {}", LOCATION_SPLASH_LOGO, ioexception);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(inputstream);
+        }
+    }
+
+    /**
+     * The Sythix loading screen: dark gradient, the centred logo and a red-to-ember progress bar.
+     * Drawn again at every startup step, so the bar moves while the game loads.
+     */
+    private void drawSplashProgress(int percent)
+    {
         ScaledResolution scaledresolution = new ScaledResolution(this);
         int i = scaledresolution.getScaleFactor();
-        Framebuffer framebuffer = new Framebuffer(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i, true);
+
+        if (this.splashFramebuffer == null)
+        {
+            this.splashFramebuffer = new Framebuffer(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i, true);
+        }
+
+        Framebuffer framebuffer = this.splashFramebuffer;
         framebuffer.bindFramebuffer(false);
         GlStateManager.matrixMode(5889);
         GlStateManager.loadIdentity();
@@ -1035,41 +1097,43 @@ public class Minecraft implements IThreadListener, ISnooperInfo
         GlStateManager.disableFog();
         GlStateManager.disableDepth();
         GlStateManager.enableTexture2D();
-        InputStream inputstream = null;
 
-        try
-        {
-            inputstream = this.mcDefaultResourcePack.getInputStream(LOCATION_SPLASH_LOGO);
-            this.mojangLogo = textureManagerInstance.getDynamicTextureLocation("sythix_logo", new DynamicTexture(ImageIO.read(inputstream)));
-            textureManagerInstance.bindTexture(this.mojangLogo);
-        }
-        catch (IOException ioexception)
-        {
-            LOGGER.error("Unable to load logo: {}", LOCATION_SPLASH_LOGO, ioexception);
-        }
-        finally
-        {
-            IOUtils.closeQuietly(inputstream);
-        }
-
-        // Sythix loading screen: dark gradient, centred logo and a red-to-blue accent line
         float screenWidth = (float)scaledresolution.getScaledWidth();
         float screenHeight = (float)scaledresolution.getScaledHeight();
         SythixTheme.drawGradientV(0.0F, 0.0F, screenWidth, screenHeight, SythixTheme.CHARCOAL, SythixTheme.BLACK);
+        float logoSize = Math.min(screenHeight * 0.6F, 220.0F);
+        float logoX = (screenWidth - logoSize) / 2.0F;
+        float logoY = (screenHeight - logoSize) / 2.0F - 8.0F;
 
         if (this.mojangLogo != null)
         {
-            float logoSize = Math.min(screenHeight * 0.6F, 220.0F);
-            float logoX = (screenWidth - logoSize) / 2.0F;
-            float logoY = (screenHeight - logoSize) / 2.0F - 8.0F;
             SythixTheme.drawTexture(this.mojangLogo, logoX, logoY, logoSize, logoSize, 1.0F);
-            SythixTheme.drawAccentLine(screenWidth / 2.0F - 60.0F, logoY + logoSize + 10.0F, screenWidth / 2.0F + 60.0F, 1.0F);
         }
 
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
+        if (GlStateManager.WEB && !this.splashLayoutReported)
+        {
+            this.splashLayoutReported = true;
+            float w = (float)this.displayWidth / (float)i;
+            float h = (float)this.displayHeight / (float)i;
+            net.sythix.client.web.WebLoading.reportLayout(logoX / w, logoY / h, logoSize / h, (logoY + logoSize + 10.0F) / h, 160.0F / w, 2.0F / h);
+        }
+
+        float barLeft = screenWidth / 2.0F - 80.0F;
+        float barRight = screenWidth / 2.0F + 80.0F;
+        float barY = logoY + logoSize + 10.0F;
+        float fill = barLeft + (barRight - barLeft) * Math.max(0, Math.min(100, percent)) / 100.0F;
+        SythixTheme.drawRect(barLeft, barY, barRight, barY + 2.0F, 0x33FFFFFF);
+        SythixTheme.drawGradientH(barLeft, barY, fill, barY + 2.0F, SythixTheme.RED, SythixTheme.BLUE);
+
         framebuffer.unbindFramebuffer();
         framebuffer.framebufferRender(scaledresolution.getScaledWidth() * i, scaledresolution.getScaledHeight() * i);
+        // back to the state the rest of startup expects
+        GlStateManager.matrixMode(5889);
+        GlStateManager.loadIdentity();
+        GlStateManager.matrixMode(5888);
+        GlStateManager.loadIdentity();
+        GlStateManager.enableDepth();
+        GlStateManager.depthFunc(515);
         GlStateManager.enableAlpha();
         GlStateManager.alphaFunc(516, 0.1F);
         this.updateDisplay();
@@ -1268,6 +1332,14 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             if (++this.webFrames <= 3)
             {
                 webStep("frame " + this.webFrames);
+            }
+
+            if (this.webFrames == 2)
+            {
+                // the main menu has been drawn once: the page's loading screen fades out and the
+                // menu's intro (logo gliding into place, buttons rising in) starts from the next frame
+                net.minecraft.client.gui.GuiMainMenu.webWaiting = false;
+                net.sythix.client.web.WebLoading.report(100, "Ready");
             }
 
             int n = this.webFrames - this.webFramesMark;
