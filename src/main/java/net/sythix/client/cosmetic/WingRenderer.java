@@ -37,7 +37,8 @@ public final class WingRenderer
         float beat = MathHelper.sin(age * 0.15F * speed);
         float open = 18.0F + beat * (dragon ? 9.0F : 13.0F);
         GlStateManager.pushMatrix();
-        GlStateManager.translate(0.0F, sneaking ? 0.32F : 0.14F, 0.155F);
+        // on the surface of the back (the body's back face is at z = 0.125)
+        GlStateManager.translate(0.0F, sneaking ? 0.32F : 0.14F, 0.17F);
 
         if (sneaking)
         {
@@ -52,8 +53,9 @@ public final class WingRenderer
             GlStateManager.pushMatrix();
             GlStateManager.translate(s * 0.05F, 0.0F, 0.0F);
             // swept back from the shoulder, and tilted up a touch on the down-beat
-            GlStateManager.rotate(s * open, 0.0F, 1.0F, 0.0F);
-            GlStateManager.rotate(s * (6.0F - beat * 5.0F), 0.0F, 0.0F, 1.0F);
+            // the front of the body is -Z, so a negative turn swings the wing back, away from the body
+            GlStateManager.rotate(-s * open, 0.0F, 1.0F, 0.0F);
+            GlStateManager.rotate(-s * (6.0F - beat * 5.0F), 0.0F, 0.0F, 1.0F);
             wing(style, s, age, beat);
             GlStateManager.popMatrix();
         }

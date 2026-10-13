@@ -1881,6 +1881,24 @@ public final class SelfTest
                 }
             }
 
+            if (it.category.equals(net.sythix.client.cosmetic.CosmeticCatalog.WINGS))
+            {
+                // also from the front and the side, to be sure the wings stay behind the body
+                add("front " + it.name, 3, () -> mc().gameSettings.thirdPersonView = 2);
+                add("shot front " + it.name, 1, () -> cleanShot(file + "-front"));
+                add("side " + it.name, 3, () -> {
+                    mc().gameSettings.thirdPersonView = 1;
+                    mc().player.rotationYaw = 90.0F;
+                    mc().player.renderYawOffset = 0.0F;
+                    mc().player.prevRenderYawOffset = 0.0F;
+                });
+                add("shot side " + it.name, 1, () -> cleanShot(file + "-side"));
+                add("back " + it.name, 3, () -> {
+                    mc().player.rotationYaw = 0.0F;
+                    mc().gameSettings.thirdPersonView = 1;
+                });
+            }
+
             if (it.name.equals("Weapon Trails"))
             {
                 add("swing", 3, () -> mc().player.swingArm(net.minecraft.util.EnumHand.MAIN_HAND));
