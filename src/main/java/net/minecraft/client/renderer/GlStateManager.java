@@ -531,6 +531,12 @@ public class GlStateManager
         normalizeState.setDisabled();
     }
 
+    /** Sythix: whether depth testing is on (so GUI clipping can put it back). */
+    public static boolean isDepthTestEnabled()
+    {
+        return depthState.depthTest.currentState;
+    }
+
     /** Sythix: the current shade model (so cosmetics can put it back). */
     public static int getShadeModel()
     {

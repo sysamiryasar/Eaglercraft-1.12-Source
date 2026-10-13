@@ -213,7 +213,19 @@ if (!proxyInput.value) {
 		if (!proxyInput.value && c.proxy) {
 			proxyInput.value = c.proxy;
 		}
-	}).catch(() => {});
+	}).catch(() => {}).then(() => {
+		// on Cloudflare the site is its own proxy (cloudflare/worker.js): use it when it answers
+		if (proxyInput.value || location.protocol === 'file:') {
+			return;
+		}
+
+		const own = new URL('proxy', location.href);
+		fetch(own, { cache: 'no-store' }).then((r) => (r.ok ? r.text() : '')).then((text) => {
+			if (!proxyInput.value && text.startsWith('Sythix multiplayer proxy')) {
+				proxyInput.value = (location.protocol === 'https:' ? 'wss://' : 'ws://') + own.host + own.pathname;
+			}
+		}).catch(() => {});
+	});
 }
 
 if (params.get('server')) {

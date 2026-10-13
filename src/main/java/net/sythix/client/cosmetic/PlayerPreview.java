@@ -120,7 +120,12 @@ public final class PlayerPreview
         GlStateManager.enableColorMaterial();
         // Menus draw without depth writes; the model needs them so the cape stays behind the body
         GlStateManager.depthMask(true);
-        GlStateManager.clear(256);
+
+        if (!net.sythix.client.ui.SythixTheme.webClipping())
+        {
+            GlStateManager.clear(256);
+        }
+
         GlStateManager.enableDepth();
         GlStateManager.pushMatrix();
         GlStateManager.translate((float)x, (float)y, 200.0F);

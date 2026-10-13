@@ -1,12 +1,16 @@
-// Cloudflare (Workers static assets) settings for the browser version of Sythix Client.
-// The site is plain files: cloudflare/build.sh writes them to build/web, Cloudflare serves them.
+// Cloudflare (Workers) settings for the browser version of Sythix Client.
+// cloudflare/build.sh writes the game files to build/web; Cloudflare serves them, and
+// cloudflare/worker.js answers /proxy/... (the multiplayer proxy) before the files are looked at.
 // "name" must match the Worker's name in the Cloudflare dashboard.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sythix-client",
+  "main": "cloudflare/worker.js",
   "compatibility_date": "2025-09-01",
   "assets": {
     "directory": "./build/web",
-    "not_found_handling": "none"
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": ["/proxy", "/proxy/*"]
   }
 }

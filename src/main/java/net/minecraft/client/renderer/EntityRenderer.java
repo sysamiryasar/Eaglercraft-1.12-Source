@@ -1430,6 +1430,16 @@ public class EntityRenderer implements IResourceManagerReloadListener
                 }
                 catch (Throwable throwable1)
                 {
+                    if (this.mc.currentScreen != null && this.mc.currentScreen.getClass().getName().startsWith("net.sythix."))
+                    {
+                        // a Sythix menu failed to draw: close it and keep the game running (in the
+                        // browser an uncaught error stops the game and leaves a black screen)
+                        org.apache.logging.log4j.LogManager.getLogger().error("Sythix screen " + this.mc.currentScreen.getClass().getSimpleName() + " failed to draw", throwable1);
+                        net.sythix.client.core.Notifications.post("That menu hit an error", "It was closed so the game keeps running. Details are in the log.", net.sythix.client.core.Notifications.Kind.WARNING);
+                        this.mc.displayGuiScreen(this.mc.world == null ? new net.minecraft.client.gui.GuiMainMenu() : null);
+                        return;
+                    }
+
                     CrashReport crashreport = CrashReport.makeCrashReport(throwable1, "Rendering screen");
                     CrashReportCategory crashreportcategory = crashreport.makeCategory("Screen render details");
                     crashreportcategory.addDetail("Screen name", new ICrashReportDetail<String>()
