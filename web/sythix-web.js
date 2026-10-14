@@ -319,6 +319,22 @@ function onKey(e, down) {
 	}
 }
 
+// The browser keeps Escape for itself while the mouse is locked to the game: it only unlocks the
+// mouse, and the game never hears the key, so it kept turning the camera with the now free mouse.
+// The game asks every frame whether that happened (WebInput.pointerLockLost) and pauses.
+let pointerLockLost = false;
+let hadPointerLock = false;
+
+document.addEventListener('pointerlockchange', () => {
+	const locked = !!document.pointerLockElement;
+
+	if (hadPointerLock && !locked) {
+		pointerLockLost = true;
+	}
+
+	hadPointerLock = locked;
+});
+
 document.addEventListener('keydown', (e) => onKey(e, true), true);
 document.addEventListener('keyup', (e) => onKey(e, false), true);
 
@@ -367,6 +383,11 @@ const natives = {
 	},
 	async Java_net_sythix_client_web_WebLoading_step(lib, percent, text) {
 		loading(percent, text);
+	},
+	async Java_net_sythix_client_web_WebInput_pointerLockLost(lib) {
+		const lost = pointerLockLost;
+		pointerLockLost = false;
+		return lost ? 1 : 0;
 	},
 	async Java_net_sythix_client_web_WebInput_poll(lib, out) {
 		const n = Math.min(keyQueue.length, out.length);

@@ -20,6 +20,18 @@ public final class WebInput
     {
     }
 
+    /** 1 when the browser unlocked the mouse since the last call (the player pressed Escape), else 0. */
+    private static native int pointerLockLost();
+
+    /**
+     * True when the browser let go of the mouse by itself since the last call. The browser keeps
+     * Escape for that and doesn't pass it on, so the game treats this as Escape.
+     */
+    public static boolean mouseReleasedByBrowser()
+    {
+        return !broken && pointerLockLost() != 0;
+    }
+
     /** Fills out with {key, character, down, repeat} per event and returns how many events. */
     private static native int poll(int[] out);
 
