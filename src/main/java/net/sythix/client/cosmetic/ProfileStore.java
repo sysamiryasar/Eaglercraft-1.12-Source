@@ -75,7 +75,17 @@ public final class ProfileStore
         if (!isValidName(name))
         {
             // First launch: pick a name and remember it so it stays the same
-            name = "Player" + (100 + new Random().nextInt(900));
+            // unlikely to belong to a real Minecraft account (servers that check names ask those for a Microsoft login)
+            String chars = "abcdefghjkmnpqrstuvwxyz23456789";
+            Random random = new Random();
+            StringBuilder b = new StringBuilder("Sythix");
+
+            for (int i = 0; i < 4; ++i)
+            {
+                b.append(chars.charAt(random.nextInt(chars.length())));
+            }
+
+            name = b.toString();
             save();
         }
     }

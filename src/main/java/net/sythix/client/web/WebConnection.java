@@ -157,9 +157,9 @@ public final class WebConnection
     }
 
     /** Always hands out heap buffers, even when Netty asks for direct ones. */
-    private static final class HeapAllocator extends io.netty.buffer.AbstractByteBufAllocator
+    public static final class HeapAllocator extends io.netty.buffer.AbstractByteBufAllocator
     {
-        static final HeapAllocator INSTANCE = new HeapAllocator();
+        public static final HeapAllocator INSTANCE = new HeapAllocator();
         private static final io.netty.buffer.UnpooledByteBufAllocator HEAP = new io.netty.buffer.UnpooledByteBufAllocator(false);
 
         HeapAllocator()

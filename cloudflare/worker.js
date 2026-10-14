@@ -18,9 +18,31 @@ export default {
 			return proxy(request, url, env);
 		}
 
+		if (url.pathname.startsWith('/skin/')) {
+			return skin(url.pathname.slice('/skin/'.length));
+		}
+
 		return env.ASSETS.fetch(request);
 	}
 };
+
+/**
+ * A player skin from Mojang's skin server. Its files can't be downloaded by pages of other sites
+ * (no CORS header), so the browser version gets them from this site instead.
+ */
+async function skin(hash) {
+	if (!/^[0-9a-f]{16,80}$/.test(hash)) {
+		return new Response('Not found', { status: 404 });
+	}
+
+	const r = await fetch('https://textures.minecraft.net/texture/' + hash, { cf: { cacheTtl: 86400, cacheEverything: true } });
+
+	if (!r.ok) {
+		return new Response('Not found', { status: 404 });
+	}
+
+	return new Response(r.body, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
+}
 
 function proxy(request, url, env) {
 	if ((request.headers.get('Upgrade') || '').toLowerCase() !== 'websocket') {
@@ -44,7 +66,12 @@ function proxy(request, url, env) {
 	const pair = new WebSocketPair();
 	const [client, server] = Object.values(pair);
 	server.accept();
-	relay(server, target, env.ALLOW_PRIVATE === '1').catch((e) => refuse(server, 'Proxy error: ' + (e && e.message ? e.message : e)));
+	// the game sends its first packets as soon as the WebSocket opens, before the server
+	// connection is ready, so keep them until relay() can pass them on
+	const early = [];
+	const keep = (event) => early.push(event.data);
+	server.addEventListener('message', keep);
+	relay(server, target, env.ALLOW_PRIVATE === '1', early, keep).catch((e) => refuse(server, 'Proxy error: ' + (e && e.message ? e.message : e)));
 	return new Response(null, { status: 101, webSocket: client });
 }
 
@@ -139,7 +166,7 @@ async function resolve(target, allowPrivate) {
 	return { host, port };
 }
 
-async function relay(ws, target, allowPrivate) {
+async function relay(ws, target, allowPrivate, early, keep) {
 	let address;
 
 	try {
@@ -191,11 +218,16 @@ async function relay(ws, target, allowPrivate) {
 	};
 
 	// game -> server: binary messages are raw Minecraft protocol bytes
-	ws.addEventListener('message', (event) => {
-		if (typeof event.data !== 'string') {
-			writer.write(new Uint8Array(event.data)).catch(shutdown);
+	const send = (data) => {
+		if (typeof data !== 'string') {
+			writer.write(new Uint8Array(data)).catch(shutdown);
 		}
-	});
+	};
+
+	ws.removeEventListener('message', keep);
+	early.forEach(send);
+	early.length = 0;
+	ws.addEventListener('message', (event) => send(event.data));
 	ws.addEventListener('close', shutdown);
 	ws.addEventListener('error', shutdown);
 

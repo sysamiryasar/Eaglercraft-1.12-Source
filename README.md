@@ -98,6 +98,8 @@ What is still not possible, and why:
 - **Loading screen:** from the Play button to the main menu the page shows the Sythix loading screen with a progress bar that follows the game's real startup steps (Java loading, window, textures, block and item models, menu). The built-in texture packs are separate files (`packs/NAME-N.zip`), so only the pack in use is downloaded, and the game files download in parallel while Java starts. The desktop version shows the same logo with a progress bar (about 4 seconds from start to menu).
 - Open the page with `#debug` at the end of the address (for example http://localhost:8080/#debug) to log frame times and the busiest parts of the game to the browser console.
 - **Multiplayer:** browsers cannot open game connections, so the browser version joins servers through a small WebSocket proxy, `web/proxy/sythix_proxy.py` (one Python file; setup on a free server in `web/proxy/README.md`). **On Cloudflare the site is its own proxy** (`cloudflare/worker.js`), and the start page uses it automatically, so nothing needs to be set up. Set the proxy for everyone with a `config.json` next to `index.html` (`{"proxy": "wss://your-proxy"}`), or per player on the start page (*Multiplayer and speed*). Links like `index.html?server=play.example.com` join a server straight away. Offline-mode servers only (no Microsoft login yet).
+- **Skins:** Mojang's skin server doesn't let other sites' pages download skins, so the browser version gets other players' skins through the site's own `/skin/` address (`cloudflare/worker.js`). On a host without the Worker, other players show default skins.
+- **Eaglercraft servers (`wss://...`):** type the address with `wss://` (for example `wss://mc.voidsent.net`) in Direct Connect or Add Server. The game connects straight to the server, so no proxy is needed and Cloudflare-protected Eaglercraft servers work too. See *Eaglercraft servers* below.
 - **Speed:** multiplayer runs about 2.5x faster than singleplayer in the browser (no built-in server sharing the thread). *Resolution* on the start page (75% or 50%) draws fewer pixels and helps a lot on weak computers (menu frames 80 ms -> 36 ms at 50% in testing). After the first visit the game files are kept by the browser (`sw.js`), so the next start skips the 60 MB download, and `preload.json` loads the Java runtime in parallel.
 - CheerpJ is free for personal and open-source projects; other companies need a license from Leaning Technologies.
 
@@ -177,7 +179,21 @@ Unlike Lax1dude's EaglercraftX there is no need for a special LAN relay, and the
 
 Eaglercraft 1.12 can connect to any cracked minecraft server that does not require authentication. The 1.12 client can play on any existing Eaglercraft 1.5.2 or 1.8.8 servers.
 
-Eaglercraft 1.12 DOES NOT support websocket `wss://` connections! When connecting to an Eaglercraft server, you CANNOT have `wss://` in the IP. or IT WILL NOT WORK!!
+### Eaglercraft servers (wss://)
+
+Sythix joins Eaglercraft servers by their `wss://` (or `ws://`) address, in both the browser and the desktop version: put the address, `wss://` included, in Direct Connect or Add Server. The server list shows their message, player count and icon.
+
+How it works (`src/main/java/net/sythix/client/eagler`):
+
+- `EaglerConnection` opens a WebSocket straight to the server (the browser's own, or Netty's on desktop), does Eaglercraft's login (handshake versions 2 and 3, as EaglerXBungee and EaglerXServer speak them) and its server list query.
+- Eaglercraft servers speak Minecraft 1.8, and this client is 1.12, so `LegacyProtocol` translates every packet both ways: chunks (`LegacyChunks`, rebuilt with the game's own 1.12 chunk format), entity data for players, mobs, items, armor stands, minecarts and boats (`LegacyMetadata`), potions and spawn eggs (`LegacyItems`), sounds (`LegacySounds`), world events, titles, teams, maps, signs, riding, inventories (including the brewing stand's new slot) and villager trades. The 1.12 attack cooldown is switched off (1.8 has none), and hits are sent after the swing, like a 1.8 client.
+- Tested against EaglerXBungee 1.0.8 with a 1.8.8 server (joining, chunks, chat, commands, mobs and their data, potions, spawn eggs, enchanted items, hitting a mob, placing a block, inventory: self-test mode `eagler`) and against the real VoidSent server (`wss://mc.voidsent.net`, EaglercraftXServer 1.1.1) from the browser.
+
+Limits:
+
+- Only servers that let Eaglercraft players join without an Eaglercraft account password (most do). Servers that check names against real Minecraft accounts refuse names that belong to one; the game then says to pick another name in Profile. New players get a name like `Sythixab3k` for this reason.
+- Eaglercraft skins and voice chat are not shown (players appear with default skins).
+- Some rarely used things may look different from a real 1.8 client (a few sounds and particles, boss bars from 1.8 withers). They are left out rather than shown wrong.
 
 ### Making a Server
 

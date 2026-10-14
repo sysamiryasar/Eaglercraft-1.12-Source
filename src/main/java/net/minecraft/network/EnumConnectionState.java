@@ -307,6 +307,20 @@ public enum EnumConnectionState
         return (Integer)((BiMap)this.directionMaps.get(direction)).inverse().get(packetIn.getClass());
     }
 
+    /** The packet id of a packet class, or -1 (used by the Eaglercraft translator). */
+    public int getPacketIdOf(EnumPacketDirection direction, Class<?> packetClass)
+    {
+        Integer id = (Integer)((BiMap)this.directionMaps.get(direction)).inverse().get(packetClass);
+        return id == null ? -1 : id.intValue();
+    }
+
+    /** The packet class of a packet id, or null (used by the Eaglercraft translator). */
+    @Nullable
+    public Class<?> getPacketClassOf(EnumPacketDirection direction, int packetId)
+    {
+        return (Class)((BiMap)this.directionMaps.get(direction)).get(Integer.valueOf(packetId));
+    }
+
     @Nullable
     public Packet<?> getPacket(EnumPacketDirection direction, int packetId) throws InstantiationException, IllegalAccessException {
         Class <? extends Packet<? >> oclass = (Class)((BiMap)this.directionMaps.get(direction)).get(Integer.valueOf(packetId));

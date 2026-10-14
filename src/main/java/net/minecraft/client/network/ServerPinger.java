@@ -54,7 +54,12 @@ public class ServerPinger
         ServerAddress serveraddress = ServerAddress.fromString(server.serverIP);
         final NetworkManager networkmanager;
 
-        if (net.minecraft.client.renderer.GlStateManager.WEB)
+        if (net.sythix.client.eagler.EaglerConnection.isEaglerAddress(server.serverIP))
+        {
+            // Eaglercraft server (wss://...): its own query over a WebSocket, no proxy needed
+            networkmanager = net.sythix.client.eagler.EaglerConnection.connect(server.serverIP);
+        }
+        else if (net.minecraft.client.renderer.GlStateManager.WEB)
         {
             try
             {
@@ -201,7 +206,7 @@ public class ServerPinger
 
     private void tryCompatibilityPing(final ServerData server)
     {
-        if (net.minecraft.client.renderer.GlStateManager.WEB)
+        if (net.minecraft.client.renderer.GlStateManager.WEB || net.sythix.client.eagler.EaglerConnection.isEaglerAddress(server.serverIP))
         {
             // the pre-1.7 ping needs a direct connection
             return;

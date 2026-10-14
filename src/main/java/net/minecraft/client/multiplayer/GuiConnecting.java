@@ -31,9 +31,17 @@ public class GuiConnecting extends GuiScreen
     {
         this.mc = mcIn;
         this.previousGuiScreen = parent;
-        ServerAddress serveraddress = ServerAddress.fromString(serverDataIn.serverIP);
         mcIn.loadWorld((WorldClient)null);
         mcIn.setServerData(serverDataIn);
+
+        if (net.sythix.client.eagler.EaglerConnection.isEaglerAddress(serverDataIn.serverIP))
+        {
+            // Eaglercraft server (wss://...)
+            this.connect(serverDataIn.serverIP.trim(), 0);
+            return;
+        }
+
+        ServerAddress serveraddress = ServerAddress.fromString(serverDataIn.serverIP);
         this.connect(serveraddress.getIP(), serveraddress.getPort());
     }
 
@@ -61,7 +69,12 @@ public class GuiConnecting extends GuiScreen
                         return;
                     }
 
-                    if (net.minecraft.client.renderer.GlStateManager.WEB)
+                    if (net.sythix.client.eagler.EaglerConnection.isEaglerAddress(ip))
+                    {
+                        // Eaglercraft server: a WebSocket straight to it, with 1.8 <-> 1.12 translation
+                        GuiConnecting.this.networkManager = net.sythix.client.eagler.EaglerConnection.connect(ip);
+                    }
+                    else if (net.minecraft.client.renderer.GlStateManager.WEB)
                     {
                         // browser build: through the WebSocket proxy (it resolves the host)
                         GuiConnecting.this.networkManager = net.sythix.client.web.WebConnection.connect(ip, port);

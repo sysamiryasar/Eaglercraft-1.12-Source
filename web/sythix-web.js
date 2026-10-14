@@ -236,7 +236,9 @@ if (params.get('server')) {
 const sockets = new Map();
 let nextSocket = 1;
 
-function openSocket(url) {
+// framed: for Eaglercraft servers (wss://...), each message keeps its boundary and type, see
+// WebSocketBridge.openFramed
+function openSocket(url, framed) {
 	const id = nextSocket++;
 	const s = { queue: [], offset: 0, pending: [], state: 0, reason: '' };
 	sockets.set(id, s);
@@ -255,16 +257,29 @@ function openSocket(url) {
 			s.pending = [];
 		};
 		ws.onmessage = (e) => {
-			if (typeof e.data === 'string') {
+			if (framed) {
+				const text = typeof e.data === 'string';
+				const body = text ? new TextEncoder().encode(e.data) : new Uint8Array(e.data);
+				const frame = new Uint8Array(5 + body.length);
+				frame[0] = text ? 1 : 0;
+				new DataView(frame.buffer).setUint32(1, body.length);
+				frame.set(body, 5);
+				s.queue.push(new Int8Array(frame.buffer));
+			} else if (typeof e.data === 'string') {
 				s.reason = e.data;
 			} else {
 				s.queue.push(new Int8Array(e.data));
 			}
 		};
 		ws.onerror = () => {
-			s.reason = s.reason || "Can't reach the multiplayer proxy (" + url.split('/').slice(0, 3).join('/') + ')';
+			const where = url.split('/').slice(0, 3).join('/');
+			s.reason = s.reason || (framed ? "Can't connect to " + where : "Can't reach the multiplayer proxy (" + where + ')');
 		};
 		ws.onclose = (e) => {
+			if (framed) {
+				console.log('[eaglercraft] WebSocket closed, code ' + e.code + (e.reason ? ': ' + e.reason : ''));
+			}
+
 			s.state = 2;
 			s.reason = s.reason || e.reason || 'Connection closed';
 		};
@@ -359,7 +374,23 @@ const natives = {
 		return n >> 2;
 	},
 	async Java_net_sythix_client_web_WebSocketBridge_open(lib, url) {
-		return openSocket(url);
+		return openSocket(url, false);
+	},
+	async Java_net_sythix_client_web_WebSocketBridge_openFramed(lib, url) {
+		return openSocket(url, true);
+	},
+	async Java_net_sythix_client_web_WebSocketBridge_sendText(lib, id, text) {
+		const s = sockets.get(id);
+
+		if (!s || s.state === 2) {
+			return;
+		}
+
+		if (s.state === 1) {
+			s.ws.send(text);
+		} else {
+			s.pending.push(text);
+		}
 	},
 	async Java_net_sythix_client_web_WebSocketBridge_state(lib, id) {
 		const s = sockets.get(id);
@@ -544,7 +575,7 @@ async function start() {
 		await cheerpjInit({
 			...(preload ? { preloadResources: preload, preloadProgress: (done, total) => { status('Loading Java (CheerpJ)... ' + Math.round(100 * done / total) + '%'); if (loadTarget < 30) { loading(6 + Math.round(24 * done / total), 'Loading Java', 6 + Math.round(24 * done / total)); } } } : {}),
 			version: 8,
-			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.packdir=' + base + 'packs', 'sythix.packs=' + (files.packs || []).join(','), 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim()],
+			javaProperties: ['java.library.path=' + base + 'lwjgl/libraries/', 'sythix.packdir=' + base + 'packs', 'sythix.packs=' + (files.packs || []).join(','), 'sythix.web=true', 'sythix.webdebug=' + (location.hash === '#debug'), 'sythix.join=' + serverInput.value.trim(), 'sythix.site=' + location.origin],
 			libraries: { 'libGL.so.1': base + 'lwjgl/libraries/gl4es.wasm' },
 			enableX11: true,
 			// Minecraft 1.12 cannot use input methods, and CheerpJ's would swallow the Enter key

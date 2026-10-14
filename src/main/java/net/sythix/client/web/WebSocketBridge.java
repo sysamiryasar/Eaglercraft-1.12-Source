@@ -17,6 +17,15 @@ public final class WebSocketBridge
     /** Opens a binary WebSocket and returns its id. */
     public static native int open(String url);
 
+    /**
+     * Opens a WebSocket that keeps message boundaries (for Eaglercraft servers): read() then returns
+     * each message as [1 byte: 0 binary / 1 text][4 bytes: length][the message].
+     */
+    public static native int openFramed(String url);
+
+    /** Sends a text message (queued until the socket is open). */
+    public static native void sendText(int id, String text);
+
     /** CONNECTING, OPEN or CLOSED. */
     public static native int state(int id);
 

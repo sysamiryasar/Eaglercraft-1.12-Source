@@ -1314,6 +1314,9 @@ public class Minecraft implements IThreadListener, ISnooperInfo
 
     private void runGameLoop() throws IOException
     {
+        // Eaglercraft (wss://) connections: received messages into the game
+        net.sythix.client.eagler.EaglerConnection.pump();
+
         if (GlStateManager.WEB)
         {
             // browser build: report the average frame time every 100 frames (for tuning)
