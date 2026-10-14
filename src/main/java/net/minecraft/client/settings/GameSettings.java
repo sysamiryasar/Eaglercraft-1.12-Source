@@ -141,7 +141,8 @@ public class GameSettings
     public boolean showSubtitles;
     public boolean realmsNotifications = true;
     public boolean autoJump = true;
-    public TutorialSteps tutorialStep = TutorialSteps.MOVEMENT;
+    // Sythix: no beginner tutorial popups ("Move with W, A, S and D" stayed on screen, even in menus)
+    public TutorialSteps tutorialStep = TutorialSteps.NONE;
     public KeyBinding keyBindForward = new KeyBinding("key.forward", 17, "key.categories.movement");
     public KeyBinding keyBindLeft = new KeyBinding("key.left", 30, "key.categories.movement");
     public KeyBinding keyBindBack = new KeyBinding("key.back", 31, "key.categories.movement");
@@ -1113,7 +1114,8 @@ public class GameSettings
 
                     if ("tutorialStep".equals(s1))
                     {
-                        this.tutorialStep = TutorialSteps.getTutorial(s2);
+                        // older saves still have a tutorial step: Sythix never shows the tutorial
+                        this.tutorialStep = TutorialSteps.NONE;
                     }
 
                     if ("ao".equals(s1))

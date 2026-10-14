@@ -1325,6 +1325,13 @@ public class Minecraft implements IThreadListener, ISnooperInfo
             net.sythix.client.web.WebConnection.pump();
             net.sythix.client.web.WebInput.inject();
 
+            // Escape in the browser only unlocks the mouse (the page never gets the key): pause like
+            // desktop Escape, instead of turning the camera with the free mouse
+            if (net.sythix.client.web.WebInput.mouseReleasedByBrowser() && this.inGameHasFocus && this.currentScreen == null)
+            {
+                this.displayInGameMenu();
+            }
+
             if (this.webFrames == 1 && !System.getProperty("sythix.join", "").isEmpty())
             {
                 // play.html?server=host:port joins that server straight away
